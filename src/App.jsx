@@ -698,7 +698,7 @@ function RosterEditor({roster,onSave,onCancel}){
 // ----------------------------------------------------------------
 const BASE_URL=window.location.origin;
 
-function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onCreateRoster,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending}){
+function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onCreateRoster,onDeleteRoster,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
   const [editIdx,setEditIdx]=useState(null);
   const [addName,setAddName]=useState("");
   const [addGender,setAddGender]=useState("M");
@@ -713,7 +713,7 @@ function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onC
     return code;
   };
 
-  const generateQR=async(r)=>{
+  const generateQR=async(r,isPending=false)=>{
     let code=getCode(r.id)||generateCode(r.id);
     const url=`${BASE_URL}?session=${code}`;
     try{
@@ -724,6 +724,10 @@ function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onC
       });
       setQrMap(prev=>({...prev,[r.id]:dataUrl}));
       setActiveQR(r.id);
+      // Si session pending → la promouvoir dans les sessions régulières
+      if(isPending&&onPromotePending){
+        onPromotePending(r,code);
+      }
     }catch(e){console.error(e);}
   };
 
@@ -830,7 +834,7 @@ function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onC
                       onMouseEnter={e=>e.target.style.color="#ef4444"}
                       onMouseLeave={e=>e.target.style.color="#374151"}>×</button>
                   </div>
-                  <button onClick={()=>generateQR(s)}
+                  <button onClick={()=>generateQR(s,true)}
                     style={{...S.btn(code?"#111827":"#84cc16"),width:"100%",padding:"8px",fontSize:12,
                       border:"1px solid "+(code?"#374151":"none"),color:code?"#6b7280":"#000"}}>
                     📲 {code?"Voir / Régénérer le code de partie":"Générer code de partie"}
@@ -849,7 +853,7 @@ function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onC
           const code=getCode(r.id);
           return(
             <div key={r.id} style={{...S.card(),border:"1px solid "+(code?"#84cc1630":"#1f2937")}}>
-              <div style={{...S.row(),gap:10,marginBottom:8}}>
+              <div style={{...S.row(),gap:8,marginBottom:8,flexWrap:"wrap"}}>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{color:"#fff",fontWeight:600,fontSize:14}}>{r.name}</div>
                   <div style={{...S.row(),gap:8,marginTop:3}}>
@@ -857,8 +861,16 @@ function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onC
                     {code&&<span style={{fontSize:11,color:"#84cc16",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>Code : {code}</span>}
                   </div>
                 </div>
-                <button onClick={()=>setEditIdx(i)} style={{...S.btn(),padding:"5px 10px",fontSize:11}}>{T.fr.modify}</button>
-                <button onClick={()=>onActivate(i)} style={{...S.btn("#84cc16"),padding:"5px 10px",fontSize:11}}>{T.fr.activate}</button>
+              </div>
+              <div style={{display:"flex",gap:6,marginBottom:8}}>
+                <button onClick={()=>setEditIdx(i)} style={{...S.btn(),flex:1,padding:"7px",fontSize:11}}>✏️ Modifier</button>
+                <button onClick={()=>onActivate(i)} style={{...S.btn("#84cc16"),flex:1,padding:"7px",fontSize:11}}>▶ Activer</button>
+                <button onClick={()=>onDeleteRoster&&onDeleteRoster(i)}
+                  style={{...S.btn("#ef444420"),flex:1,padding:"7px",fontSize:11,color:"#ef4444",border:"1px solid #ef444440"}}
+                  onMouseEnter={e=>{e.currentTarget.style.background="#ef444430";}}
+                  onMouseLeave={e=>{e.currentTarget.style.background="#ef444420";}}>
+                  🗑 Supprimer
+                </button>
               </div>
               <button onClick={()=>generateQR(r)}
                 style={{...S.btn(code?"#111827":"#0d1508"),width:"100%",padding:"8px",fontSize:12,
@@ -1724,7 +1736,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending}){
+function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
   const [tab,setTab]=useState("leaderboard");
   const [timer,setTimer]=useState("75:00");
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
@@ -2131,10 +2143,12 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
           <SessionPanel
             rosters={rosters} players={players}
             onActivate={onActivateRoster} onUpdateRoster={onUpdateRoster}
+            onDeleteRoster={onDeleteRoster}
             onAddPlayer={onAddPlayer} onCreateRoster={onCreateRoster}
             rosterCodes={rosterCodes} onUpdateCodes={onUpdateCodes}
             pendingSessions={pendingSessions}
             onDismissPending={onDismissPending}
+            onPromotePending={onPromotePending}
           />
         )}
 
@@ -3815,6 +3829,7 @@ export default function PurInstinctApp(){
     setArenaState({active:false,ended:false,startTime:null});
   };
   const updateRoster=(idx,updated)=>setRosters(r=>{const a=[...r];a[idx]=updated;return a;});
+  const deleteRoster=(idx)=>setRosters(r=>r.filter((_,i)=>i!==idx));
   const createRoster=()=>{
     const newR={id:"r"+Date.now(),name:"Nouvelle liste",entries:[]};
     setRosters(r=>[...r,newR]);
@@ -3994,12 +4009,20 @@ export default function PurInstinctApp(){
       })}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onLogout={()=>setView({type:"login"})}
-      onActivateRoster={activateRoster} onUpdateRoster={updateRoster}
+      onActivateRoster={activateRoster} onUpdateRoster={updateRoster} onDeleteRoster={deleteRoster}
       onAddPlayer={addPlayerToSession} onCreateRoster={createRoster}
+      onDeleteRoster={deleteRoster}
       onUpdatePlayer={updatePlayer}
       rosterCodes={rosterCodes} onUpdateCodes={setRosterCodes}
       pendingSessions={pendingSessions}
       onDismissPending={(id)=>setPendingSessions(prev=>prev.filter(x=>x.id!==id))}
+      onPromotePending={(s,code)=>{
+        // Convertir la session pending en roster régulier
+        const newRoster={id:s.id,name:s.name+" (solo)",entries:[{name:s.name,gender:s.gender}]};
+        setRosters(r=>[...r,newRoster]);
+        setRosterCodes(prev=>({...prev,[s.id]:code}));
+        setPendingSessions(prev=>prev.filter(x=>x.id!==s.id));
+      }}
       winnersPublished={winnersPublished}
       onPublishWinners={()=>setWinnersPublished(true)}
       onUnpublishWinners={()=>setWinnersPublished(false)}/>
