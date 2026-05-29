@@ -1258,9 +1258,10 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest}){
     ?players.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())||String(p.number).includes(search))
     :[];
 
-  const handlePinSubmit=(role)=>{
+  const handlePinSubmit=(role,value)=>{
+    const entered=value!==undefined?value:pin;
     const expected=role==="admin"?ADMIN_PIN:STATION_PIN;
-    if(pin===expected){
+    if(entered===expected){
       setPinError(false);
       if(role==="admin") onLogin("admin",null);
       else setScreen("stationPick");
@@ -1302,7 +1303,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest}){
             else if(pin.length<4){
               const newPin=pin+k;
               setPin(newPin);
-              if(newPin.length===4) setTimeout(()=>handlePinSubmit(role),150);
+              if(newPin.length===4) setTimeout(()=>handlePinSubmit(role,newPin),150);
             }
           }} style={{
             padding:"16px",borderRadius:14,border:"1px solid #1f2937",
