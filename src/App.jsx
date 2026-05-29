@@ -1052,15 +1052,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
   const [timer,setTimer]=useState("75:00");
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
 
-  // Open individual player dossier
-  if(dossierPlayerId){
-    const dp=players.find(p=>p.id===dossierPlayerId);
-    if(dp) return(
-      <PlayerDossier player={dp}
-        onSave={(updated)=>{onUpdatePlayer(updated);}}
-        onBack={()=>{setDossierPlayerId(null);setTab("players");}}/>
-    );
-  }
+  const dossierPlayer = dossierPlayerId ? players.find(p=>p.id===dossierPlayerId) : null;
 
 
   useEffect(()=>{
@@ -1076,6 +1068,12 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
   const eligible=sorted.filter(p=>p.zonesPlayed.length===6);
   const winner=arenaState.ended&&eligible.length>0?eligible[0]:null;
   const timerColor=arenaState.active?"#84cc16":arenaState.ended?"#dc2626":"#374151";
+
+  if(dossierPlayer) return(
+    <PlayerDossier player={dossierPlayer}
+      onSave={(updated)=>{onUpdatePlayer(updated);}}
+      onBack={()=>{setDossierPlayerId(null);setTab("players");}}/>
+  );
 
   return(
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
