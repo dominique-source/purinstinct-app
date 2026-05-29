@@ -1420,7 +1420,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
       setScreen("newPlayer"); setSessionCodeError(false); return;
     }
     const validCodes=rosterCodes?Object.values(rosterCodes):[];
-    if(validCodes.includes(c)||c.length===4){
+    if(validCodes.includes(c)){
       setScreen("player"); setSessionCodeError(false);
     } else {
       setSessionCodeError(true);
