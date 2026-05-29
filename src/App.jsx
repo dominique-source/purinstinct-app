@@ -1124,7 +1124,7 @@ function LangFooter({lang}){
 }
 
 
-function LoginView({players,queues,onLogin,disabledZones}){
+function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
   const [tab,setTab]=useState("roles");
   return(
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
@@ -1218,6 +1218,234 @@ function LoginView({players,queues,onLogin,disabledZones}){
           <div style={{marginTop:14,padding:"8px 12px",borderRadius:10,background:"#0d0f1a",border:"1px solid #1f2937",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <span style={{fontSize:11,color:"#374151"}}>{players.length} {"joueurs"}</span>
             <span style={{fontSize:11,color:"#f97316"}}>{Object.values(queues||{}).flat().filter((v,i,a)=>a.indexOf(v)===i).length} {"en file"}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Bouton Mode Live */}
+      <div style={{marginTop:32,paddingTop:24,borderTop:"1px solid #1f2937",width:"100%",maxWidth:420,textAlign:"center"}}>
+        <div style={{fontSize:11,color:"#374151",marginBottom:10,letterSpacing:1,textTransform:"uppercase"}}>Prêt pour une vraie session ?</div>
+        <button onClick={onGoLive}
+          style={{width:"100%",padding:"14px",borderRadius:16,border:"2px solid #84cc16",
+            background:"linear-gradient(135deg,#111a05,#0d0f1a)",
+            color:"#84cc16",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
+            fontWeight:900,fontSize:18,letterSpacing:1,
+            boxShadow:"0 0 20px #84cc1620"}}
+          onMouseEnter={e=>{e.currentTarget.style.background="#84cc16";e.currentTarget.style.color="#000";}}
+          onMouseLeave={e=>{e.currentTarget.style.background="linear-gradient(135deg,#111a05,#0d0f1a)";e.currentTarget.style.color="#84cc16";}}>
+          ⚡ Passer en mode LIVE
+        </button>
+        <div style={{fontSize:10,color:"#374151",marginTop:8}}>Expérience joueur simplifiée · Accès sécurisé par PIN</div>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------
+// LIVE LOGIN VIEW
+// ----------------------------------------------------------------
+const ADMIN_PIN="1234";
+const STATION_PIN="5678";
+
+function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest}){
+  const [screen,setScreen]=useState("home"); // "home"|"player"|"admin"|"station"
+  const [search,setSearch]=useState("");
+  const [pin,setPin]=useState("");
+  const [pinError,setPinError]=useState(false);
+  const [selectedZone,setSelectedZone]=useState(null);
+
+  const filtered=search.trim().length>0
+    ?players.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())||String(p.number).includes(search))
+    :[];
+
+  const handlePinSubmit=(role)=>{
+    const expected=role==="admin"?ADMIN_PIN:STATION_PIN;
+    if(pin===expected){
+      setPinError(false);
+      if(role==="admin") onLogin("admin",null);
+      else setScreen("stationPick");
+    } else {
+      setPinError(true);
+      setPin("");
+    }
+  };
+
+  const PinPad=({role})=>(
+    <div style={{width:"100%",maxWidth:320}}>
+      <button onClick={()=>{setScreen("home");setPin("");setPinError(false);}}
+        style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>
+        ← Retour
+      </button>
+      <div style={{textAlign:"center",marginBottom:24}}>
+        <div style={{fontSize:32,marginBottom:8}}>{role==="admin"?"🛡️":"📍"}</div>
+        <div style={{color:"#fff",fontWeight:700,fontSize:18}}>
+          {role==="admin"?"Accès Administrateur":"Accès Responsable de station"}
+        </div>
+        <div style={{color:"#4b5563",fontSize:12,marginTop:4}}>Entrez votre code PIN</div>
+      </div>
+      {/* Affichage PIN */}
+      <div style={{display:"flex",justifyContent:"center",gap:12,marginBottom:24}}>
+        {[0,1,2,3].map(i=>(
+          <div key={i} style={{width:16,height:16,borderRadius:"50%",
+            background:i<pin.length?"#84cc16":"#1f2937",
+            border:"2px solid "+(i<pin.length?"#84cc16":"#374151")}}>
+          </div>
+        ))}
+      </div>
+      {pinError&&<div style={{textAlign:"center",color:"#ef4444",fontSize:12,marginBottom:12}}>Code incorrect. Réessayez.</div>}
+      {/* Clavier numérique */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,maxWidth:260,margin:"0 auto"}}>
+        {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((k,i)=>(
+          <button key={i} onClick={()=>{
+            if(k==="") return;
+            if(k==="⌫"){setPin(p=>p.slice(0,-1));setPinError(false);}
+            else if(pin.length<4){
+              const newPin=pin+k;
+              setPin(newPin);
+              if(newPin.length===4) setTimeout(()=>handlePinSubmit(role),150);
+            }
+          }} style={{
+            padding:"16px",borderRadius:14,border:"1px solid #1f2937",
+            background:k===""?"transparent":"#0d0f1a",color:"#fff",
+            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:22,
+            cursor:k===""?"default":"pointer",
+            opacity:k===""?0:1,
+            boxShadow:k!==""?"0 2px 8px rgba(0,0,0,.3)":"none"}}
+            onMouseEnter={e=>{if(k!=="")e.currentTarget.style.background="#1f2937";}}
+            onMouseLeave={e=>{if(k!=="")e.currentTarget.style.background="#0d0f1a";}}>
+            {k}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  return(
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
+      justifyContent:"center",padding:"32px 16px",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
+      <style>{FONTS}</style>
+
+      {/* Retour mode test — discret */}
+      {onGoTest&&<button onClick={onGoTest}
+        style={{position:"fixed",bottom:16,right:16,fontSize:10,color:"#374151",
+          background:"none",border:"1px solid #1f2937",borderRadius:8,padding:"4px 8px",cursor:"pointer"}}>
+        Mode test
+      </button>}
+
+      {/* Header toujours visible */}
+      <div style={{textAlign:"center",marginBottom:32}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:64,letterSpacing:-2,lineHeight:1}}>
+          <span style={{color:"#84cc16"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
+        </div>
+        <div style={{color:"#84cc16",fontSize:12,letterSpacing:3,textTransform:"uppercase",marginTop:4,fontWeight:700}}>
+          PurInstinct Games
+        </div>
+      </div>
+
+      {/* Écran principal joueur */}
+      {screen==="home"&&(
+        <div className="anim-up" style={{width:"100%",maxWidth:380}}>
+          {/* Recherche joueur */}
+          <div style={{...S.card(),border:"1px solid #84cc1640",marginBottom:16}}>
+            <div style={{fontSize:13,color:"#84cc16",fontWeight:700,marginBottom:12,textAlign:"center"}}>
+              👤 Qui êtes-vous ?
+            </div>
+            <input
+              value={search}
+              onChange={e=>setSearch(e.target.value)}
+              placeholder="Entrez votre nom ou numéro..."
+              autoFocus
+              style={{width:"100%",padding:"12px 14px",borderRadius:12,border:"1px solid #374151",
+                background:"#111827",color:"#fff",fontSize:16,outline:"none",boxSizing:"border-box",
+                marginBottom:search.trim()?10:0}}/>
+            {filtered.length>0&&(
+              <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:240,overflowY:"auto"}}>
+                {filtered.map(p=>(
+                  <button key={p.id} onClick={()=>onLogin("player",p.id)}
+                    style={{...S.row(),gap:12,padding:"10px 12px",borderRadius:10,border:"1px solid #1f2937",
+                      background:"#0d0f1a",cursor:"pointer",textAlign:"left"}}
+                    onMouseEnter={e=>e.currentTarget.style.background="#1f2937"}
+                    onMouseLeave={e=>e.currentTarget.style.background="#0d0f1a"}>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
+                      color:"#84cc16",width:32,textAlign:"center",flexShrink:0}}>#{p.number}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{color:"#fff",fontWeight:600,fontSize:14}}>{p.name}</div>
+                      <div style={{color:"#4b5563",fontSize:11,marginTop:1}}>
+                        {p.globalPoints} pts · {p.zonesPlayed.length}/6 zones
+                      </div>
+                    </div>
+                    <div style={{color:"#374151",fontSize:16}}>›</div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {search.trim().length>0&&filtered.length===0&&(
+              <div style={{textAlign:"center",color:"#4b5563",fontSize:12,padding:"8px 0"}}>
+                Aucun joueur trouvé
+              </div>
+            )}
+          </div>
+
+          {/* Boutons Admin + Station */}
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>{setScreen("admin");setPin("");setPinError(false);}}
+              style={{flex:1,padding:"14px",borderRadius:14,border:"1px solid #374151",
+                background:"#111827",color:"#6b7280",cursor:"pointer",
+                display:"flex",flexDirection:"column",alignItems:"center",gap:6}}
+              onMouseEnter={e=>e.currentTarget.style.borderColor="#84cc16"}
+              onMouseLeave={e=>e.currentTarget.style.borderColor="#374151"}>
+              <span style={{fontSize:24}}>🛡️</span>
+              <span style={{fontSize:12,fontWeight:600}}>Admin</span>
+            </button>
+            <button onClick={()=>{setScreen("station");setPin("");setPinError(false);}}
+              style={{flex:1,padding:"14px",borderRadius:14,border:"1px solid #374151",
+                background:"#111827",color:"#6b7280",cursor:"pointer",
+                display:"flex",flexDirection:"column",alignItems:"center",gap:6}}
+              onMouseEnter={e=>e.currentTarget.style.borderColor="#f97316"}
+              onMouseLeave={e=>e.currentTarget.style.borderColor="#374151"}>
+              <span style={{fontSize:24}}>📍</span>
+              <span style={{fontSize:12,fontWeight:600}}>Station</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PIN Admin */}
+      {screen==="admin"&&<PinPad role="admin"/>}
+
+      {/* PIN Station */}
+      {screen==="station"&&<PinPad role="station"/>}
+
+      {/* Choix de station après PIN valide */}
+      {screen==="stationPick"&&(
+        <div className="anim-up" style={{width:"100%",maxWidth:380}}>
+          <button onClick={()=>setScreen("home")}
+            style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>
+            ← Retour
+          </button>
+          <div style={{color:"#fff",fontWeight:700,fontSize:16,marginBottom:16,textAlign:"center"}}>
+            📍 Choisissez votre station
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {ZK.map(zk=>{
+              const z=ZONES[zk]; const zl=zn(zk);
+              const isOff=(disabledZones||[]).includes(zk);
+              return(
+                <button key={zk} onClick={()=>onLogin("station",zk)}
+                  style={{padding:"14px 16px",borderRadius:14,
+                    border:"1px solid "+(isOff?"#ef444440":z.border),
+                    background:isOff?"#1a0a0a":z.bg,
+                    color:isOff?"#ef4444":z.color,cursor:"pointer",
+                    display:"flex",alignItems:"center",gap:12,opacity:isOff?0.7:1}}
+                  onMouseEnter={e=>{if(!isOff)e.currentTarget.style.borderColor=z.color;}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=isOff?"#ef444440":z.border;}}>
+                  <span style={{fontSize:22}}>{z.icon}</span>
+                  <span style={{fontWeight:700,fontSize:14,flex:1,textAlign:"left"}}>{zl.name}</span>
+                  {isOff&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,
+                    background:"#ef444420",color:"#ef4444",border:"1px solid #ef444440"}}>DÉSACTIVÉE</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -3284,6 +3512,7 @@ export default function PurInstinctApp(){
   const [arenaState,setArenaState]=useState({active:false,ended:false,startTime:null,disabledZones:[]});
   const [winnersPublished,setWinnersPublished]=useState(false);
   const [view,setView]=useState({type:"login"});
+  const [liveMode,setLiveMode]=useState(false);
   const [setLang]=useState("fr");
 
   const playersRef=useRef(players);
@@ -3451,7 +3680,13 @@ export default function PurInstinctApp(){
   };
 
   // --- Routing ---
-  if(view.type==="login") return <LoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]} onLogin={(t,id)=>setView({type:t,id})}/>;
+  if(view.type==="login") return liveMode
+    ?<LiveLoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
+        onLogin={(t,id)=>setView({type:t,id})}
+        onGoTest={()=>setLiveMode(false)}/>
+    :<LoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
+        onLogin={(t,id)=>setView({type:t,id})}
+        onGoLive={()=>setLiveMode(true)}/>;
 
   if(view.type==="admin") return(
     <AdminView players={players} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters}
