@@ -698,7 +698,7 @@ function RosterEditor({roster,onSave,onCancel}){
 // ----------------------------------------------------------------
 const BASE_URL=window.location.origin;
 
-function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onCreateRoster,onDeleteRoster,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
+function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onUpdateRoster,onAddPlayer,onCreateRoster,onDeleteRoster,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
   const [editIdx,setEditIdx]=useState(null);
   const [addName,setAddName]=useState("");
   const [addGender,setAddGender]=useState("M");
@@ -765,6 +765,19 @@ function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onC
           </div>
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#84cc16"}}>{players.length}</div>
         </div>
+        {/* Joueurs de la session active seulement */}
+        {players.length>0&&(
+          <div style={{display:"flex",flexDirection:"column",gap:3,marginBottom:12,maxHeight:200,overflowY:"auto"}}>
+            {[...players].sort((a,b)=>b.id-a.id).map(p=>(
+              <div key={p.id} style={{...S.row(),gap:8,padding:"5px 10px",borderRadius:8,background:"#111827"}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
+                  color:"#84cc16",width:22,flexShrink:0}}>#{p.number}</div>
+                <span style={{color:"#fff",fontSize:12,flex:1}}>{p.name}</span>
+                <span style={{fontSize:10,color:"#4b5563"}}>{p.gender==="F"?"F":"H"}</span>
+              </div>
+            ))}
+          </div>
+        )}
         <div style={{...S.label(),marginBottom:8}}>{T.fr.addNow}</div>
         <div style={{display:"flex",gap:8}}>
           <input value={addName} onChange={e=>setAddName(e.target.value)}
@@ -1426,10 +1439,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
       const entry=Object.entries(rosterCodes).find(([,v])=>v===c);
       if(entry){
         const rosterId=entry[0];
-        // Sessions solo ont un id "solo_XXX" → groupId unique
-        // Sessions régulières → groupId "main"
-        const gId=rosterId.startsWith("solo_")?rosterId:"main";
-        setActiveGroupId(gId);
+        setActiveGroupId(rosterId); // chaque code = son groupe isolé
         setScreen("player"); setSessionCodeError(false); return;
       }
     }
@@ -1745,7 +1755,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
+function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
   const [tab,setTab]=useState("leaderboard");
   const [timer,setTimer]=useState("75:00");
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
@@ -2150,7 +2160,10 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
 
         {tab==="session"&&(
           <SessionPanel
-            rosters={rosters} players={players}
+            rosters={rosters}
+            players={players.filter(p=>(p.groupId||"main")===activeRosterId)}
+            allPlayers={players}
+            activeRosterId={activeRosterId}
             onActivate={onActivateRoster} onUpdateRoster={onUpdateRoster}
             onDeleteRoster={onDeleteRoster}
             onAddPlayer={onAddPlayer} onCreateRoster={onCreateRoster}
@@ -3800,7 +3813,8 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
 // ----------------------------------------------------------------
 export default function PurInstinctApp(){
   const [rosters,setRosters]=useState(INITIAL_ROSTERS);
-  const [players,setPlayers]=useState(()=>createPlayersFromRoster(INITIAL_ROSTERS[0]));
+  const [activeRosterId,setActiveRosterId]=useState(INITIAL_ROSTERS[0]?.id||"main");
+  const [players,setPlayers]=useState(()=>createPlayersFromRoster(INITIAL_ROSTERS[0]).map(p=>({...p,groupId:INITIAL_ROSTERS[0]?.id||"main"})));
   const [queues,setQueues]=useState(()=>buildInitialQueues(createPlayersFromRoster(INITIAL_ROSTERS[0])));
   const [activeGames,setActiveGames]=useState(makeEmptyGames);
   const [arenaState,setArenaState]=useState({active:false,ended:false,startTime:null,disabledZones:[]});
@@ -3831,8 +3845,12 @@ export default function PurInstinctApp(){
   // --- Roster management ---
   const activateRoster=(idx)=>{
     const r=rosters[idx];
-    const newPlayers=createPlayersFromRoster(r);
-    setPlayers(newPlayers);
+    const newPlayers=createPlayersFromRoster(r).map(p=>({...p,groupId:r.id}));
+    setActiveRosterId(r.id);
+    setPlayers(prev=>{
+      const others=prev.filter(p=>p.groupId!==r.id);
+      return [...others,...newPlayers];
+    });
     setQueues(buildInitialQueues(newPlayers));
     setActiveGames(makeEmptyGames());
     setArenaState({active:false,ended:false,startTime:null});
@@ -4009,7 +4027,7 @@ export default function PurInstinctApp(){
         onGoLive={()=>{setLiveMode(true);setQueues(makeEmptyQueues());}}/>;
 
   if(view.type==="admin") return(
-    <AdminView players={players} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters}
+    <AdminView players={players.filter(p=>(p.groupId||"main")===activeRosterId)} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId}
       onStart={()=>setArenaState(s=>({...s,active:true,ended:false,startTime:Date.now()}))}
       onEnd={()=>setArenaState(s=>({...s,active:false,ended:true}))}
       onToggleZone={(zk)=>setArenaState(s=>{
@@ -4019,6 +4037,7 @@ export default function PurInstinctApp(){
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onLogout={()=>setView({type:"login"})}
       onActivateRoster={activateRoster} onUpdateRoster={updateRoster} onDeleteRoster={deleteRoster}
+      activeRosterId={activeRosterId}
       onAddPlayer={addPlayerToSession} onCreateRoster={createRoster}
       onDeleteRoster={deleteRoster}
       onUpdatePlayer={updatePlayer}
