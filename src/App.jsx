@@ -1178,8 +1178,8 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
                               onMouseEnter={e=>e.currentTarget.style.borderColor=z.color}
                               onMouseLeave={e=>e.currentTarget.style.borderColor=z.color+"40"}>
                               <Bib n={p.number} size="sm"/>
-                              <span style={{color:"#fff",fontSize:13,fontWeight:600}}>{p.name.split(" ")[0]}</span>
-                              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1}}>
+                              <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name.split(" ")[0]}</span>
+                              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,flexShrink:0}}>
                                 <span style={{color:"#84cc16",fontSize:13,fontWeight:700}}>{p.globalPoints} pts</span>
                                 <span style={{color:z.color,fontSize:10,fontWeight:600}}>{z.icon} {p.zoneScores[zk]||50}</span>
                               </div>
@@ -1197,8 +1197,8 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
                                   onMouseEnter={e=>e.currentTarget.style.background="#ffffff08"}
                                   onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                                   <Bib n={p.number} size="sm"/>
-                                  <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1}}>{p.name.split(" ")[0]}</span>
-                                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1}}>
+                                  <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name.split(" ")[0]}</span>
+                                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,flexShrink:0}}>
                                     <span style={{color:"#84cc16",fontSize:13,fontWeight:700}}>{p.globalPoints} pts</span>
                                     <span style={{color:z.color,fontSize:10,fontWeight:600}}>{z.icon} {p.zoneScores[zk]||50}</span>
                                   </div>
@@ -1229,8 +1229,8 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
                             onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                             <span style={{color:"#4b5563",fontSize:11,width:16,textAlign:"right"}}>{i+1}</span>
                             <Bib n={p.number} size="sm"/>
-                            <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1}}>{p.name}</span>
-                            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1}}>
+                            <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+                            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,flexShrink:0}}>
                               <span style={{color:"#84cc16",fontSize:13,fontWeight:700}}>{p.globalPoints} pts</span>
                               <span style={{color:z.color,fontSize:10,fontWeight:600}}>{z.icon} {p.zoneScores[zk]||50}</span>
                             </div>
