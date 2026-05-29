@@ -419,12 +419,15 @@ function TierBadge({score}){
   );
 }
 
-function LeaderRow({player,rank,highlight}){
+function LeaderRow({player,rank,highlight,onOpen}){
   const elig=player.zonesPlayed.length===6;
   const medal=rank===1?"#ca8a04":rank===2?"#6b7280":rank===3?"#b45309":"#1f2937";
   return(
-    <div style={{display:"flex",alignItems:"center",gap:12,padding:"8px 12px",borderRadius:12,
-      background:highlight?"#1a2e0555":"transparent",border:highlight?"1px solid #84cc1625":"1px solid transparent"}}>
+    <div onClick={onOpen||undefined} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 12px",borderRadius:12,
+      background:highlight?"#1a2e0555":"transparent",border:highlight?"1px solid #84cc1625":"1px solid transparent",
+      cursor:onOpen?"pointer":"default"}}
+      onMouseEnter={e=>{if(onOpen)e.currentTarget.style.background=highlight?"#1a2e0580":"#ffffff08";}}
+      onMouseLeave={e=>{e.currentTarget.style.background=highlight?"#1a2e0555":"transparent";}}>
       <div style={{width:28,height:28,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",
         fontSize:12,fontWeight:900,flexShrink:0,fontFamily:"'Barlow Condensed',sans-serif",
         background:medal,color:rank<=3?"#000":"#9ca3af"}}>{rank}</div>
@@ -1129,7 +1132,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
               <div style={{fontSize:11,color:"#4b5563"}}><span style={{color:"#84cc16"}}>✓</span> = 6/6 {T.fr.eligible}</div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:2}}>
-              {sorted.map((p,i)=><LeaderRow key={p.id} player={p} rank={i+1} highlight={false}/>)}
+              {sorted.map((p,i)=><LeaderRow key={p.id} player={p} rank={i+1} highlight={false} onOpen={()=>setDossierPlayerId(p.id)}/>)}
             </div>
           </div>
         )}
