@@ -1054,7 +1054,13 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
   const [tab,setTab]=useState("leaderboard");
   const [timer,setTimer]=useState("75:00");
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
+  const [dossierOrigin,setDossierOrigin]=useState(null);
   const [selectedStation,setSelectedStation]=useState(null);
+
+  const openDossier=(id)=>{
+    setDossierOrigin({tab,station:selectedStation});
+    setDossierPlayerId(id);
+  };
 
   const dossierPlayer = dossierPlayerId ? players.find(p=>p.id===dossierPlayerId) : null;
 
@@ -1076,7 +1082,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
   if(dossierPlayer) return(
     <PlayerDossier player={dossierPlayer}
       onSave={(updated)=>{onUpdatePlayer(updated);}}
-      onBack={()=>{setDossierPlayerId(null);setTab("players");}}/>
+      onBack={()=>{setDossierPlayerId(null);if(dossierOrigin){setTab(dossierOrigin.tab);setSelectedStation(dossierOrigin.station);}setDossierOrigin(null);}}/>
   );
 
   return(
@@ -1133,7 +1139,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
               <div style={{fontSize:11,color:"#4b5563"}}><span style={{color:"#84cc16"}}>✓</span> = 6/6 {T.fr.eligible}</div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:2}}>
-              {sorted.map((p,i)=><LeaderRow key={p.id} player={p} rank={i+1} highlight={false} onOpen={()=>setDossierPlayerId(p.id)}/>)}
+              {sorted.map((p,i)=><LeaderRow key={p.id} player={p} rank={i+1} highlight={false} onOpen={()=>openDossier(p.id)}/>)}
             </div>
           </div>
         )}
@@ -1172,16 +1178,16 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
                       {solo.length>0?(
                         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                           {solo.map(p=>(
-                            <div key={p.id} onClick={()=>setDossierPlayerId(p.id)}
+                            <div key={p.id} onClick={()=>openDossier(p.id)}
                               style={{...S.row(),gap:6,padding:"6px 10px",borderRadius:10,background:"#0d0f1a",
                                 border:"1px solid "+z.color+"40",cursor:"pointer"}}
                               onMouseEnter={e=>e.currentTarget.style.borderColor=z.color}
                               onMouseLeave={e=>e.currentTarget.style.borderColor=z.color+"40"}>
                               <Bib n={p.number} size="sm"/>
                               <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name.split(" ")[0]}</span>
-                              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,flexShrink:0}}>
-                                <span style={{color:"#84cc16",fontSize:13,fontWeight:700}}>{p.globalPoints} pts</span>
-                                <span style={{color:z.color,fontSize:10,fontWeight:600}}>{z.icon} {p.zoneScores[zk]||50}</span>
+                              <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
+                                {(p.zoneStreaks&&p.zoneStreaks[zk]>=2)&&<span style={{fontSize:11,color:"#f97316"}}>🔥×{p.zoneStreaks[zk]}</span>}
+                                <span style={{color:z.color,fontSize:13,fontWeight:700}}>{z.icon} {p.zoneScores[zk]||50}</span>
                               </div>
                             </div>
                           ))}
@@ -1192,15 +1198,15 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
                             <div key={label} style={{flex:1,background:"#0d0f1a",borderRadius:10,padding:"10px 12px",border:"1px solid "+z.color+"30"}}>
                               <div style={{color:z.color,fontWeight:700,fontSize:12,marginBottom:8}}>ÉQUIPE {label}</div>
                               {team.map(p=>(
-                                <div key={p.id} onClick={()=>setDossierPlayerId(p.id)}
+                                <div key={p.id} onClick={()=>openDossier(p.id)}
                                   style={{...S.row(),gap:6,padding:"4px 0",cursor:"pointer",borderRadius:6}}
                                   onMouseEnter={e=>e.currentTarget.style.background="#ffffff08"}
                                   onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                                   <Bib n={p.number} size="sm"/>
                                   <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name.split(" ")[0]}</span>
-                                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,flexShrink:0}}>
-                                    <span style={{color:"#84cc16",fontSize:13,fontWeight:700}}>{p.globalPoints} pts</span>
-                                    <span style={{color:z.color,fontSize:10,fontWeight:600}}>{z.icon} {p.zoneScores[zk]||50}</span>
+                                  <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
+                                    {(p.zoneStreaks&&p.zoneStreaks[zk]>=2)&&<span style={{fontSize:11,color:"#f97316"}}>🔥×{p.zoneStreaks[zk]}</span>}
+                                    <span style={{color:z.color,fontSize:13,fontWeight:700}}>{z.icon} {p.zoneScores[zk]||50}</span>
                                   </div>
                                 </div>
                               ))}
@@ -1223,16 +1229,16 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
                     ):(
                       <div style={{display:"flex",flexDirection:"column",gap:4}}>
                         {inQueue.map((p,i)=>(
-                          <div key={p.id} onClick={()=>setDossierPlayerId(p.id)}
+                          <div key={p.id} onClick={()=>openDossier(p.id)}
                             style={{...S.row(),gap:8,padding:"5px 8px",borderRadius:8,cursor:"pointer"}}
                             onMouseEnter={e=>e.currentTarget.style.background="#ffffff08"}
                             onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                             <span style={{color:"#4b5563",fontSize:11,width:16,textAlign:"right"}}>{i+1}</span>
                             <Bib n={p.number} size="sm"/>
                             <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-                            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,flexShrink:0}}>
-                              <span style={{color:"#84cc16",fontSize:13,fontWeight:700}}>{p.globalPoints} pts</span>
-                              <span style={{color:z.color,fontSize:10,fontWeight:600}}>{z.icon} {p.zoneScores[zk]||50}</span>
+                            <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
+                              {(p.zoneStreaks&&p.zoneStreaks[zk]>=2)&&<span style={{fontSize:11,color:"#f97316"}}>🔥×{p.zoneStreaks[zk]}</span>}
+                              <span style={{color:z.color,fontSize:13,fontWeight:700}}>{z.icon} {p.zoneScores[zk]||50}</span>
                             </div>
                           </div>
                         ))}
@@ -1303,7 +1309,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
                     border:"1px solid "+(playingAt?"#fbbf2430":inQueues.length>0?"#84cc1630":"#1f2937")}}>
 
                     {/* Top row: identity + status + points + dossier link — full row is clickable */}
-                    <div onClick={()=>setDossierPlayerId(p.id)} title="Ouvrir le dossier"
+                    <div onClick={()=>openDossier(p.id)} title="Ouvrir le dossier"
                       style={{...S.row(),padding:"9px 12px",gap:10,cursor:"pointer"}}
                       onMouseEnter={e=>e.currentTarget.style.background="#ffffff08"}
                       onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
