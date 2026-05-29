@@ -287,11 +287,13 @@ function computeTeamResult(players, teamA, teamB, winner, zone) {
     }
     const curZS=p.zoneScores[zone];
     const newZS=isWin?Math.min(100,Math.round(curZS+(bonus?22:13))):Math.max(0,Math.round(curZS-9));
-    const newEntry={zone,isWin,delta,bonus,newStreak,ts:Date.now()};
+    const newGP=Math.max(0,p.globalPoints+delta);
+    const newZoneScores={...p.zoneScores,[zone]:newZS};
+    const newEntry={zone,isWin,delta,bonus,newStreak,ts:Date.now(),gp:newGP,zs:{...newZoneScores}};
     return {
       ...p,
-      globalPoints:Math.max(0,p.globalPoints+delta),
-      zoneScores:{...p.zoneScores,[zone]:newZS},
+      globalPoints:newGP,
+      zoneScores:newZoneScores,
       zoneStreaks:{...p.zoneStreaks,[zone]:newStreak},
       zonesPlayed:p.zonesPlayed.includes(zone)?p.zonesPlayed:[...p.zonesPlayed,zone],
       lastResult:{zone,isWin,delta,bonus,newStreak},
@@ -338,11 +340,13 @@ function computeIndividualResult(players, participants, winnerId, zone, secondId
     }
     const curZS=p.zoneScores[zone];
     const newZS=isWin?Math.min(100,Math.round(curZS+(bonus?22:13))):isSecond?Math.min(100,Math.round(curZS+5)):Math.max(0,Math.round(curZS-9));
-    const newEntry={zone,isWin,isSecond:isSecond||false,delta,bonus,newStreak,ts:Date.now()};
+    const newGP=Math.max(0,p.globalPoints+delta);
+    const newZoneScores={...p.zoneScores,[zone]:newZS};
+    const newEntry={zone,isWin,isSecond:isSecond||false,delta,bonus,newStreak,ts:Date.now(),gp:newGP,zs:{...newZoneScores}};
     return {
       ...p,
-      globalPoints:Math.max(0,p.globalPoints+delta),
-      zoneScores:{...p.zoneScores,[zone]:newZS},
+      globalPoints:newGP,
+      zoneScores:newZoneScores,
       zoneStreaks:{...p.zoneStreaks,[zone]:newStreak},
       zonesPlayed:p.zonesPlayed.includes(zone)?p.zonesPlayed:[...p.zonesPlayed,zone],
       lastResult:{zone,isWin,isSecond:isSecond||false,delta,bonus,newStreak},
@@ -722,6 +726,75 @@ function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onC
 // ----------------------------------------------------------------
 // PLAYER DOSSIER  (shared: admin + player view)
 // ----------------------------------------------------------------
+function ProgressChart({player}){
+  const history=player.history||[];
+  if(history.length===0) return null;
+
+  const zoneColors={purinstinct:"#84cc16",speed:"#f97316",handAgility:"#3b82f6",
+    footAgility:"#22c55e",generalAgility:"#eab308",iq:"#a855f7"};
+  const zoneLabels={purinstinct:"🏟️",speed:"⚡",handAgility:"✋",footAgility:"👟",generalAgility:"🎯",iq:"🧠"};
+
+  // Construire les points : point 0 = départ, puis un point par entrée d'historique
+  const gpPoints=[0,...history.map(h=>h.gp||0)];
+  const zsPoints={};
+  ZK.forEach(zk=>{zsPoints[zk]=[50,...history.map(h=>h.zs?h.zs[zk]||50:50)];});
+
+  const W=320, H=140, PAD=28, INNER_W=W-PAD*2, INNER_H=H-PAD*2;
+  const n=gpPoints.length;
+  const xScale=(i)=>PAD+i*(INNER_W/(n-1||1));
+
+  // Echelle GP : 0 à max(gpPoints)*1.2 ou 20 minimum
+  const maxGP=Math.max(...gpPoints,20);
+  const gpY=(v)=>PAD+INNER_H-(v/maxGP)*INNER_H;
+
+  // Echelle zones : 0-100
+  const zsY=(v)=>PAD+INNER_H-((v-0)/100)*INNER_H;
+
+  const makePath=(pts,yFn)=>pts.map((v,i)=>(i===0?"M":"L")+xScale(i).toFixed(1)+","+yFn(v).toFixed(1)).join(" ");
+
+  return(
+    <div>
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{overflow:"visible"}}>
+        {/* Grille */}
+        {[0,0.25,0.5,0.75,1].map(t=>(
+          <line key={t} x1={PAD} y1={PAD+INNER_H*(1-t)} x2={W-PAD} y2={PAD+INNER_H*(1-t)}
+            stroke="#1f2937" strokeWidth="1"/>
+        ))}
+        {/* Lignes zones (fines) */}
+        {ZK.map(zk=>(
+          <path key={zk} d={makePath(zsPoints[zk],zsY)}
+            fill="none" stroke={zoneColors[zk]} strokeWidth="1.5" strokeOpacity="0.6"
+            strokeDasharray="4 2"/>
+        ))}
+        {/* Ligne GP (épaisse) */}
+        <path d={makePath(gpPoints,gpY)}
+          fill="none" stroke="#84cc16" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+        {/* Point actuel GP */}
+        <circle cx={xScale(n-1)} cy={gpY(gpPoints[n-1])} r="4" fill="#84cc16"/>
+        {/* Label valeur GP actuelle */}
+        <text x={xScale(n-1)+6} y={gpY(gpPoints[n-1])+4}
+          fill="#84cc16" fontSize="10" fontWeight="bold">{gpPoints[n-1]}</text>
+      </svg>
+      {/* Légende */}
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:6}}>
+        <div style={{...S.row(),gap:4}}>
+          <div style={{width:20,height:3,background:"#84cc16",borderRadius:2}}/>
+          <span style={{fontSize:10,color:"#84cc16",fontWeight:700}}>Pts globaux</span>
+        </div>
+        {ZK.map(zk=>(
+          <div key={zk} style={{...S.row(),gap:4}}>
+            <div style={{width:14,height:2,background:zoneColors[zk],borderRadius:2,opacity:0.7}}/>
+            <span style={{fontSize:10,color:zoneColors[zk]}}>{zoneLabels[zk]}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{fontSize:10,color:"#374151",marginTop:6,textAlign:"center"}}>
+        {n-1} partie{n>2?"s":""} jouée{n>2?"s":""}
+      </div>
+    </div>
+  );
+}
+
 function PlayerDossier({player,onSave,onBack,embedded}){
   const [form,setForm]=useState({
     name:player.name||"",gender:player.gender||"M",age:player.age||"",
@@ -846,60 +919,13 @@ function PlayerDossier({player,onSave,onBack,embedded}){
         </div>
       </div>
 
-      {/* Highlights */}
-      <div style={{...S.card()}}>
-        <div style={{...S.label(),marginBottom:10}}>Serie de highlights video</div>
-        {form.highlights.length===0
-          ?<div style={{fontSize:12,color:"#374151",textAlign:"center",padding:"10px 0",marginBottom:8}}>
-              Aucun highlight ajoute
-            </div>
-          :<div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:10}}>
-            {form.highlights.map((h,i)=>(
-              <div key={i} style={{...S.row(),padding:"8px 10px",borderRadius:10,background:"#111827"}}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:12,color:"#84cc16",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{h.url}</div>
-                  {h.cap&&<div style={{fontSize:11,color:"#6b7280",marginTop:1}}>{h.cap}</div>}
-                </div>
-                <a href={h.url} target="_blank" rel="noreferrer"
-                  style={{fontSize:14,color:"#84cc16",marginRight:8,textDecoration:"none",flexShrink:0}}>▶</a>
-                <button onClick={()=>removeHl(i)}
-                  style={{background:"none",border:"none",cursor:"pointer",color:"#4b5563",fontSize:16,lineHeight:1}}>×</button>
-              </div>
-            ))}
-          </div>
-        }
-        <div style={{display:"flex",flexDirection:"column",gap:6}}>
-          <input value={newUrl} onChange={e=>setNewUrl(e.target.value)}
-            placeholder="URL du video (YouTube, TikTok, Instagram...)"
-            onKeyDown={e=>{if(e.key==="Enter")addHl();}} style={inp}/>
-          <input value={newCap} onChange={e=>setNewCap(e.target.value)}
-            placeholder="Description (optionnel)"
-            onKeyDown={e=>{if(e.key==="Enter")addHl();}} style={inp}/>
-          <button onClick={addHl} style={{...S.btn("#84cc16"),padding:"9px"}}>+ Ajouter ce highlight</button>
+      {/* Graphique historique */}
+      {(player.history||[]).length>0&&(
+        <div style={{...S.card()}}>
+          <div style={{...S.label(),marginBottom:12}}>📈 Progression en séance</div>
+          <ProgressChart player={player}/>
         </div>
-      </div>
-
-      {/* Game stats */}
-      <div style={{...S.card()}}>
-        <div style={{...S.label(),marginBottom:10}}>Statistiques de jeu</div>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {[
-            [player.globalPoints,"Pts globaux","#84cc16"],
-            [player.zonesPlayed.length+"/6","Zones","#84cc16"],
-            [(player.history||[]).filter(h=>h.isWin).length,"Victoires","#22c55e"],
-            [(player.history||[]).filter(h=>!h.isWin).length,"Defaites","#ef4444"]
-          ].map(([v,lbl,c],i)=>(
-            <div key={i} style={{flex:1,textAlign:"center",padding:"8px 4px",borderRadius:10,
-              background:"#111827",minWidth:60}}>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:26,color:c}}>{v}</div>
-              <div style={{fontSize:10,color:"#4b5563",marginTop:2,lineHeight:1.2}}>{lbl}</div>
-            </div>
-          ))}
-        </div>
-        <div style={{display:"flex",gap:4,marginTop:10,justifyContent:"center"}}>
-          {ZK.map(zk=><ZonePip key={zk} zone={zk} played={player.zonesPlayed.includes(zk)}/>)}
-        </div>
-      </div>
+      )}
 
       <button onClick={handleSave} style={{
         padding:"14px",borderRadius:14,border:"none",cursor:"pointer",width:"100%",
@@ -2688,6 +2714,25 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
                 </div>
               </div>
             )}
+
+            {/* STATS GLOBALES */}
+            <div style={{...S.card(),marginBottom:14}}>
+              <div style={{...S.label(),marginBottom:10}}>Statistiques</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
+                {[
+                  [player.globalPoints,"Pts globaux","#84cc16"],
+                  [player.zonesPlayed.length+"/"+activeZones.length,"Zones","#84cc16"],
+                  [(player.history||[]).filter(h=>h.isWin).length,"Victoires","#22c55e"],
+                  [(player.history||[]).filter(h=>!h.isWin&&!h.isSecond).length,"Défaites","#ef4444"]
+                ].map(([v,lbl,c],i)=>(
+                  <div key={i} style={{flex:1,textAlign:"center",padding:"8px 4px",borderRadius:10,background:"#111827",minWidth:60}}>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:24,color:c}}>{v}</div>
+                    <div style={{fontSize:10,color:"#4b5563",marginTop:2,lineHeight:1.2}}>{lbl}</div>
+                  </div>
+                ))}
+              </div>
+              {(player.history||[]).length>0&&<ProgressChart player={player}/>}
+            </div>
 
             {/* FILES INDICATOR */}
             <div style={{...S.card(),...S.row(),justifyContent:"space-between",marginBottom:14}}>
