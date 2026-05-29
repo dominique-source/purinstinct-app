@@ -2416,14 +2416,27 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
             <button onClick={onLogout} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>×</button>
           </div>
         </div>
-        <div style={{display:"flex",gap:4}}>
-          {[["stats",T.fr.myStats],["leaderboard",T.fr.myRank],["rules",T.fr.myRules],["profil",T.fr.myProfile],...(winnersPublished?[["winners","🏆 Gagnants"]]:[])] .map(([t,l])=>(
-            <button key={t} onClick={()=>setTab(t)} style={{
-              padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
-              background:tab===t?"#84cc16":"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
-              {l}
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {/* Onglets principaux */}
+          <div style={{display:"flex",gap:4}}>
+            {[["stats",T.fr.myStats],["leaderboard",T.fr.myRank],["rules",T.fr.myRules],["profil",T.fr.myProfile]].map(([t,l])=>(
+              <button key={t} onClick={()=>setTab(t)} style={{
+                flex:1,padding:"6px 4px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
+                background:tab===t?"#84cc16":"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
+                {l}
+              </button>
+            ))}
+          </div>
+          {/* Onglet Gagnants — deuxième ligne quand publié */}
+          {winnersPublished&&(
+            <button onClick={()=>setTab("winners")} style={{
+              width:"100%",padding:"7px",borderRadius:8,fontSize:12,fontWeight:700,border:"none",cursor:"pointer",
+              background:tab==="winners"?"#ca8a04":"#2d1a00",
+              color:tab==="winners"?"#000":"#f59e0b",
+              border:"1px solid "+(tab==="winners"?"#ca8a04":"#ca8a0480")}}>
+              🏆 Gagnants — Voir les résultats
             </button>
-          ))}
+          )}
         </div>
       </div>
 
