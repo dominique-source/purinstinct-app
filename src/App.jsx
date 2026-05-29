@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import html2canvas from "html2canvas";
 import confetti from "canvas-confetti";
+import QRCode from "qrcode";
 
 // ================================================================
 // PURINSTINCT ARENA v3  –  75 min  |  Dynamic rosters  |  5 tiers
@@ -694,10 +695,42 @@ function RosterEditor({roster,onSave,onCancel}){
 // ----------------------------------------------------------------
 // SESSION PANEL  (admin tab)
 // ----------------------------------------------------------------
-function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onCreateRoster}){
+const BASE_URL=window.location.origin;
+
+function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onCreateRoster,rosterCodes,onUpdateCodes}){
   const [editIdx,setEditIdx]=useState(null);
   const [addName,setAddName]=useState("");
   const [addGender,setAddGender]=useState("M");
+  const [qrMap,setQrMap]=useState({});       // {rosterId: dataURL}
+  const [activeQR,setActiveQR]=useState(null); // rosterId en vue QR
+
+  const getCode=(id)=>(rosterCodes&&rosterCodes[id])||null;
+
+  const generateCode=(id)=>{
+    const code=String(Math.floor(1000+Math.random()*9000));
+    onUpdateCodes&&onUpdateCodes({...(rosterCodes||{}),[id]:code});
+    return code;
+  };
+
+  const generateQR=async(r)=>{
+    let code=getCode(r.id)||generateCode(r.id);
+    const url=`${BASE_URL}?session=${code}`;
+    try{
+      const dataUrl=await QRCode.toDataURL(url,{
+        width:280,margin:2,
+        color:{dark:"#000000",light:"#ffffff"},
+        errorCorrectionLevel:"H"
+      });
+      setQrMap(prev=>({...prev,[r.id]:dataUrl}));
+      setActiveQR(r.id);
+    }catch(e){console.error(e);}
+  };
+
+  const downloadQR=(r)=>{
+    const data=qrMap[r.id]; if(!data) return;
+    const a=document.createElement("a");
+    a.href=data; a.download=`QR-${r.name.replace(/\s+/g,"-")}.png`; a.click();
+  };
 
   const handleAdd=()=>{
     const n=addName.trim();
@@ -741,20 +774,64 @@ function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onC
         </div>
       </div>
 
+      {/* Vue QR plein écran */}
+      {activeQR&&qrMap[activeQR]&&(()=>{
+        const r=rosters.find(x=>x.id===activeQR);
+        const code=getCode(activeQR);
+        const url=`${BASE_URL}?session=${code}`;
+        return(
+          <div style={{position:"fixed",inset:0,zIndex:60,background:"rgba(0,0,0,.92)",
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
+            <div style={{...S.card(),border:"2px solid #84cc1640",maxWidth:340,width:"100%",textAlign:"center"}}>
+              <div style={{color:"#fff",fontWeight:700,fontSize:16,marginBottom:4}}>{r?.name}</div>
+              <div style={{fontSize:12,color:"#4b5563",marginBottom:16}}>
+                Code de partie : <span style={{color:"#84cc16",fontWeight:900,fontSize:22,
+                  fontFamily:"'Barlow Condensed',sans-serif"}}>{code}</span>
+              </div>
+              <div style={{display:"inline-block",padding:12,background:"#fff",borderRadius:12,marginBottom:12}}>
+                <img src={qrMap[activeQR]} alt="QR" style={{width:200,height:200,display:"block"}}/>
+              </div>
+              <div style={{fontSize:10,color:"#374151",marginBottom:14,wordBreak:"break-all",
+                padding:"6px 10px",borderRadius:8,background:"#111827"}}>{url}</div>
+              <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+                <button onClick={()=>downloadQR(r)}
+                  style={{...S.btn("#84cc16"),padding:"10px 18px",fontSize:13}}>⬇ Télécharger</button>
+                <button onClick={()=>{navigator.clipboard&&navigator.clipboard.writeText(url);}}
+                  style={{...S.btn(),padding:"10px 14px",fontSize:13}}>📋 Lien</button>
+                <button onClick={()=>setActiveQR(null)}
+                  style={{...S.btn(),padding:"10px 14px",fontSize:13}}>✕</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Saved rosters */}
       <div style={{...S.label(),marginBottom:10}}>{T.fr.savedLists}</div>
       <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
-        {rosters.map((r,i)=>(
-          <div key={r.id} style={{...S.card(),display:"flex",alignItems:"center",gap:10}}>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{color:"#fff",fontWeight:600,fontSize:14}}>{r.name}</div>
-              <div style={{color:"#4b5563",fontSize:12,marginTop:2}}>{r.entries.length} joueurs</div>
+        {rosters.map((r,i)=>{
+          const code=getCode(r.id);
+          return(
+            <div key={r.id} style={{...S.card(),border:"1px solid "+(code?"#84cc1630":"#1f2937")}}>
+              <div style={{...S.row(),gap:10,marginBottom:8}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{color:"#fff",fontWeight:600,fontSize:14}}>{r.name}</div>
+                  <div style={{...S.row(),gap:8,marginTop:3}}>
+                    <span style={{fontSize:11,color:"#4b5563"}}>{r.entries.length} joueurs</span>
+                    {code&&<span style={{fontSize:11,color:"#84cc16",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>Code : {code}</span>}
+                  </div>
+                </div>
+                <button onClick={()=>setEditIdx(i)} style={{...S.btn(),padding:"5px 10px",fontSize:11}}>{T.fr.modify}</button>
+                <button onClick={()=>onActivate(i)} style={{...S.btn("#84cc16"),padding:"5px 10px",fontSize:11}}>{T.fr.activate}</button>
+              </div>
+              <button onClick={()=>generateQR(r)}
+                style={{...S.btn(code?"#111827":"#0d1508"),width:"100%",padding:"8px",fontSize:12,
+                  border:"1px solid "+(code?"#374151":"#84cc1640"),color:code?"#6b7280":"#84cc16"}}>
+                📲 {code?"Voir / Régénérer le QR":"Générer le QR code"}
+              </button>
             </div>
-            <button onClick={()=>setEditIdx(i)} style={{...S.btn(),padding:"6px 12px",fontSize:12}}>{T.fr.modify}</button>
-            <button onClick={()=>onActivate(i)}
-              style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12}}>{T.fr.activate}</button>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <button onClick={onCreateRoster}
         style={{...S.btn(),width:"100%",padding:"12px",fontSize:13,border:"1px dashed #374151"}}>
@@ -1457,7 +1534,8 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest}){
 // ----------------------------------------------------------------
 // ADMIN VIEW
 // ----------------------------------------------------------------
-function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners}){
+// ----------------------------------------------------------------
+function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes}){
   const [tab,setTab]=useState("leaderboard");
   const [timer,setTimer]=useState("75:00");
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
@@ -1865,6 +1943,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
             rosters={rosters} players={players}
             onActivate={onActivateRoster} onUpdateRoster={onUpdateRoster}
             onAddPlayer={onAddPlayer} onCreateRoster={onCreateRoster}
+            rosterCodes={rosterCodes} onUpdateCodes={onUpdateCodes}
           />
         )}
 
@@ -3512,6 +3591,7 @@ export default function PurInstinctApp(){
   const [activeGames,setActiveGames]=useState(makeEmptyGames);
   const [arenaState,setArenaState]=useState({active:false,ended:false,startTime:null,disabledZones:[]});
   const [winnersPublished,setWinnersPublished]=useState(false);
+  const [rosterCodes,setRosterCodes]=useState({});
   const [view,setView]=useState({type:"login"});
   const [liveMode,setLiveMode]=useState(false);
   const [setLang]=useState("fr");
@@ -3707,6 +3787,7 @@ export default function PurInstinctApp(){
       onActivateRoster={activateRoster} onUpdateRoster={updateRoster}
       onAddPlayer={addPlayerToSession} onCreateRoster={createRoster}
       onUpdatePlayer={updatePlayer}
+      rosterCodes={rosterCodes} onUpdateCodes={setRosterCodes}
       winnersPublished={winnersPublished}
       onPublishWinners={()=>setWinnersPublished(true)}
       onUnpublishWinners={()=>setWinnersPublished(false)}/>
