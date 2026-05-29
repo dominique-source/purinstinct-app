@@ -951,7 +951,7 @@ function LangFooter({lang}){
 }
 
 
-function LoginView({players,queues,onLogin}){
+function LoginView({players,queues,onLogin,disabledZones}){
   const [tab,setTab]=useState("roles");
   return(
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
@@ -961,13 +961,11 @@ function LoginView({players,queues,onLogin}){
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:72,letterSpacing:-2,lineHeight:1}}>
           <span style={{color:"#84cc16"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
         </div>
-        <div style={{color:"#4b5563",fontSize:11,letterSpacing:4,textTransform:"uppercase",marginTop:6,fontWeight:600}}>
-          T.fr.subtitle
+        <div style={{color:"#84cc16",fontSize:13,letterSpacing:3,textTransform:"uppercase",marginTop:4,fontWeight:700}}>
+          PurInstinct Games
         </div>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,marginTop:12}}>
-          <div style={{height:1,width:48,background:"#84cc16"}}/>
-          <div style={{color:"#374151",fontSize:12}}>{T.fr.subInfo}</div>
-          <div style={{height:1,width:48,background:"#84cc16"}}/>
+        <div style={{color:"#4b5563",fontSize:11,letterSpacing:2,textTransform:"uppercase",marginTop:4,fontWeight:600}}>
+          Jeux Sportifs
         </div>
       </div>
 
@@ -995,16 +993,24 @@ function LoginView({players,queues,onLogin}){
           <div style={{...S.label(),textAlign:"center",paddingTop:12,paddingBottom:4}}>{T.fr.stationManagers}</div>
           {ZK.map(zk=>{
             const zl=zn(zk);
+            const isOff=(disabledZones||[]).includes(zk);
             return(
             <button key={zk} onClick={()=>onLogin("station",zk)} style={{
-              width:"100%",padding:"14px 16px",borderRadius:16,border:"1px solid "+ZONES[zk].border,
-              background:ZONES[zk].bg,color:ZONES[zk].color,cursor:"pointer",
-              display:"flex",alignItems:"center",gap:12,fontFamily:"'DM Sans',sans-serif"}}>
-              <span style={{fontSize:22}}>{ZONES[zk].icon}</span>
-              <div style={{textAlign:"left"}}>
+              width:"100%",padding:"14px 16px",borderRadius:16,
+              border:"1px solid "+(isOff?"#ef444440":ZONES[zk].border),
+              background:isOff?"#1a0a0a":ZONES[zk].bg,
+              color:isOff?"#ef4444":ZONES[zk].color,cursor:"pointer",
+              display:"flex",alignItems:"center",gap:12,fontFamily:"'DM Sans',sans-serif",
+              opacity:isOff?0.7:1,position:"relative"}}>
+              <span style={{fontSize:22,opacity:isOff?0.5:1}}>{ZONES[zk].icon}</span>
+              <div style={{textAlign:"left",flex:1}}>
                 <div style={{fontWeight:700,fontSize:14}}>{zl.name}</div>
                 <div style={{opacity:.6,fontSize:12,fontWeight:400,marginTop:2}}>{zl.sub}</div>
               </div>
+              {isOff&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,
+                background:"#ef444420",color:"#ef4444",border:"1px solid #ef444440",flexShrink:0}}>
+                DÉSACTIVÉE
+              </span>}
             </button>
             );
           })}
@@ -1050,7 +1056,7 @@ function LoginView({players,queues,onLogin}){
 // ----------------------------------------------------------------
 // ADMIN VIEW
 // ----------------------------------------------------------------
-function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onAddPlayer,onCreateRoster,onUpdatePlayer}){
+function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onAddPlayer,onCreateRoster,onUpdatePlayer}){
   const [tab,setTab]=useState("leaderboard");
   const [timer,setTimer]=useState("75:00");
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
@@ -1252,25 +1258,42 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
               ZK.map(zk=>{
                 const z=ZONES[zk]; const zl=zn(zk); const q=queues[zk]||[]; const game=activeGames[zk];
                 const allInGame=game?(game.participants||[...(game.teamA||[]),...(game.teamB||[])]).length:0;
+                const isDisabled=(arenaState.disabledZones||[]).includes(zk);
                 return(
-                  <div key={zk} onClick={()=>setSelectedStation(zk)}
-                    style={{...S.card(),border:"1px solid "+z.border,cursor:"pointer"}}
-                    onMouseEnter={e=>e.currentTarget.style.borderColor=z.color}
-                    onMouseLeave={e=>e.currentTarget.style.borderColor=z.border}>
-                    <div style={{...S.row(),justifyContent:"space-between"}}>
-                      <div style={{...S.row()}}>
-                        <span style={{fontSize:20}}>{z.icon}</span>
-                        <div>
-                          <div style={{color:"#fff",fontWeight:700,fontSize:14}}>{zl.name}</div>
-                          <div style={{color:z.color,fontSize:12}}>{zl.sub}</div>
+                  <div key={zk} style={{position:"relative",marginBottom:0}}>
+                    {/* Contenu de la carte — opaque si désactivée */}
+                    <div style={{...S.card(),border:"1px solid "+(isDisabled?"#1f2937":z.border),
+                      opacity:isDisabled?0.4:1,marginBottom:0}}
+                      onClick={()=>!isDisabled&&setSelectedStation(zk)}
+                      onMouseEnter={e=>{if(!isDisabled)e.currentTarget.style.borderColor=z.color;}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor=isDisabled?"#1f2937":z.border;}}>
+                      <div style={{...S.row(),justifyContent:"space-between",cursor:isDisabled?"default":"pointer",paddingRight:100}}>
+                        <div style={{...S.row()}}>
+                          <span style={{fontSize:20}}>{z.icon}</span>
+                          <div>
+                            <div style={{color:"#fff",fontWeight:700,fontSize:14}}>{zl.name}</div>
+                            <div style={{color:isDisabled?"#4b5563":z.color,fontSize:12}}>{zl.sub}</div>
+                          </div>
+                        </div>
+                        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                          {!isDisabled&&<div style={{...S.tag(z.color)}}>{q.length} en file</div>}
+                          {!isDisabled&&game&&<div className="pulse-lime" style={{...S.tag("#dc2626")}}>{allInGame} LIVE</div>}
+                          {!isDisabled&&<span style={{color:"#4b5563",fontSize:16}}>›</span>}
                         </div>
                       </div>
-                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                        <div style={{...S.tag(z.color)}}>{q.length} en file</div>
-                        {game&&<div className="pulse-lime" style={{...S.tag("#dc2626")}}>{allInGame} LIVE</div>}
-                        <span style={{color:"#4b5563",fontSize:16}}>›</span>
-                      </div>
                     </div>
+                    {/* Bouton toggle — toujours visible, hors de l'opacité */}
+                    <button onClick={()=>onToggleZone(zk)}
+                      style={{position:"absolute",top:"50%",right:12,transform:"translateY(-50%)",
+                        padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",
+                        fontSize:10,fontWeight:700,zIndex:3,
+                        background:isDisabled?"#ef444420":"#84cc1620",
+                        color:isDisabled?"#ef4444":"#84cc16",
+                        border:"1px solid "+(isDisabled?"#ef444440":"#84cc1640")}}
+                      onMouseEnter={e=>{e.currentTarget.style.background=isDisabled?"#ef444430":"#84cc1630";}}
+                      onMouseLeave={e=>{e.currentTarget.style.background=isDisabled?"#ef444420":"#84cc1620";}}>
+                      {isDisabled?"⏸ DÉSACTIVÉ":"● LIVE"}
+                    </button>
                   </div>
                 );
               })
@@ -1384,8 +1407,9 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
           const ranked=[...players].sort((a,b)=>b.globalPoints-a.globalPoints);
           const top5=ranked.slice(0,5);
           const overall=ranked[0]||null;
+          const activeZK=ZK.filter(zk=>!(arenaState.disabledZones||[]).includes(zk));
           const zoneChamps={};
-          ZK.forEach(zk=>{
+          activeZK.forEach(zk=>{
             const played=players.filter(p=>p.zonesPlayed.includes(zk));
             if(played.length>0) zoneChamps[zk]=[...played].sort((a,b)=>(b.zoneScores[zk]||50)-(a.zoneScores[zk]||50))[0];
           });
@@ -1922,7 +1946,7 @@ function TeamGameView({game,players,zone,onResult,onRemove,onReplace}){
 // ----------------------------------------------------------------
 // STATION VIEW
 // ----------------------------------------------------------------
-function StationView({zone,players,queue,activeGame,onAddQ,onRemoveQ,onGenerate,onResult,onRemoveFromGame,onReplaceInGame,onReorderQ,onLogout}){
+function StationView({zone,players,queue,activeGame,disabled,onAddQ,onRemoveQ,onGenerate,onResult,onRemoveFromGame,onReplaceInGame,onReorderQ,onLogout}){
   const z=ZONES[zone];
   const zl=zn(zone);
   const [tab,setTab]=useState("game");
@@ -1983,6 +2007,21 @@ function StationView({zone,players,queue,activeGame,onAddQ,onRemoveQ,onGenerate,
   };
 
   const minForIQ=iqCount;
+
+  if(disabled) return(
+    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
+      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,padding:24}}>
+      <style>{FONTS}</style>
+      <div style={{fontSize:56,opacity:0.3}}>{z.icon}</div>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#374151",textAlign:"center"}}>
+        Station désactivée
+      </div>
+      <div style={{fontSize:13,color:"#4b5563",textAlign:"center",maxWidth:260}}>
+        Cette station a été désactivée par l'admin pour cette session.
+      </div>
+      <button onClick={onLogout} style={{marginTop:16,...S.btn(),padding:"8px 20px",fontSize:13}}>← Retour</button>
+    </div>
+  );
 
   return(
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
@@ -2257,7 +2296,7 @@ function PlayerRulesView(){
   );
 }
 
-function PlayerView({playerId,players,queues,activeGames,onJoin,onLeave,onLogout,onUpdatePlayer}){
+function PlayerView({playerId,players,queues,activeGames,disabledZones,onJoin,onLeave,onLogout,onUpdatePlayer}){
   const player=players.find(p=>p.id===playerId);
   const [tab,setTab]=useState("stats");
   const [skinIdx,setSkinIdx]=useState(2);
@@ -2276,7 +2315,8 @@ function PlayerView({playerId,players,queues,activeGames,onJoin,onLeave,onLogout
   const {inQueues,playingAt}=getStatus(playerId,queues,activeGames);
   const sorted=[...players].sort((a,b)=>b.globalPoints-a.globalPoints);
   const rank=sorted.findIndex(p=>p.id===playerId)+1;
-  const elig=player.zonesPlayed.length===6;
+  const activeZones=ZK.filter(zk=>!(disabledZones||[]).includes(zk));
+  const elig=activeZones.every(zk=>player.zonesPlayed.includes(zk));
   const canJoin=inQueues.length<2&&!playingAt;
 
   return(
@@ -2445,14 +2485,19 @@ function PlayerView({playerId,players,queues,activeGames,onJoin,onLeave,onLogout
                 const streak=player.zoneStreaks[zk]||0;
                 const inQ=inQueues.includes(zk);
                 const inG=activeGames[zk]&&(()=>{const g=activeGames[zk];const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(playerId);})();
+                const isZoneDisabled=(disabledZones||[]).includes(zk);
                 // Count wins/losses in history for this zone
                 const zoneHistory=(player.history||[]).filter(h=>h.zone===zk);
                 const wins=zoneHistory.filter(h=>h.isWin).length;
                 const losses=zoneHistory.filter(h=>!h.isWin).length;
                 return(
                   <div key={zk} style={{borderRadius:14,padding:12,background:"#0d0f1a",
-                    border:"2px solid "+(played?zc.color:inG?"#fbbf2460":"#1f2937"),
-                    opacity:1}}>
+                    border:"2px solid "+(isZoneDisabled?"#1f2937":played?zc.color:inG?"#fbbf2460":"#1f2937"),
+                    opacity:isZoneDisabled?0.6:1,pointerEvents:isZoneDisabled?"none":"auto",
+                    position:"relative"}}>
+                    {isZoneDisabled&&<div style={{position:"absolute",top:8,right:8,
+                      padding:"2px 8px",borderRadius:6,background:"#ef444420",
+                      color:"#ef4444",border:"1px solid #ef444440",fontSize:10,fontWeight:700}}>DÉSACTIVÉE</div>}
                     <div style={{...S.row(),marginBottom:played||inG?8:0}}>
                       {/* Done/todo indicator */}
                       <div style={{width:26,height:26,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",
@@ -2528,7 +2573,7 @@ function PlayerView({playerId,players,queues,activeGames,onJoin,onLeave,onLogout
                 :<div>
                   <div style={{color:"#6b7280",marginBottom:6}}>Zones manquantes pour etre eligible:</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center"}}>
-                    {ZK.filter(zk=>!player.zonesPlayed.includes(zk)).map(zk=>(
+                    {ZK.filter(zk=>!player.zonesPlayed.includes(zk)&&!(disabledZones||[]).includes(zk)).map(zk=>(
                       <div key={zk} style={{...S.tag(ZONES[zk].color),padding:"3px 8px",fontSize:12}}>
                         {ZONES[zk].icon} {zn(zk).sn}
                       </div>
@@ -2595,7 +2640,7 @@ export default function PurInstinctApp(){
   const [players,setPlayers]=useState(()=>createPlayersFromRoster(INITIAL_ROSTERS[0]));
   const [queues,setQueues]=useState(()=>buildInitialQueues(createPlayersFromRoster(INITIAL_ROSTERS[0])));
   const [activeGames,setActiveGames]=useState(makeEmptyGames);
-  const [arenaState,setArenaState]=useState({active:false,ended:false,startTime:null});
+  const [arenaState,setArenaState]=useState({active:false,ended:false,startTime:null,disabledZones:[]});
   const [view,setView]=useState({type:"login"});
   const [setLang]=useState("fr");
 
@@ -2638,6 +2683,7 @@ export default function PurInstinctApp(){
 
   // --- Queue management ---
   const addToQueue=(id,zone,force=false)=>{
+    if((arenaState.disabledZones||[]).includes(zone)) return; // zone désactivée
     const {inQueues,playingAt}=getStatus(id,queues,activeGames);
     if(playingAt) return;
     if(queues[zone]&&queues[zone].includes(id)) return; // already in this queue
@@ -2763,12 +2809,16 @@ export default function PurInstinctApp(){
   };
 
   // --- Routing ---
-  if(view.type==="login") return <LoginView players={players} queues={queues} onLogin={(t,id)=>setView({type:t,id})}/>;
+  if(view.type==="login") return <LoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]} onLogin={(t,id)=>setView({type:t,id})}/>;
 
   if(view.type==="admin") return(
     <AdminView players={players} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters}
-      onStart={()=>setArenaState({active:true,ended:false,startTime:Date.now()})}
+      onStart={()=>setArenaState(s=>({...s,active:true,ended:false,startTime:Date.now()}))}
       onEnd={()=>setArenaState(s=>({...s,active:false,ended:true}))}
+      onToggleZone={(zk)=>setArenaState(s=>{
+        const dz=s.disabledZones||[];
+        return {...s,disabledZones:dz.includes(zk)?dz.filter(z=>z!==zk):[...dz,zk]};
+      })}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onLogout={()=>setView({type:"login"})}
       onActivateRoster={activateRoster} onUpdateRoster={updateRoster}
@@ -2780,6 +2830,7 @@ export default function PurInstinctApp(){
     <StationView zone={view.id} players={players}
       queue={queues[view.id]||[]}
       activeGame={activeGames[view.id]}
+      disabled={(arenaState.disabledZones||[]).includes(view.id)}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onGenerate={(p)=>generateTeams(view.id,p)}
       onResult={(w)=>submitResult(view.id,w)}
@@ -2793,6 +2844,7 @@ export default function PurInstinctApp(){
     const p=players.find(px=>px.id===view.id);
     if(p) return(
       <PlayerView playerId={view.id} players={players} queues={queues} activeGames={activeGames}
+        disabledZones={arenaState.disabledZones||[]}
         onJoin={addToQueue} onLeave={removeFromQueue}
         onLogout={()=>setView({type:"login"})}
         onUpdatePlayer={updatePlayer}/>
