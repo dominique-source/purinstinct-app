@@ -1007,7 +1007,6 @@ function LoginView({players,queues,onLogin,disabledZones}){
               <span style={{fontSize:22,opacity:isOff?0.5:1}}>{ZONES[zk].icon}</span>
               <div style={{textAlign:"left",flex:1}}>
                 <div style={{fontWeight:700,fontSize:14}}>{zl.name}</div>
-                <div style={{opacity:.6,fontSize:12,fontWeight:400,marginTop:2}}>{zl.sub}</div>
               </div>
               {isOff&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,
                 background:"#ef444420",color:"#ef4444",border:"1px solid #ef444440",flexShrink:0}}>
