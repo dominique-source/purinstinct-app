@@ -421,7 +421,7 @@ function TierBadge({score}){
   );
 }
 
-function LeaderRow({player,rank,highlight,onOpen}){
+function LeaderRow({player,rank,highlight,isMe,onOpen}){
   const elig=player.zonesPlayed.length===6;
   const medal=rank===1?"#ca8a04":rank===2?"#6b7280":rank===3?"#b45309":"#1f2937";
   return(
@@ -436,7 +436,7 @@ function LeaderRow({player,rank,highlight,onOpen}){
       <div style={{flex:1,minWidth:0}}>
         <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
           <span style={{color:"#fff",fontWeight:600,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{player.name}</span>
-          {highlight&&<span style={{color:"#84cc16",fontSize:11}}>(toi)</span>}
+          {isMe&&<span style={{color:"#84cc16",fontSize:11}}>(toi)</span>}
           {elig&&<span style={{background:"#84cc1620",color:"#84cc16",fontSize:10,padding:"1px 5px",borderRadius:4}}>✓</span>}
         </div>
         <div style={{display:"flex",gap:3}}>{ZK.map(zk=><ZonePip key={zk} zone={zk} played={player.zonesPlayed.includes(zk)}/>)}</div>
@@ -1158,7 +1158,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
               <input value={leaderSearch} onChange={e=>{setLeaderSearch(e.target.value);setLeaderHighlight(null);}}
                 placeholder="🔍 Rechercher un joueur..."
                 style={{width:"100%",padding:"8px 12px",borderRadius:10,border:"1px solid #374151",
-                  background:"#0d0f1a",color:"#fff",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                  background:"#0d0f1a",color:"#fff",fontSize:16,outline:"none",boxSizing:"border-box"}}/>
               {leaderSearch.trim().length>0&&(()=>{
                 const q=leaderSearch.trim().toLowerCase();
                 const matches=sorted.filter(p=>p.name.toLowerCase().includes(q));
@@ -2760,7 +2760,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
               <input value={leaderSearch} onChange={e=>{setLeaderSearch(e.target.value);setLeaderHighlight(null);}}
                 placeholder="🔍 Rechercher un joueur..."
                 style={{width:"100%",padding:"8px 12px",borderRadius:10,border:"1px solid #374151",
-                  background:"#0d0f1a",color:"#fff",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                  background:"#0d0f1a",color:"#fff",fontSize:16,outline:"none",boxSizing:"border-box"}}/>
               {leaderSearch.trim().length>0&&(()=>{
                 const q=leaderSearch.trim().toLowerCase();
                 const matches=sorted.filter(p=>p.name.toLowerCase().includes(q));
@@ -2789,7 +2789,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
             <div style={{display:"flex",flexDirection:"column",gap:2}}>
               {sorted.map((p,i)=>(
                 <div key={p.id} ref={p.id===leaderHighlight?leaderHighlightRef:null}>
-                  <LeaderRow player={p} rank={i+1} highlight={p.id===playerId||p.id===leaderHighlight}/>
+                  <LeaderRow player={p} rank={i+1} highlight={p.id===playerId||p.id===leaderHighlight} isMe={p.id===playerId&&!leaderHighlight}/>
                 </div>
               ))}
             </div>
