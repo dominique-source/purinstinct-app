@@ -2886,7 +2886,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
             </div>
 
             {/* ZONE CHECKLIST - explicit done/todo */}
-            <div style={{...S.label(),marginBottom:10}}>{T.fr.zonesToComplete}</div>
+            <div style={{...S.label(),marginBottom:10}}>Stations — rejoignez la file pour accumuler des points</div>
             <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:16}}>
               {ZK.map(zk=>{
                 const zc=ZONES[zk];
@@ -2956,8 +2956,8 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
                       </div>
                     )}
 
-                    {/* Action button */}
-                    {!played&&!inG&&(
+                    {/* Action button — toujours visible sauf si en partie */}
+                    {!inG&&(
                       inQ
                         ?<div style={{...S.row(),justifyContent:"space-between",marginTop:8}}>
                           <div style={{fontSize:12,fontWeight:600,color:zc.color}}>En file d'attente...</div>
@@ -2966,7 +2966,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
                         :canJoin
                           ?<button onClick={()=>onJoin(playerId,zk)} style={{marginTop:8,width:"100%",padding:"6px 12px",borderRadius:8,
                             border:"1px solid "+zc.color+"35",background:zc.color+"15",color:zc.color,cursor:"pointer",fontSize:12,fontWeight:700}}>
-                            {T.fr.joinQueue}
+                            {played?"Rejouer — "+T.fr.joinQueue:T.fr.joinQueue}
                           </button>
                           :<div style={{fontSize:11,color:"#4b5563",marginTop:6}}>{playingAt?T.fr.inGameElsewhere:T.fr.max2queues}</div>
                     )}
