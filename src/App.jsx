@@ -2921,7 +2921,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
                         <div style={{...S.row(),justifyContent:"space-between"}}>
                           <div style={{...S.row(),gap:6}}>
                             <span style={{fontSize:16}}>{zc.icon}</span>
-                            <span style={{fontSize:14,fontWeight:700,color:played?"#fff":"#6b7280"}}>{zc.name}</span>
+                            <span style={{fontSize:14,fontWeight:700,color:played?"#fff":"#6b7280"}}>{zn(zk).name}</span>
                             {inG&&<span className="pulse-lime" style={{fontSize:11,color:"#fbbf24"}}>en cours</span>}
                             {inQ&&!inG&&<span style={{fontSize:11,color:zc.color}}>en file</span>}
                           </div>
