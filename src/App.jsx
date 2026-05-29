@@ -3521,9 +3521,14 @@ export default function PurInstinctApp(){
   useEffect(()=>{playersRef.current=players;});
   useEffect(()=>{gamesRef.current=activeGames;});
 
+  const liveModeRef=useRef(liveMode);
+  useEffect(()=>{liveModeRef.current=liveMode;},[liveMode]);
+
   useEffect(()=>{
     const iv=setInterval(()=>{
-      setQueues(q=>refillQueues(playersRef.current,q,gamesRef.current));
+      if(!liveModeRef.current){
+        setQueues(q=>refillQueues(playersRef.current,q,gamesRef.current));
+      }
     },8000);
     return()=>clearInterval(iv);
   },[]);
@@ -3684,10 +3689,10 @@ export default function PurInstinctApp(){
   if(view.type==="login") return liveMode
     ?<LiveLoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         onLogin={(t,id)=>setView({type:t,id})}
-        onGoTest={()=>setLiveMode(false)}/>
+        onGoTest={()=>{setLiveMode(false);setQueues(q=>buildInitialQueues(players));}}/>
     :<LoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         onLogin={(t,id)=>setView({type:t,id})}
-        onGoLive={()=>setLiveMode(true)}/>;
+        onGoLive={()=>{setLiveMode(true);setQueues(makeEmptyQueues());}}/>;
 
   if(view.type==="admin") return(
     <AdminView players={players} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters}
