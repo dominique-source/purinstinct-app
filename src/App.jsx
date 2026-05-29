@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import html2canvas from "html2canvas";
 
 // ================================================================
 // PURINSTINCT ARENA v3  –  75 min  |  Dynamic rosters  |  5 tiers
@@ -1064,6 +1065,8 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
   const [selectedStation,setSelectedStation]=useState(null);
   const [stationTab,setStationTab]=useState("live");
   const [winnerCard,setWinnerCard]=useState(null); // {type:"overall"|"top5"|"zone", zk?}
+  const [savingCard,setSavingCard]=useState(false);
+  const cardRef=useRef(null);
 
   const openDossier=(id)=>{
     setDossierOrigin({tab,station:selectedStation});
@@ -1442,32 +1445,48 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
           if(winnerCard){
             const {type,zk}=winnerCard;
 
-            const FullCard=({accent,children,copyTxt})=>(
-              <div style={{position:"fixed",inset:0,zIndex:60,background:"rgba(0,0,0,.92)",
+            const saveImage=async()=>{
+              if(!cardRef.current||savingCard) return;
+              setSavingCard(true);
+              try{
+                const canvas=await html2canvas(cardRef.current,{
+                  backgroundColor:"#0a0c14",scale:3,useCORS:true,
+                  logging:false,removeContainer:true
+                });
+                const url=canvas.toDataURL("image/png");
+                const a=document.createElement("a");
+                a.href=url; a.download="purinstinct-gagnant.png";
+                a.click();
+              }catch(e){console.error(e);}
+              setSavingCard(false);
+            };
+
+            const FullCard=({accent,children})=>(
+              <div style={{position:"fixed",inset:0,zIndex:60,background:"rgba(0,0,0,.95)",
                 display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
-                {/* Carte visuelle */}
-                <div style={{width:"100%",maxWidth:380,borderRadius:24,background:"#0a0c14",
-                  border:"2px solid "+(accent||"#84cc16"),padding:28,position:"relative",
-                  boxShadow:"0 0 60px "+(accent||"#84cc16")+"30"}}>
+                {/* Carte visuelle — capturée par html2canvas */}
+                <div ref={cardRef} onClick={saveImage} style={{width:"100%",maxWidth:380,borderRadius:24,
+                  background:"#0a0c14",border:"2px solid "+(accent||"#84cc16"),padding:28,
+                  position:"relative",overflow:"hidden",cursor:"pointer",
+                  boxShadow:"0 0 60px "+(accent||"#84cc16")+"40"}}>
                   {/* Barre couleur top */}
-                  <div style={{position:"absolute",top:0,left:0,right:0,height:4,borderRadius:"24px 24px 0 0",
+                  <div style={{position:"absolute",top:0,left:0,right:0,height:4,
                     background:`linear-gradient(90deg, ${accent||"#84cc16"}, ${accent||"#84cc16"}88)`}}/>
                   {/* Logo texte */}
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:10,
-                    color:(accent||"#84cc16")+"80",letterSpacing:3,marginBottom:16,textAlign:"center"}}>
+                    color:(accent||"#84cc16")+"80",letterSpacing:3,marginBottom:16,textAlign:"center",marginTop:8}}>
                     PURINSTINCT GAMES · {today}
                   </div>
                   {children}
+                  {/* Hint tap — exclu de la capture */}
+                  <div data-html2canvas-ignore="true" style={{textAlign:"center",marginTop:12,fontSize:10,color:"#374151"}}>
+                    Appuyez pour enregistrer
+                  </div>
                 </div>
-                {/* Boutons */}
-                <div style={{display:"flex",gap:10,marginTop:16}}>
-                  <button onClick={()=>copyText(copyTxt)}
-                    style={{padding:"10px 20px",borderRadius:10,background:"#84cc16",color:"#000",
-                      border:"none",cursor:"pointer",fontWeight:700,fontSize:13}}>
-                    📋 Copier le texte
-                  </button>
+                {/* Bouton retour */}
+                <div style={{marginTop:16}}>
                   <button onClick={()=>setWinnerCard(null)}
-                    style={{padding:"10px 20px",borderRadius:10,background:"#111827",color:"#9ca3af",
+                    style={{padding:"10px 24px",borderRadius:10,background:"#111827",color:"#9ca3af",
                       border:"1px solid #374151",cursor:"pointer",fontWeight:700,fontSize:13}}>
                     ← Retour
                   </button>
@@ -1480,7 +1499,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
               const streaks=ZK.filter(zk=>(overall.zoneStreaks[zk]||0)>=2);
               return(
                 <FullCard accent="#ca8a04"
-                  copyTxt={`🥇 Gagnant PurInstinct Games\n${overall.name} — ${overall.globalPoints} pts\n${ZK.map(zk=>zoneIcons[zk]+" "+zoneNames[zk]+": "+(overall.zoneScores[zk]||50)).join(" | ")}${streaks.length?"\n🔥 Streak: "+streaks.map(zk=>zoneNames[zk]+"×"+overall.zoneStreaks[zk]).join(", "):""}\n${today}`}>
+>
                   <div style={{textAlign:"center",marginBottom:16}}>
                     <div style={{fontSize:52,lineHeight:1,marginBottom:8}}>🥇</div>
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
@@ -1524,7 +1543,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
             if(type==="top5"&&top5.length>0){
               return(
                 <FullCard accent="#6366f1"
-                  copyTxt={`🏆 Top ${top5.length} PurInstinct Games\n${top5.map((p,i)=>medals[i]+" "+p.name+" — "+p.globalPoints+" pts").join("\n")}\n${today}`}>
+>
                   <div style={{textAlign:"center",marginBottom:20}}>
                     <div style={{fontSize:42,lineHeight:1,marginBottom:6}}>🏆</div>
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
@@ -1555,7 +1574,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
               const hasStreak=(champ.zoneStreaks[zk]||0)>=2;
               return(
                 <FullCard accent={z.color}
-                  copyTxt={`${zoneIcons[zk]} Champion ${zoneNames[zk]}\n${champ.name} — Score: ${champ.zoneScores[zk]||50}${hasStreak?"\n🔥 Série ×"+champ.zoneStreaks[zk]:""}\n${today}`}>
+>
                   <div style={{textAlign:"center",marginBottom:20}}>
                     <div style={{fontSize:56,lineHeight:1,marginBottom:10}}>{zoneIcons[zk]}</div>
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
