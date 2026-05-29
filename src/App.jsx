@@ -1062,6 +1062,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
   const [dossierOrigin,setDossierOrigin]=useState(null);
   const [selectedStation,setSelectedStation]=useState(null);
+  const [stationTab,setStationTab]=useState("live");
   const [winnerCard,setWinnerCard]=useState(null); // {type:"overall"|"top5"|"zone", zk?}
 
   const openDossier=(id)=>{
@@ -1163,17 +1164,34 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
               return(
                 <div>
                   {/* Header */}
-                  <div style={{...S.row(),gap:10,marginBottom:16}}>
-                    <button onClick={()=>setSelectedStation(null)}
+                  <div style={{...S.row(),gap:10,marginBottom:12}}>
+                    <button onClick={()=>{setSelectedStation(null);setStationTab("live");}}
                       style={{background:"none",border:"none",cursor:"pointer",color:"#6b7280",fontSize:20,lineHeight:1,padding:0}}
                       onMouseEnter={e=>e.target.style.color="#fff"}
                       onMouseLeave={e=>e.target.style.color="#6b7280"}>←</button>
                     <span style={{fontSize:22}}>{z.icon}</span>
-                    <div>
+                    <div style={{flex:1}}>
                       <div style={{color:"#fff",fontWeight:700,fontSize:16}}>{zl.name}</div>
-                      <div style={{color:z.color,fontSize:12}}>{zl.sub}</div>
                     </div>
                   </div>
+
+                  {/* Onglets */}
+                  <div style={{display:"flex",gap:4,marginBottom:14}}>
+                    {[["live","⚡ Live"],["rules","📋 Règlements"]].map(([t,l])=>(
+                      <button key={t} onClick={()=>setStationTab(t)}
+                        style={{padding:"6px 14px",borderRadius:8,fontSize:11,fontWeight:600,border:"none",cursor:"pointer",
+                          background:stationTab===t?z.color:"#0d0f1a",
+                          color:stationTab===t?"#000":"#6b7280"}}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+
+                  {stationTab==="rules"&&(
+                    <RulesCard zone={zk}/>
+                  )}
+
+                  {stationTab==="live"&&<>
 
                   {/* Live game */}
                   {game?(
@@ -1252,6 +1270,8 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
                       </div>
                     )}
                   </div>
+
+                  </>}
                 </div>
               );
             })():(
@@ -1264,7 +1284,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
                     {/* Contenu de la carte — opaque si désactivée */}
                     <div style={{...S.card(),border:"1px solid "+(isDisabled?"#1f2937":z.border),
                       opacity:isDisabled?0.4:1,marginBottom:0}}
-                      onClick={()=>!isDisabled&&setSelectedStation(zk)}
+                      onClick={()=>{if(!isDisabled){setSelectedStation(zk);setStationTab("live");}}}
                       onMouseEnter={e=>{if(!isDisabled)e.currentTarget.style.borderColor=z.color;}}
                       onMouseLeave={e=>{e.currentTarget.style.borderColor=isDisabled?"#1f2937":z.border;}}>
                       <div style={{...S.row(),justifyContent:"space-between",cursor:isDisabled?"default":"pointer",paddingRight:100}}>
@@ -1272,7 +1292,6 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
                           <span style={{fontSize:20}}>{z.icon}</span>
                           <div>
                             <div style={{color:"#fff",fontWeight:700,fontSize:14}}>{zl.name}</div>
-                            <div style={{color:isDisabled?"#4b5563":z.color,fontSize:12}}>{zl.sub}</div>
                           </div>
                         </div>
                         <div style={{display:"flex",gap:6,alignItems:"center"}}>
