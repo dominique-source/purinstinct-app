@@ -1766,7 +1766,7 @@ function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReorder,high
   const z=ZONES[zone];
   const [dragIdx,setDragIdx]=useState(null);
   const [overIdx,setOverIdx]=useState(null);
-  const touchDragRef=useRef({active:false,fromIdx:null,longPressTimer:null,ghost:null});
+  const touchRef=useRef({fromIdx:null});
   const listRef=useRef(null);
 
   const handleDrop=(toIdx)=>{
@@ -1778,42 +1778,34 @@ function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReorder,high
     setDragIdx(null);setOverIdx(null);
   };
 
-  // Touch drag — long press puis glisser
-  const handleTouchStart=(e,idx)=>{
-    const td=touchDragRef.current;
-    td.longPressTimer=setTimeout(()=>{
-      td.active=true; td.fromIdx=idx;
-      setDragIdx(idx);
-      // vibration courte si disponible
-      navigator.vibrate&&navigator.vibrate(40);
-    },400);
+  // Touch drag — démarre immédiatement sur le handle ⠿
+  const handleHandleTouchStart=(e,idx)=>{
+    e.preventDefault(); // empêche scroll et sélection texte
+    touchRef.current.fromIdx=idx;
+    setDragIdx(idx);
+    navigator.vibrate&&navigator.vibrate(30);
   };
 
   const handleTouchMove=(e)=>{
-    const td=touchDragRef.current;
-    clearTimeout(td.longPressTimer);
-    if(!td.active) return;
+    if(dragIdx===null) return;
     e.preventDefault();
     const touch=e.touches[0];
     const list=listRef.current;
     if(!list) return;
-    const items=[...list.children];
+    const items=[...list.querySelectorAll("[data-queue-item]")];
     for(let i=0;i<items.length;i++){
       const rect=items[i].getBoundingClientRect();
       if(touch.clientY>=rect.top&&touch.clientY<=rect.bottom){
-        setOverIdx(i); break;
+        setOverIdx(i); return;
       }
     }
   };
 
   const handleTouchEnd=()=>{
-    const td=touchDragRef.current;
-    clearTimeout(td.longPressTimer);
-    if(td.active&&td.fromIdx!==null){
-      handleDrop(overIdx!==null?overIdx:td.fromIdx);
+    if(dragIdx!==null){
+      handleDrop(overIdx!==null?overIdx:dragIdx);
     }
-    td.active=false; td.fromIdx=null;
-    setDragIdx(null); setOverIdx(null);
+    touchRef.current.fromIdx=null;
   };
 
   if(qPlayers.length===0) return(
@@ -1824,29 +1816,30 @@ function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReorder,high
   );
 
   return(
-    <div ref={listRef} style={{display:"flex",flexDirection:"column",gap:5,touchAction:dragIdx!==null?"none":"auto"}}
-      onTouchMove={(e)=>{if(dragIdx!==null)e.preventDefault();handleTouchMove(e);}} onTouchEnd={handleTouchEnd}>
+    <div ref={listRef} style={{display:"flex",flexDirection:"column",gap:5,userSelect:"none"}}
+      onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
       {qPlayers.map((p,idx)=>{
         const zs=p.zoneScores[zone]||50;
         const streak=p.zoneStreaks[zone]||0;
         const isOver=overIdx===idx;
         const isDragging=dragIdx===idx;
         return(
-          <div key={p.id}
+          <div key={p.id} data-queue-item="1"
             draggable
             onDragStart={()=>setDragIdx(idx)}
             onDragOver={e=>{e.preventDefault();setOverIdx(idx);}}
             onDrop={()=>handleDrop(idx)}
             onDragEnd={()=>{setDragIdx(null);setOverIdx(null);}}
-            onTouchStart={(e)=>handleTouchStart(e,idx)}
             style={{...S.row(),padding:"8px 10px",borderRadius:10,
               background:p.id===highlightId?"#1a2e05":isDragging?"#1a2e05":isOver?"#1a1a2e":"#0d0f1a",
               border:p.id===highlightId?"2px solid "+z.color:isOver?"2px solid "+z.color+"80":isDragging?"2px solid #84cc1660":"1px solid transparent",
               cursor:"grab",transition:"all .15s",opacity:isDragging?0.5:1,
               animation:p.id===highlightId?"pulseLime 0.6s ease-in-out 4":"none"}}>
-            {/* drag handle — indique le long press sur mobile */}
-            <div style={{color:isDragging?"#84cc16":"#374151",fontSize:18,flexShrink:0,cursor:"grab",
-              userSelect:"none",touchAction:"none",paddingRight:2}}>⠿</div>
+            {/* drag handle — toucher pour drag sur mobile */}
+            <div
+              onTouchStart={(e)=>handleHandleTouchStart(e,idx)}
+              style={{color:isDragging?"#84cc16":"#4b5563",fontSize:20,flexShrink:0,
+                cursor:"grab",touchAction:"none",padding:"0 4px 0 0",lineHeight:1}}>⠿</div>
             <div style={{fontSize:11,color:"#374151",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,width:16,flexShrink:0}}>{idx+1}</div>
             <Bib n={p.number} size="sm" color={z.color}/>
             <span style={{fontSize:13,color:"#fff",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
