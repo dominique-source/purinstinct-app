@@ -1324,17 +1324,38 @@ function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
 const ADMIN_PIN="1111";
 const STATION_PIN="2222";
 
-function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest}){
-  const [screen,setScreen]=useState("home"); // "home"|"player"|"admin"|"station"
+function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCodes}){
+  // Détecter le code de session dans l'URL
+  const urlCode=new URLSearchParams(window.location.search).get("session");
+
+  // screen: "sessionCode" | "player" | "admin" | "station" | "stationPick"
+  const [screen,setScreen]=useState(urlCode?"player":"sessionCode");
+  const [sessionCode,setSessionCode]=useState(urlCode||"");
+  const [sessionCodeError,setSessionCodeError]=useState(false);
   const [search,setSearch]=useState("");
   const [pin,setPin]=useState("");
   const [pinError,setPinError]=useState(false);
-  const [selectedZone,setSelectedZone]=useState(null);
 
   const filtered=search.trim().length>0
     ?players.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())||String(p.number).includes(search))
     :[];
 
+  // Valider le code de session
+  const handleSessionCode=(code)=>{
+    const c=code||sessionCode;
+    if(c==="0000"){
+      // Session vide — joueur unique
+      setScreen("player"); setSessionCodeError(false); return;
+    }
+    const validCodes=rosterCodes?Object.values(rosterCodes):[];
+    if(validCodes.includes(c)||c.length===4){
+      setScreen("player"); setSessionCodeError(false);
+    } else {
+      setSessionCodeError(true);
+    }
+  };
+
+  // PIN Admin / Station
   const handlePinSubmit=(role,value)=>{
     const entered=value!==undefined?value:pin;
     const expected=role==="admin"?ADMIN_PIN:STATION_PIN;
@@ -1343,51 +1364,33 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest}){
       if(role==="admin") onLogin("admin",null);
       else setScreen("stationPick");
     } else {
-      setPinError(true);
-      setPin("");
+      setPinError(true); setPin("");
     }
   };
 
-  const PinPad=({role})=>(
-    <div style={{width:"100%",maxWidth:320}}>
-      <button onClick={()=>{setScreen("home");setPin("");setPinError(false);}}
-        style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>
-        ← Retour
-      </button>
-      <div style={{textAlign:"center",marginBottom:24}}>
-        <div style={{fontSize:32,marginBottom:8}}>{role==="admin"?"🛡️":"📍"}</div>
-        <div style={{color:"#fff",fontWeight:700,fontSize:18}}>
-          {role==="admin"?"Accès Administrateur":"Accès Responsable de station"}
-        </div>
-        <div style={{color:"#4b5563",fontSize:12,marginTop:4}}>Entrez votre code PIN</div>
-      </div>
-      {/* Affichage PIN */}
-      <div style={{display:"flex",justifyContent:"center",gap:12,marginBottom:24}}>
-        {[0,1,2,3].map(i=>(
-          <div key={i} style={{width:16,height:16,borderRadius:"50%",
-            background:i<pin.length?"#84cc16":"#1f2937",
-            border:"2px solid "+(i<pin.length?"#84cc16":"#374151")}}>
-          </div>
+  // Clavier numérique réutilisable
+  const NumPad=({value,onChange,onComplete,maxLen=4})=>(
+    <div>
+      <div style={{display:"flex",justifyContent:"center",gap:12,marginBottom:20}}>
+        {Array.from({length:maxLen}).map((_,i)=>(
+          <div key={i} style={{width:18,height:18,borderRadius:"50%",
+            background:i<value.length?"#84cc16":"#1f2937",
+            border:"2px solid "+(i<value.length?"#84cc16":"#374151")}}/>
         ))}
       </div>
-      {pinError&&<div style={{textAlign:"center",color:"#ef4444",fontSize:12,marginBottom:12}}>Code incorrect. Réessayez.</div>}
-      {/* Clavier numérique */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,maxWidth:260,margin:"0 auto"}}>
         {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((k,i)=>(
           <button key={i} onClick={()=>{
             if(k==="") return;
-            if(k==="⌫"){setPin(p=>p.slice(0,-1));setPinError(false);}
-            else if(pin.length<4){
-              const newPin=pin+k;
-              setPin(newPin);
-              if(newPin.length===4) setTimeout(()=>handlePinSubmit(role,newPin),150);
+            if(k==="⌫"){onChange(value.slice(0,-1));}
+            else if(value.length<maxLen){
+              const nv=value+k; onChange(nv);
+              if(nv.length===maxLen) setTimeout(()=>onComplete(nv),150);
             }
-          }} style={{
-            padding:"16px",borderRadius:14,border:"1px solid #1f2937",
+          }} style={{padding:"16px",borderRadius:14,border:"1px solid #1f2937",
             background:k===""?"transparent":"#0d0f1a",color:"#fff",
             fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:22,
-            cursor:k===""?"default":"pointer",
-            opacity:k===""?0:1,
+            cursor:k===""?"default":"pointer",opacity:k===""?0:1,
             boxShadow:k!==""?"0 2px 8px rgba(0,0,0,.3)":"none"}}
             onMouseEnter={e=>{if(k!=="")e.currentTarget.style.background="#1f2937";}}
             onMouseLeave={e=>{if(k!=="")e.currentTarget.style.background="#0d0f1a";}}>
@@ -1398,44 +1401,81 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest}){
     </div>
   );
 
+  const Header=()=>(
+    <div style={{textAlign:"center",marginBottom:28}}>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:64,letterSpacing:-2,lineHeight:1}}>
+        <span style={{color:"#84cc16"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
+      </div>
+      <div style={{color:"#84cc16",fontSize:12,letterSpacing:3,textTransform:"uppercase",marginTop:4,fontWeight:700}}>
+        PurInstinct Games
+      </div>
+    </div>
+  );
+
   return(
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
       justifyContent:"center",padding:"32px 16px",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
-
-      {/* Retour mode test — discret */}
       {onGoTest&&<button onClick={onGoTest}
         style={{position:"fixed",bottom:16,right:16,fontSize:10,color:"#374151",
           background:"none",border:"1px solid #1f2937",borderRadius:8,padding:"4px 8px",cursor:"pointer"}}>
         Mode test
       </button>}
 
-      {/* Header toujours visible */}
-      <div style={{textAlign:"center",marginBottom:32}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:64,letterSpacing:-2,lineHeight:1}}>
-          <span style={{color:"#84cc16"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
-        </div>
-        <div style={{color:"#84cc16",fontSize:12,letterSpacing:3,textTransform:"uppercase",marginTop:4,fontWeight:700}}>
-          PurInstinct Games
-        </div>
-      </div>
+      <Header/>
 
-      {/* Écran principal joueur */}
-      {screen==="home"&&(
+      {/* ÉTAPE 1 — Code de session (si pas de QR) */}
+      {screen==="sessionCode"&&(
+        <div className="anim-up" style={{width:"100%",maxWidth:320}}>
+          <div style={{textAlign:"center",marginBottom:20}}>
+            <div style={{fontSize:32,marginBottom:8}}>🔑</div>
+            <div style={{color:"#fff",fontWeight:700,fontSize:18,marginBottom:4}}>Code de session</div>
+            <div style={{color:"#4b5563",fontSize:12}}>Entrez le code à 4 chiffres de votre session</div>
+          </div>
+          {sessionCodeError&&<div style={{textAlign:"center",color:"#ef4444",fontSize:12,marginBottom:12}}>
+            Code invalide. Réessayez ou entrez <strong>0000</strong> pour une nouvelle session.
+          </div>}
+          <NumPad value={sessionCode} onChange={v=>{setSessionCode(v);setSessionCodeError(false);}}
+            onComplete={handleSessionCode}/>
+          <div style={{textAlign:"center",marginTop:16,fontSize:11,color:"#374151"}}>
+            Entrez <span style={{color:"#84cc16",fontWeight:700}}>0000</span> pour démarrer une session solo
+          </div>
+          {/* Boutons Admin + Station discrets en bas */}
+          <div style={{display:"flex",gap:8,marginTop:24,justifyContent:"center"}}>
+            <button onClick={()=>{setScreen("admin");setPin("");setPinError(false);}}
+              style={{padding:"8px 16px",borderRadius:10,border:"1px solid #374151",background:"#111827",
+                color:"#6b7280",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",gap:6}}
+              onMouseEnter={e=>e.currentTarget.style.borderColor="#84cc16"}
+              onMouseLeave={e=>e.currentTarget.style.borderColor="#374151"}>
+              🛡️ Admin
+            </button>
+            <button onClick={()=>{setScreen("station");setPin("");setPinError(false);}}
+              style={{padding:"8px 16px",borderRadius:10,border:"1px solid #374151",background:"#111827",
+                color:"#6b7280",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",gap:6}}
+              onMouseEnter={e=>e.currentTarget.style.borderColor="#f97316"}
+              onMouseLeave={e=>e.currentTarget.style.borderColor="#374151"}>
+              📍 Station
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ÉTAPE 2 — Recherche joueur */}
+      {screen==="player"&&(
         <div className="anim-up" style={{width:"100%",maxWidth:380}}>
-          {/* Recherche joueur */}
+          {!urlCode&&<button onClick={()=>{setScreen("sessionCode");setSearch("");}}
+            style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:16,padding:0}}>
+            ← Retour
+          </button>}
+          {sessionCode&&<div style={{textAlign:"center",marginBottom:14}}>
+            <span style={{fontSize:11,color:"#4b5563"}}>Session </span>
+            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,color:"#84cc16"}}>{sessionCode}</span>
+          </div>}
           <div style={{...S.card(),border:"1px solid #84cc1640",marginBottom:16}}>
-            <div style={{fontSize:13,color:"#84cc16",fontWeight:700,marginBottom:12,textAlign:"center"}}>
-              👤 Qui êtes-vous ?
-            </div>
-            <input
-              value={search}
-              onChange={e=>setSearch(e.target.value)}
-              placeholder="Entrez votre nom ou numéro..."
-              autoFocus
+            <div style={{fontSize:13,color:"#84cc16",fontWeight:700,marginBottom:12,textAlign:"center"}}>👤 Qui êtes-vous ?</div>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Entrez votre nom ou numéro..." autoFocus
               style={{width:"100%",padding:"12px 14px",borderRadius:12,border:"1px solid #374151",
-                background:"#111827",color:"#fff",fontSize:16,outline:"none",boxSizing:"border-box",
-                marginBottom:search.trim()?10:0}}/>
+                background:"#111827",color:"#fff",fontSize:16,outline:"none",boxSizing:"border-box",marginBottom:search.trim()?10:0}}/>
             {filtered.length>0&&(
               <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:240,overflowY:"auto"}}>
                 {filtered.map(p=>(
@@ -1448,9 +1488,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest}){
                       color:"#84cc16",width:32,textAlign:"center",flexShrink:0}}>#{p.number}</div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{color:"#fff",fontWeight:600,fontSize:14}}>{p.name}</div>
-                      <div style={{color:"#4b5563",fontSize:11,marginTop:1}}>
-                        {p.globalPoints} pts · {p.zonesPlayed.length}/6 zones
-                      </div>
+                      <div style={{color:"#4b5563",fontSize:11,marginTop:1}}>{p.globalPoints} pts · {p.zonesPlayed.length}/6 zones</div>
                     </div>
                     <div style={{color:"#374151",fontSize:16}}>›</div>
                   </button>
@@ -1458,62 +1496,56 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest}){
               </div>
             )}
             {search.trim().length>0&&filtered.length===0&&(
-              <div style={{textAlign:"center",color:"#4b5563",fontSize:12,padding:"8px 0"}}>
-                Aucun joueur trouvé
-              </div>
+              <div style={{textAlign:"center",color:"#4b5563",fontSize:12,padding:"8px 0"}}>Aucun joueur trouvé</div>
             )}
-          </div>
-
-          {/* Boutons Admin + Station */}
-          <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>{setScreen("admin");setPin("");setPinError(false);}}
-              style={{flex:1,padding:"14px",borderRadius:14,border:"1px solid #374151",
-                background:"#111827",color:"#6b7280",cursor:"pointer",
-                display:"flex",flexDirection:"column",alignItems:"center",gap:6}}
-              onMouseEnter={e=>e.currentTarget.style.borderColor="#84cc16"}
-              onMouseLeave={e=>e.currentTarget.style.borderColor="#374151"}>
-              <span style={{fontSize:24}}>🛡️</span>
-              <span style={{fontSize:12,fontWeight:600}}>Admin</span>
-            </button>
-            <button onClick={()=>{setScreen("station");setPin("");setPinError(false);}}
-              style={{flex:1,padding:"14px",borderRadius:14,border:"1px solid #374151",
-                background:"#111827",color:"#6b7280",cursor:"pointer",
-                display:"flex",flexDirection:"column",alignItems:"center",gap:6}}
-              onMouseEnter={e=>e.currentTarget.style.borderColor="#f97316"}
-              onMouseLeave={e=>e.currentTarget.style.borderColor="#374151"}>
-              <span style={{fontSize:24}}>📍</span>
-              <span style={{fontSize:12,fontWeight:600}}>Station</span>
-            </button>
           </div>
         </div>
       )}
 
       {/* PIN Admin */}
-      {screen==="admin"&&<PinPad role="admin"/>}
+      {screen==="admin"&&(
+        <div style={{width:"100%",maxWidth:320}}>
+          <button onClick={()=>{setScreen("sessionCode");setPin("");setPinError(false);}}
+            style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>← Retour</button>
+          <div style={{textAlign:"center",marginBottom:24}}>
+            <div style={{fontSize:32,marginBottom:8}}>🛡️</div>
+            <div style={{color:"#fff",fontWeight:700,fontSize:18}}>Accès Administrateur</div>
+            <div style={{color:"#4b5563",fontSize:12,marginTop:4}}>Entrez votre code PIN</div>
+          </div>
+          {pinError&&<div style={{textAlign:"center",color:"#ef4444",fontSize:12,marginBottom:12}}>Code incorrect.</div>}
+          <NumPad value={pin} onChange={v=>{setPin(v);setPinError(false);}} onComplete={v=>handlePinSubmit("admin",v)}/>
+        </div>
+      )}
 
       {/* PIN Station */}
-      {screen==="station"&&<PinPad role="station"/>}
+      {screen==="station"&&(
+        <div style={{width:"100%",maxWidth:320}}>
+          <button onClick={()=>{setScreen("sessionCode");setPin("");setPinError(false);}}
+            style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>← Retour</button>
+          <div style={{textAlign:"center",marginBottom:24}}>
+            <div style={{fontSize:32,marginBottom:8}}>📍</div>
+            <div style={{color:"#fff",fontWeight:700,fontSize:18}}>Accès Responsable de station</div>
+            <div style={{color:"#4b5563",fontSize:12,marginTop:4}}>Entrez votre code PIN</div>
+          </div>
+          {pinError&&<div style={{textAlign:"center",color:"#ef4444",fontSize:12,marginBottom:12}}>Code incorrect.</div>}
+          <NumPad value={pin} onChange={v=>{setPin(v);setPinError(false);}} onComplete={v=>handlePinSubmit("station",v)}/>
+        </div>
+      )}
 
-      {/* Choix de station après PIN valide */}
+      {/* Choix station */}
       {screen==="stationPick"&&(
         <div className="anim-up" style={{width:"100%",maxWidth:380}}>
-          <button onClick={()=>setScreen("home")}
-            style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>
-            ← Retour
-          </button>
-          <div style={{color:"#fff",fontWeight:700,fontSize:16,marginBottom:16,textAlign:"center"}}>
-            📍 Choisissez votre station
-          </div>
+          <button onClick={()=>setScreen("station")}
+            style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>← Retour</button>
+          <div style={{color:"#fff",fontWeight:700,fontSize:16,marginBottom:16,textAlign:"center"}}>📍 Choisissez votre station</div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {ZK.map(zk=>{
               const z=ZONES[zk]; const zl=zn(zk);
               const isOff=(disabledZones||[]).includes(zk);
               return(
                 <button key={zk} onClick={()=>onLogin("station",zk)}
-                  style={{padding:"14px 16px",borderRadius:14,
-                    border:"1px solid "+(isOff?"#ef444440":z.border),
-                    background:isOff?"#1a0a0a":z.bg,
-                    color:isOff?"#ef4444":z.color,cursor:"pointer",
+                  style={{padding:"14px 16px",borderRadius:14,border:"1px solid "+(isOff?"#ef444440":z.border),
+                    background:isOff?"#1a0a0a":z.bg,color:isOff?"#ef4444":z.color,cursor:"pointer",
                     display:"flex",alignItems:"center",gap:12,opacity:isOff?0.7:1}}
                   onMouseEnter={e=>{if(!isOff)e.currentTarget.style.borderColor=z.color;}}
                   onMouseLeave={e=>{e.currentTarget.style.borderColor=isOff?"#ef444440":z.border;}}>
@@ -3768,6 +3800,7 @@ export default function PurInstinctApp(){
   // --- Routing ---
   if(view.type==="login") return liveMode
     ?<LiveLoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
+        rosterCodes={rosterCodes}
         onLogin={(t,id)=>setView({type:t,id})}
         onGoTest={()=>{setLiveMode(false);setQueues(q=>buildInitialQueues(players));}}/>
     :<LoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
