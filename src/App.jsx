@@ -290,6 +290,7 @@ function createPlayersFromRoster(roster) {
       zoneStreaks:{ purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0 },
       zonesPlayed:[], lastResult:null,
       history:fake.history,
+      groupId:"main",
       age:"", email:"", instagram:"", tiktok:"", snapchat:"",
       photoConsent:false, videoConsent:false, profilePhoto:null, highlights:[]
     };
@@ -3818,12 +3819,13 @@ export default function PurInstinctApp(){
     const newR={id:"r"+Date.now(),name:"Nouvelle liste",entries:[]};
     setRosters(r=>[...r,newR]);
   };
-  const addPlayerToSession=(name,gender,callback)=>{
+  const addPlayerToSession=(name,gender,callback,groupId="main")=>{
     const newId=players.length>0?Math.max(...players.map(p=>p.id))+1:1;
     const newPlayer={id:newId,number:newId,name,gender:gender||"M",globalPoints:0,
       zoneScores:{purinstinct:50,speed:50,handAgility:50,footAgility:50,generalAgility:50,iq:50},
       zoneStreaks:{purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0},
       zonesPlayed:[],lastResult:null,history:[],
+      groupId,
       age:"",email:"",instagram:"",tiktok:"",snapchat:"",
       photoConsent:false,videoConsent:false,profilePhoto:null,highlights:[]};
     setPlayers(p=>[...p,newPlayer]);
@@ -3964,17 +3966,17 @@ export default function PurInstinctApp(){
         rosterCodes={rosterCodes}
         onAddPlayer={addPlayerToSession}
         onRequestSolo={(name,gender,callback)=>{
+          const soloGroupId="solo_"+Date.now();
           addPlayerToSession(name,gender,(newId)=>{
-            // Joueur connecté immédiatement
             if(callback) callback(newId);
-            // Admin voit la session en attente de code
             setPendingSessions(prev=>[...prev,{
-              id:"solo_"+Date.now(),
+              id:soloGroupId,
               name,gender,playerId:newId,
+              groupId:soloGroupId,
               createdAt:new Date().toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit"}),
               status:"pending"
             }]);
-          });
+          },soloGroupId);
         }}
         onLogin={(t,id)=>setView({type:t,id})}
         onGoTest={()=>{setLiveMode(false);setQueues(q=>buildInitialQueues(players));}}/>
@@ -4019,14 +4021,18 @@ export default function PurInstinctApp(){
 
   if(view.type==="player"){
     const p=players.find(px=>px.id===view.id);
-    if(p) return(
-      <PlayerView playerId={view.id} players={players} queues={queues} activeGames={activeGames}
-        disabledZones={arenaState.disabledZones||[]}
-        winnersPublished={winnersPublished}
-        onJoin={addToQueue} onLeave={removeFromQueue}
-        onLogout={()=>setView({type:"login"})}
-        onUpdatePlayer={updatePlayer}/>
-    );
+    if(p){
+      // Filtrer les joueurs du même groupe seulement
+      const groupPlayers=players.filter(px=>px.groupId===(p.groupId||"main"));
+      return(
+        <PlayerView playerId={view.id} players={groupPlayers} queues={queues} activeGames={activeGames}
+          disabledZones={arenaState.disabledZones||[]}
+          winnersPublished={winnersPublished}
+          onJoin={addToQueue} onLeave={removeFromQueue}
+          onLogout={()=>setView({type:"login"})}
+          onUpdatePlayer={updatePlayer}/>
+      );
+    }
   }
 
   return null;
