@@ -1054,6 +1054,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
   const [tab,setTab]=useState("leaderboard");
   const [timer,setTimer]=useState("75:00");
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
+  const [selectedStation,setSelectedStation]=useState(null);
 
   const dossierPlayer = dossierPlayerId ? players.find(p=>p.id===dossierPlayerId) : null;
 
@@ -1115,7 +1116,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
         </div>
         <div style={{display:"flex",gap:4}}>
           {[["leaderboard",T.fr.tabLeader],["stations",T.fr.tabStations],["players",T.fr.tabPlayers],["session",T.fr.tabSession]].map(([t,l])=>(
-            <button key={t} onClick={()=>setTab(t)} style={{
+            <button key={t} onClick={()=>{setTab(t);setSelectedStation(null);}} style={{
               padding:"6px 10px",borderRadius:8,fontSize:11,fontWeight:600,border:"none",cursor:"pointer",
               background:tab===t?"#84cc16":"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
               {l}
@@ -1139,35 +1140,125 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
 
         {tab==="stations"&&(
           <div className="anim-up" style={{display:"flex",flexDirection:"column",gap:10}}>
-            {ZK.map(zk=>{
-              const z=ZONES[zk]; const zl=zn(zk); const q=queues[zk]||[]; const game=activeGames[zk];
-              const allInGame=game?(game.participants||[...(game.teamA||[]),...(game.teamB||[])]).length:0;
+            {selectedStation?(()=>{
+              const zk=selectedStation; const z=ZONES[zk]; const zl=zn(zk);
+              const game=activeGames[zk]; const q=queues[zk]||[];
+              const teamA=game?(game.teamA||[]).map(id=>players.find(p=>p.id===id)).filter(Boolean):[];
+              const teamB=game?(game.teamB||[]).map(id=>players.find(p=>p.id===id)).filter(Boolean):[];
+              const solo=game?(game.participants||[]).map(id=>players.find(p=>p.id===id)).filter(Boolean):[];
+              const inQueue=q.map(id=>players.find(p=>p.id===id)).filter(Boolean);
               return(
-                <div key={zk} style={{...S.card(),border:"1px solid "+z.border}}>
-                  <div style={{...S.row(),justifyContent:"space-between",marginBottom:game?8:0}}>
-                    <div style={{...S.row()}}>
-                      <span style={{fontSize:20}}>{z.icon}</span>
-                      <div>
-                        <div style={{color:"#fff",fontWeight:700,fontSize:14}}>{zl.name}</div>
-                        <div style={{color:z.color,fontSize:12}}>{zl.sub}</div>
-                      </div>
-                    </div>
-                    <div style={{display:"flex",gap:6}}>
-                      <div style={{...S.tag(z.color)}}>{q.length} en file</div>
-                      {game&&<div className="pulse-lime" style={{...S.tag("#dc2626")}}>{allInGame} LIVE</div>}
+                <div>
+                  {/* Header */}
+                  <div style={{...S.row(),gap:10,marginBottom:16}}>
+                    <button onClick={()=>setSelectedStation(null)}
+                      style={{background:"none",border:"none",cursor:"pointer",color:"#6b7280",fontSize:20,lineHeight:1,padding:0}}
+                      onMouseEnter={e=>e.target.style.color="#fff"}
+                      onMouseLeave={e=>e.target.style.color="#6b7280"}>←</button>
+                    <span style={{fontSize:22}}>{z.icon}</span>
+                    <div>
+                      <div style={{color:"#fff",fontWeight:700,fontSize:16}}>{zl.name}</div>
+                      <div style={{color:z.color,fontSize:12}}>{zl.sub}</div>
                     </div>
                   </div>
-                  {game&&(
-                    <div style={{fontSize:12,color:"#6b7280",paddingTop:8,borderTop:"1px solid #1f2937"}}>
-                      {game.participants
-                        ? game.participants.map(id=>{const p=players.find(px=>px.id===id);return p?p.name.split(" ")[0]:""}).join(" · ")
-                        : <>{<span style={{color:z.color}}>A:</span>}{" "}{(game.teamA||[]).map(id=>{const p=players.find(px=>px.id===id);return p?p.name.split(" ")[0]:""}).join(", ")}{" vs "}{<span style={{color:z.color}}>B:</span>}{" "}{(game.teamB||[]).map(id=>{const p=players.find(px=>px.id===id);return p?p.name.split(" ")[0]:""}).join(", ")}</>
-                      }
+
+                  {/* Live game */}
+                  {game?(
+                    <div style={{...S.card(),border:"1px solid "+z.border,marginBottom:10}}>
+                      <div style={{...S.row(),justifyContent:"space-between",marginBottom:12}}>
+                        <div style={{fontWeight:700,fontSize:13,color:"#fff"}}>Partie en cours</div>
+                        <div className="pulse-lime" style={{...S.tag("#dc2626")}}>LIVE</div>
+                      </div>
+                      {solo.length>0?(
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                          {solo.map(p=>(
+                            <div key={p.id} onClick={()=>setDossierPlayerId(p.id)}
+                              style={{...S.row(),gap:6,padding:"6px 10px",borderRadius:10,background:"#0d0f1a",
+                                border:"1px solid "+z.color+"40",cursor:"pointer"}}
+                              onMouseEnter={e=>e.currentTarget.style.borderColor=z.color}
+                              onMouseLeave={e=>e.currentTarget.style.borderColor=z.color+"40"}>
+                              <Bib n={p.number} size="sm"/>
+                              <span style={{color:"#fff",fontSize:13,fontWeight:600}}>{p.name.split(" ")[0]}</span>
+                              <span style={{color:z.color,fontSize:12,fontWeight:700}}>{p.zoneScores[zk]||50} pts</span>
+                            </div>
+                          ))}
+                        </div>
+                      ):(
+                        <div style={{display:"flex",gap:10}}>
+                          {[["A",teamA],["B",teamB]].map(([label,team])=>(
+                            <div key={label} style={{flex:1,background:"#0d0f1a",borderRadius:10,padding:"10px 12px",border:"1px solid "+z.color+"30"}}>
+                              <div style={{color:z.color,fontWeight:700,fontSize:12,marginBottom:8}}>ÉQUIPE {label}</div>
+                              {team.map(p=>(
+                                <div key={p.id} onClick={()=>setDossierPlayerId(p.id)}
+                                  style={{...S.row(),gap:6,padding:"4px 0",cursor:"pointer",borderRadius:6}}
+                                  onMouseEnter={e=>e.currentTarget.style.background="#ffffff08"}
+                                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                                  <Bib n={p.number} size="sm"/>
+                                  <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1}}>{p.name.split(" ")[0]}</span>
+                                  <span style={{color:z.color,fontSize:12,fontWeight:700}}>{p.zoneScores[zk]||50} pts</span>
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ):(
+                    <div style={{...S.card(),border:"1px solid #1f2937",marginBottom:10,textAlign:"center",color:"#4b5563",fontSize:13,padding:"20px 12px"}}>
+                      Aucune partie en cours
                     </div>
                   )}
+
+                  {/* Queue */}
+                  <div style={{...S.card(),border:"1px solid #1f2937"}}>
+                    <div style={{fontWeight:700,fontSize:13,color:"#fff",marginBottom:10}}>File d'attente ({inQueue.length})</div>
+                    {inQueue.length===0?(
+                      <div style={{color:"#4b5563",fontSize:12,textAlign:"center",padding:"8px 0"}}>File vide</div>
+                    ):(
+                      <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                        {inQueue.map((p,i)=>(
+                          <div key={p.id} onClick={()=>setDossierPlayerId(p.id)}
+                            style={{...S.row(),gap:8,padding:"5px 8px",borderRadius:8,cursor:"pointer"}}
+                            onMouseEnter={e=>e.currentTarget.style.background="#ffffff08"}
+                            onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                            <span style={{color:"#4b5563",fontSize:11,width:16,textAlign:"right"}}>{i+1}</span>
+                            <Bib n={p.number} size="sm"/>
+                            <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1}}>{p.name}</span>
+                            <span style={{color:z.color,fontSize:12,fontWeight:700}}>{p.zoneScores[zk]||50} pts</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
-            })}
+            })():(
+              ZK.map(zk=>{
+                const z=ZONES[zk]; const zl=zn(zk); const q=queues[zk]||[]; const game=activeGames[zk];
+                const allInGame=game?(game.participants||[...(game.teamA||[]),...(game.teamB||[])]).length:0;
+                return(
+                  <div key={zk} onClick={()=>setSelectedStation(zk)}
+                    style={{...S.card(),border:"1px solid "+z.border,cursor:"pointer"}}
+                    onMouseEnter={e=>e.currentTarget.style.borderColor=z.color}
+                    onMouseLeave={e=>e.currentTarget.style.borderColor=z.border}>
+                    <div style={{...S.row(),justifyContent:"space-between"}}>
+                      <div style={{...S.row()}}>
+                        <span style={{fontSize:20}}>{z.icon}</span>
+                        <div>
+                          <div style={{color:"#fff",fontWeight:700,fontSize:14}}>{zl.name}</div>
+                          <div style={{color:z.color,fontSize:12}}>{zl.sub}</div>
+                        </div>
+                      </div>
+                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                        <div style={{...S.tag(z.color)}}>{q.length} en file</div>
+                        {game&&<div className="pulse-lime" style={{...S.tag("#dc2626")}}>{allInGame} LIVE</div>}
+                        <span style={{color:"#4b5563",fontSize:16}}>›</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         )}
 
