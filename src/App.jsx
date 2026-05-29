@@ -2093,7 +2093,7 @@ function StationView({zone,players,queue,activeGame,disabled,onAddQ,onRemoveQ,on
   const zl=zn(zone);
   const [tab,setTab]=useState("game");
   const [numInput,setNumInput]=useState("");
-  const [sprintSize,setSprintSize]=useState(4);
+  const [sprintSize,setSprintSize]=useState(4); // nombre ou "tous"
   const [iqCount,setIqCount]=useState(2);
   const [flash,setFlash]=useState(null);
   const [highlightId,setHighlightId]=useState(null);
@@ -2233,21 +2233,33 @@ function StationView({zone,players,queue,activeGame,disabled,onAddQ,onRemoveQ,on
                 {zone==="speed"&&(
                   <div style={{borderRadius:14,padding:12,marginBottom:12,background:z.bg,border:"1px solid "+z.border}}>
                     <div style={{...S.label(),color:z.color,marginBottom:10}}>{T.fr.raceGroupSize}</div>
-                    {validSprintSizes.length===0
+                    {qPlayers.length<4
                       ?<div style={{fontSize:12,color:"#4b5563",textAlign:"center"}}>Minimum 4 joueurs requis</div>
                       :<div>
-                        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
-                          {validSprintSizes.map(s=>(
-                            <button key={s} onClick={()=>setSprintSize(s)} style={{
-                              padding:"5px 12px",borderRadius:8,border:"none",cursor:"pointer",
-                              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,
-                              background:sprintSize===s?z.color:"#1f2937",
-                              color:sprintSize===s?"#000":"#9ca3af"}}>
-                              {s} coureurs
-                            </button>
-                          ))}
+                        <div style={{display:"flex",gap:6,marginBottom:10}}>
+                          {[4,10,15,"tous"].map(s=>{
+                            const effectiveSize=s==="tous"?qPlayers.length:s;
+                            const disabled=s!=="tous"&&qPlayers.length<s;
+                            const isSelected=sprintSize===s;
+                            return(
+                              <button key={s} onClick={()=>!disabled&&setSprintSize(s)}
+                                style={{flex:1,padding:"8px 4px",borderRadius:10,border:"none",
+                                  cursor:disabled?"not-allowed":"pointer",
+                                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,
+                                  background:isSelected?z.color:disabled?"#111827":"#1f2937",
+                                  color:isSelected?"#000":disabled?"#374151":"#9ca3af",
+                                  opacity:disabled?0.4:1}}>
+                                {s==="tous"?"Tous\n("+qPlayers.length+")":s}
+                              </button>
+                            );
+                          })}
                         </div>
-                        <div style={{fontSize:11,color:"#4b5563"}}>Groupe A (avant): {Math.floor(sprintSize/2)} · Groupe B (arriere): {sprintSize-Math.floor(sprintSize/2)}</div>
+                        <div style={{fontSize:11,color:"#4b5563"}}>
+                          {(()=>{
+                            const eff=sprintSize==="tous"?qPlayers.length:sprintSize;
+                            return"Course de "+eff+" · Groupe A (avant): "+Math.floor(eff/2)+" · Groupe B (arrière): "+(eff-Math.floor(eff/2));
+                          })()}
+                        </div>
                       </div>
                     }
                   </div>
@@ -2275,13 +2287,13 @@ function StationView({zone,players,queue,activeGame,disabled,onAddQ,onRemoveQ,on
                   {(zone==="iq"?qPlayers.length>=iqCount:canGen)?(
                     <div>
                       <div style={{fontSize:13,color:"#6b7280",marginBottom:12}}>
-                        {zone==="speed"?qPlayers.length+" joueurs en file - course de "+sprintSize
+                        {zone==="speed"?(()=>{const eff=sprintSize==="tous"?qPlayers.length:sprintSize; return qPlayers.length+" joueurs en file — course de "+eff;})()
                           :zone==="iq"?qPlayers.length+" joueurs - format "+iqCount
                           :qPlayers.length+" joueurs en file"}
                       </div>
-                      <button onClick={()=>onGenerate(zone==="speed"?sprintSize:zone==="iq"?iqCount:null)}
+                      <button onClick={()=>onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):zone==="iq"?iqCount:null)}
                         style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:z.color,color:"#000"}}>
-                        {zone==="speed"?T.fr.launchRace+" ("+sprintSize+")":zone==="iq"?T.fr.generateIQ:T.fr.generateTeams}
+                        {zone==="speed"?T.fr.launchRace+" ("+(sprintSize==="tous"?qPlayers.length:sprintSize)+")":zone==="iq"?T.fr.generateIQ:T.fr.generateTeams}
                       </button>
                     </div>
                   ):(
