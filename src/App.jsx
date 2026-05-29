@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import html2canvas from "html2canvas";
+import confetti from "canvas-confetti";
 
 // ================================================================
 // PURINSTINCT ARENA v3  –  75 min  |  Dynamic rosters  |  5 tiers
@@ -2360,7 +2361,9 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
   const [morphology,setMorphology]=useState(1);
   const [playerWinnerCard,setPlayerWinnerCard]=useState(null);
   const [savingPlayerCard,setSavingPlayerCard]=useState(false);
+  const [showCongrats,setShowCongrats]=useState(false);
   const playerCardRef=useRef(null);
+  const confettiFiredRef=useRef(false);
   if(!player) return null;
 
   const savePlayerCard=async()=>{
@@ -2728,6 +2731,46 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
           const zoneIcons={purinstinct:"🏟️",speed:"⚡",handAgility:"✋",footAgility:"👟",generalAgility:"🏃",iq:"🧠"};
           const zoneNames={purinstinct:"PurInstinct",speed:"Vitesse",handAgility:"Habileté Main",footAgility:"Habileté Pied",generalAgility:"Agilité",iq:"IQ de Jeu"};
           const medals=["🥇","🥈","🥉","4️⃣","5️⃣"];
+
+          // Vérifier si le joueur figure dans les résultats
+          const isWinner=overall&&overall.id===playerId;
+          const isTop5=top5.some(p=>p.id===playerId);
+          const isZoneChamp=activeZK.some(zk=>zoneChamps[zk]&&zoneChamps[zk].id===playerId);
+          const isFeatured=isWinner||isTop5||isZoneChamp;
+
+          // Déclencher confetti + félicitations une seule fois
+          if(isFeatured&&!confettiFiredRef.current){
+            confettiFiredRef.current=true;
+            setShowCongrats(true);
+            const fire=(opts)=>confetti({particleCount:80,spread:70,origin:{y:0.6},...opts});
+            setTimeout(()=>fire({colors:["#84cc16","#ca8a04","#fff","#6366f1"]}),100);
+            setTimeout(()=>fire({angle:60,origin:{x:0,y:0.7}}),350);
+            setTimeout(()=>fire({angle:120,origin:{x:1,y:0.7}}),550);
+            setTimeout(()=>setShowCongrats(false),3200);
+          }
+
+          // Overlay félicitations
+          if(showCongrats) return(
+            <div className="anim-pop" style={{position:"fixed",inset:0,zIndex:70,
+              display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+              background:"rgba(0,0,0,.85)",gap:16,pointerEvents:"none"}}>
+              <div style={{fontSize:72,lineHeight:1}}>🎉</div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:42,
+                color:"#84cc16",textAlign:"center",letterSpacing:2}}>FÉLICITATIONS !</div>
+              <div style={{color:"#fff",fontWeight:700,fontSize:22,textAlign:"center"}}>{player.name}</div>
+              <div style={{color:"#ca8a04",fontSize:14,fontWeight:600,textAlign:"center",lineHeight:2,padding:"0 20px"}}>
+                {(()=>{
+                  const f=player.gender==="F";
+                  const parts=[];
+                  if(isWinner) parts.push("🥇 Grand"+(f?"e":"")+" gagnant"+(f?"e":"")+" !");
+                  if(!isWinner&&isTop5) parts.push("🏆 Dans le Top 5 !");
+                  const champZones=activeZK.filter(zk=>zoneChamps[zk]&&zoneChamps[zk].id===playerId);
+                  if(champZones.length>0) parts.push("⚡ Champion"+(f?"ne":"")+" — "+champZones.map(zk=>zoneNames[zk]).join(", ")+" !");
+                  return parts.map((p,i)=><div key={i}>{p}</div>);
+                })()}
+              </div>
+            </div>
+          );
 
           // Plein écran
           if(playerWinnerCard){
