@@ -1068,6 +1068,9 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
   const [winnerCard,setWinnerCard]=useState(null); // {type:"overall"|"top5"|"zone", zk?}
   const [savingCard,setSavingCard]=useState(false);
   const cardRef=useRef(null);
+  const [leaderSearch,setLeaderSearch]=useState("");
+  const [leaderHighlight,setLeaderHighlight]=useState(null);
+  const leaderHighlightRef=useRef(null);
 
   const openDossier=(id)=>{
     setDossierOrigin({tab,station:selectedStation});
@@ -1150,9 +1153,50 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
               <div style={{...S.label()}}>{T.fr.realtimeRank}</div>
               <div style={{fontSize:11,color:"#4b5563"}}><span style={{color:"#84cc16"}}>✓</span> = 6/6 {T.fr.eligible}</div>
             </div>
-            <div style={{display:"flex",flexDirection:"column",gap:2}}>
-              {sorted.map((p,i)=><LeaderRow key={p.id} player={p} rank={i+1} highlight={false} onOpen={()=>openDossier(p.id)}/>)}
+            {/* Barre de recherche */}
+            <div style={{position:"relative",marginBottom:10}}>
+              <input value={leaderSearch} onChange={e=>{setLeaderSearch(e.target.value);setLeaderHighlight(null);}}
+                placeholder="🔍 Rechercher un joueur..."
+                style={{width:"100%",padding:"8px 12px",borderRadius:10,border:"1px solid #374151",
+                  background:"#0d0f1a",color:"#fff",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+              {leaderSearch.trim().length>0&&(()=>{
+                const q=leaderSearch.trim().toLowerCase();
+                const matches=sorted.filter(p=>p.name.toLowerCase().includes(q));
+                if(matches.length===0) return null;
+                return(
+                  <div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:10,
+                    background:"#111827",border:"1px solid #374151",borderRadius:10,marginTop:4,
+                    maxHeight:180,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.5)"}}>
+                    {matches.map(p=>(
+                      <div key={p.id} onClick={()=>{
+                        setLeaderHighlight(p.id);
+                        setLeaderSearch("");
+                        setTimeout(()=>{leaderHighlightRef.current&&leaderHighlightRef.current.scrollIntoView({behavior:"smooth",block:"center"});},100);
+                      }} style={{...S.row(),gap:10,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid #1f2937"}}
+                        onMouseEnter={e=>e.currentTarget.style.background="#1f2937"}
+                        onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                        <Bib n={p.number} size="sm"/>
+                        <span style={{color:"#fff",fontSize:13,flex:1}}>{p.name}</span>
+                        <span style={{color:"#84cc16",fontSize:12,fontWeight:700}}>#{sorted.indexOf(p)+1}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
+            <div style={{display:"flex",flexDirection:"column",gap:2}}>
+              {sorted.map((p,i)=>(
+                <div key={p.id} ref={p.id===leaderHighlight?leaderHighlightRef:null}>
+                  <LeaderRow player={p} rank={i+1}
+                    highlight={p.id===leaderHighlight}
+                    onOpen={()=>openDossier(p.id)}/>
+                </div>
+              ))}
+            </div>
+            {leaderHighlight&&<button onClick={()=>setLeaderHighlight(null)}
+              style={{marginTop:8,fontSize:11,color:"#4b5563",background:"none",border:"none",cursor:"pointer"}}>
+              Effacer la surbrillance
+            </button>}
           </div>
         )}
 
@@ -2362,8 +2406,11 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
   const [playerWinnerCard,setPlayerWinnerCard]=useState(null);
   const [savingPlayerCard,setSavingPlayerCard]=useState(false);
   const [showCongrats,setShowCongrats]=useState(false);
+  const [leaderSearch,setLeaderSearch]=useState("");
+  const [leaderHighlight,setLeaderHighlight]=useState(null);
   const playerCardRef=useRef(null);
   const confettiFiredRef=useRef(false);
+  const leaderHighlightRef=useRef(null);
   if(!player) return null;
 
   const savePlayerCard=async()=>{
@@ -2708,9 +2755,48 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
         {tab==="leaderboard"&&(
           <div className="anim-up">
             <div style={{...S.label(),marginBottom:10}}>{T.fr.tabLeader} - {sorted.filter(p=>p.zonesPlayed.length===6).length} {T.fr.eligibles}</div>
-            <div style={{display:"flex",flexDirection:"column",gap:2}}>
-              {sorted.map((p,i)=><LeaderRow key={p.id} player={p} rank={i+1} highlight={p.id===playerId}/>)}
+            {/* Barre de recherche */}
+            <div style={{position:"relative",marginBottom:10}}>
+              <input value={leaderSearch} onChange={e=>{setLeaderSearch(e.target.value);setLeaderHighlight(null);}}
+                placeholder="🔍 Rechercher un joueur..."
+                style={{width:"100%",padding:"8px 12px",borderRadius:10,border:"1px solid #374151",
+                  background:"#0d0f1a",color:"#fff",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+              {leaderSearch.trim().length>0&&(()=>{
+                const q=leaderSearch.trim().toLowerCase();
+                const matches=sorted.filter(p=>p.name.toLowerCase().includes(q));
+                if(matches.length===0) return null;
+                return(
+                  <div style={{position:"absolute",top:"100%",left:0,right:0,zIndex:10,
+                    background:"#111827",border:"1px solid #374151",borderRadius:10,marginTop:4,
+                    maxHeight:180,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.5)"}}>
+                    {matches.map(p=>(
+                      <div key={p.id} onClick={()=>{
+                        setLeaderHighlight(p.id);
+                        setLeaderSearch("");
+                        setTimeout(()=>{leaderHighlightRef.current&&leaderHighlightRef.current.scrollIntoView({behavior:"smooth",block:"center"});},100);
+                      }} style={{...S.row(),gap:10,padding:"8px 12px",cursor:"pointer",borderBottom:"1px solid #1f2937"}}
+                        onMouseEnter={e=>e.currentTarget.style.background="#1f2937"}
+                        onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                        <Bib n={p.number} size="sm"/>
+                        <span style={{color:"#fff",fontSize:13,flex:1}}>{p.name}</span>
+                        <span style={{color:"#84cc16",fontSize:12,fontWeight:700}}>#{sorted.indexOf(p)+1}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
+            <div style={{display:"flex",flexDirection:"column",gap:2}}>
+              {sorted.map((p,i)=>(
+                <div key={p.id} ref={p.id===leaderHighlight?leaderHighlightRef:null}>
+                  <LeaderRow player={p} rank={i+1} highlight={p.id===playerId||p.id===leaderHighlight}/>
+                </div>
+              ))}
+            </div>
+            {leaderHighlight&&leaderHighlight!==playerId&&<button onClick={()=>setLeaderHighlight(null)}
+              style={{marginTop:8,fontSize:11,color:"#4b5563",background:"none",border:"none",cursor:"pointer"}}>
+              Effacer la surbrillance
+            </button>}
           </div>
         )}
         {tab==="rules"&&(
