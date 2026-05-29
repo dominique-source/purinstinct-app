@@ -143,7 +143,7 @@ const T={
     activeQueues:"Files actives",
     zonesToComplete:"Zones à compléter pour la victoire",
     inProgress:"en cours", inQueue:"en file",
-    joinQueue:"{T.fr.joinQueue}",
+    joinQueue:"Joindre la file",
     missingZones:"Zones manquantes pour être éligible :",
     activityHistory:"Historique des activités",
     win:"Victoire", loss:"Défaite",
@@ -1056,6 +1056,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
   const [dossierOrigin,setDossierOrigin]=useState(null);
   const [selectedStation,setSelectedStation]=useState(null);
+  const [winnerCard,setWinnerCard]=useState(null); // {type:"overall"|"top5"|"zone", zk?}
 
   const openDossier=(id)=>{
     setDossierOrigin({tab,station:selectedStation});
@@ -1121,7 +1122,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
           </div>
         </div>
         <div style={{display:"flex",gap:4}}>
-          {[["leaderboard",T.fr.tabLeader],["stations",T.fr.tabStations],["players",T.fr.tabPlayers],["session",T.fr.tabSession]].map(([t,l])=>(
+          {[["leaderboard",T.fr.tabLeader],["stations",T.fr.tabStations],["players",T.fr.tabPlayers],["session",T.fr.tabSession],["winners","🥇 Gagnants"]].map(([t,l])=>(
             <button key={t} onClick={()=>{setTab(t);setSelectedStation(null);}} style={{
               padding:"6px 10px",borderRadius:8,fontSize:11,fontWeight:600,border:"none",cursor:"pointer",
               background:tab===t?"#84cc16":"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
@@ -1377,6 +1378,254 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
             onAddPlayer={onAddPlayer} onCreateRoster={onCreateRoster}
           />
         )}
+
+        {tab==="winners"&&(()=>{
+          const today=new Date().toLocaleDateString("fr-CA",{year:"numeric",month:"long",day:"numeric"});
+          const ranked=[...players].sort((a,b)=>b.globalPoints-a.globalPoints);
+          const top5=ranked.slice(0,5);
+          const overall=ranked[0]||null;
+          const zoneChamps={};
+          ZK.forEach(zk=>{
+            const played=players.filter(p=>p.zonesPlayed.includes(zk));
+            if(played.length>0) zoneChamps[zk]=[...played].sort((a,b)=>(b.zoneScores[zk]||50)-(a.zoneScores[zk]||50))[0];
+          });
+          const zoneIcons={purinstinct:"🏟️",speed:"⚡",handAgility:"✋",footAgility:"👟",generalAgility:"🏃",iq:"🧠"};
+          const zoneNames={purinstinct:"PurInstinct",speed:"Vitesse",handAgility:"Habileté Main",footAgility:"Habileté Pied",generalAgility:"Agilité",iq:"IQ de Jeu"};
+          const medals=["🥇","🥈","🥉","4️⃣","5️⃣"];
+
+          const copyText=(text)=>{ navigator.clipboard&&navigator.clipboard.writeText(text); };
+
+          // ── Plein écran visuel ──────────────────────────────────────
+          if(winnerCard){
+            const {type,zk}=winnerCard;
+
+            const FullCard=({accent,children,copyTxt})=>(
+              <div style={{position:"fixed",inset:0,zIndex:60,background:"rgba(0,0,0,.92)",
+                display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
+                {/* Carte visuelle */}
+                <div style={{width:"100%",maxWidth:380,borderRadius:24,background:"#0a0c14",
+                  border:"2px solid "+(accent||"#84cc16"),padding:28,position:"relative",
+                  boxShadow:"0 0 60px "+(accent||"#84cc16")+"30"}}>
+                  {/* Barre couleur top */}
+                  <div style={{position:"absolute",top:0,left:0,right:0,height:4,borderRadius:"24px 24px 0 0",
+                    background:`linear-gradient(90deg, ${accent||"#84cc16"}, ${accent||"#84cc16"}88)`}}/>
+                  {/* Logo texte */}
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:10,
+                    color:(accent||"#84cc16")+"80",letterSpacing:3,marginBottom:16,textAlign:"center"}}>
+                    PURINSTINCT GAMES · {today}
+                  </div>
+                  {children}
+                </div>
+                {/* Boutons */}
+                <div style={{display:"flex",gap:10,marginTop:16}}>
+                  <button onClick={()=>copyText(copyTxt)}
+                    style={{padding:"10px 20px",borderRadius:10,background:"#84cc16",color:"#000",
+                      border:"none",cursor:"pointer",fontWeight:700,fontSize:13}}>
+                    📋 Copier le texte
+                  </button>
+                  <button onClick={()=>setWinnerCard(null)}
+                    style={{padding:"10px 20px",borderRadius:10,background:"#111827",color:"#9ca3af",
+                      border:"1px solid #374151",cursor:"pointer",fontWeight:700,fontSize:13}}>
+                    ← Retour
+                  </button>
+                </div>
+              </div>
+            );
+
+            // Carte Gagnant Overall
+            if(type==="overall"&&overall){
+              const streaks=ZK.filter(zk=>(overall.zoneStreaks[zk]||0)>=2);
+              return(
+                <FullCard accent="#ca8a04"
+                  copyTxt={`🥇 Gagnant PurInstinct Games\n${overall.name} — ${overall.globalPoints} pts\n${ZK.map(zk=>zoneIcons[zk]+" "+zoneNames[zk]+": "+(overall.zoneScores[zk]||50)).join(" | ")}${streaks.length?"\n🔥 Streak: "+streaks.map(zk=>zoneNames[zk]+"×"+overall.zoneStreaks[zk]).join(", "):""}\n${today}`}>
+                  <div style={{textAlign:"center",marginBottom:16}}>
+                    <div style={{fontSize:52,lineHeight:1,marginBottom:8}}>🥇</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
+                      color:"#ca8a04",letterSpacing:3,marginBottom:6}}>GAGNANT</div>
+                    <div style={{color:"#fff",fontWeight:700,fontSize:26,marginBottom:4}}>{overall.name}</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:48,
+                      color:"#84cc16",lineHeight:1}}>{overall.globalPoints}</div>
+                    <div style={{fontSize:12,color:"#4b5563",marginTop:2}}>points globaux</div>
+                  </div>
+                  {/* Zones */}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:12}}>
+                    {ZK.map(zk=>{
+                      const played=overall.zonesPlayed.includes(zk);
+                      return(
+                        <div key={zk} style={{borderRadius:10,padding:"8px 6px",textAlign:"center",
+                          background:played?"#1a2e05":"#111827",
+                          border:"1px solid "+(played?"#84cc1650":"#1f2937")}}>
+                          <div style={{fontSize:18}}>{zoneIcons[zk]}</div>
+                          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
+                            color:played?"#84cc16":"#374151"}}>{overall.zoneScores[zk]||50}</div>
+                          <div style={{fontSize:9,color:played?"#6b7280":"#1f2937",marginTop:1}}>{zoneNames[zk].split(" ")[0]}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {streaks.length>0&&(
+                    <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center"}}>
+                      {streaks.map(zk=>(
+                        <span key={zk} style={{padding:"3px 8px",borderRadius:6,background:"#f9731620",
+                          color:"#f97316",fontSize:11,fontWeight:700}}>
+                          🔥 {zoneNames[zk]} ×{overall.zoneStreaks[zk]}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </FullCard>
+              );
+            }
+
+            // Carte Top 5
+            if(type==="top5"&&top5.length>0){
+              return(
+                <FullCard accent="#6366f1"
+                  copyTxt={`🏆 Top ${top5.length} PurInstinct Games\n${top5.map((p,i)=>medals[i]+" "+p.name+" — "+p.globalPoints+" pts").join("\n")}\n${today}`}>
+                  <div style={{textAlign:"center",marginBottom:20}}>
+                    <div style={{fontSize:42,lineHeight:1,marginBottom:6}}>🏆</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
+                      color:"#6366f1",letterSpacing:3}}>CLASSEMENT FINAL</div>
+                  </div>
+                  {top5.map((p,i)=>(
+                    <div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",
+                      borderRadius:12,marginBottom:6,
+                      background:i===0?"#1a1a2e":i===1?"#12121e":i===2?"#111118":"#0d0f1a",
+                      border:"1px solid "+(i===0?"#6366f140":i===1?"#6b728040":i===2?"#b4530940":"#1f2937")}}>
+                      <span style={{fontSize:20,width:28,textAlign:"center"}}>{medals[i]}</span>
+                      <span style={{color:"#fff",fontWeight:700,fontSize:15,flex:1}}>{p.name}</span>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
+                          color:i===0?"#ca8a04":i===1?"#9ca3af":i===2?"#b45309":"#6b7280"}}>{p.globalPoints}</div>
+                        <div style={{fontSize:9,color:"#374151"}}>pts</div>
+                      </div>
+                    </div>
+                  ))}
+                </FullCard>
+              );
+            }
+
+            // Carte Champion de zone
+            if(type==="zone"&&zk&&zoneChamps[zk]){
+              const champ=zoneChamps[zk];
+              const z=ZONES[zk];
+              const hasStreak=(champ.zoneStreaks[zk]||0)>=2;
+              return(
+                <FullCard accent={z.color}
+                  copyTxt={`${zoneIcons[zk]} Champion ${zoneNames[zk]}\n${champ.name} — Score: ${champ.zoneScores[zk]||50}${hasStreak?"\n🔥 Série ×"+champ.zoneStreaks[zk]:""}\n${today}`}>
+                  <div style={{textAlign:"center",marginBottom:20}}>
+                    <div style={{fontSize:56,lineHeight:1,marginBottom:10}}>{zoneIcons[zk]}</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
+                      color:z.color,letterSpacing:3,marginBottom:4}}>CHAMPION</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+                      color:z.color,marginBottom:16}}>{zoneNames[zk].toUpperCase()}</div>
+                    <div style={{color:"#fff",fontWeight:700,fontSize:28,marginBottom:8}}>{champ.name}</div>
+                    <div style={{display:"inline-block",padding:"12px 24px",borderRadius:16,
+                      background:z.color+"20",border:"2px solid "+z.color+"60"}}>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:52,
+                        color:z.color,lineHeight:1}}>{champ.zoneScores[zk]||50}</div>
+                      <div style={{fontSize:11,color:z.color+"80",marginTop:2}}>score de zone</div>
+                    </div>
+                    {hasStreak&&(
+                      <div style={{marginTop:14,padding:"6px 16px",borderRadius:20,
+                        background:"#f9731620",display:"inline-block"}}>
+                        <span style={{color:"#f97316",fontWeight:700,fontSize:14}}>
+                          🔥 Série ×{champ.zoneStreaks[zk]}
+                        </span>
+                      </div>
+                    )}
+                    <div style={{marginTop:12,fontSize:13,color:"#4b5563",fontWeight:600}}>
+                      {champ.globalPoints} pts globaux
+                    </div>
+                  </div>
+                </FullCard>
+              );
+            }
+
+            return null;
+          }
+
+          // ── Liste des cartes ────────────────────────────────────────
+          const ClickCard=({accent,onClick,children})=>(
+            <div onClick={onClick} style={{borderRadius:16,background:"#0d0f1a",border:"2px solid "+(accent||"#84cc16"),
+              padding:20,marginBottom:12,position:"relative",overflow:"hidden",cursor:"pointer"}}
+              onMouseEnter={e=>{e.currentTarget.style.background="#111827";e.currentTarget.style.boxShadow="0 0 20px "+(accent||"#84cc16")+"20";}}
+              onMouseLeave={e=>{e.currentTarget.style.background="#0d0f1a";e.currentTarget.style.boxShadow="none";}}>
+              <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:accent||"#84cc16"}}/>
+              <div style={{position:"absolute",top:12,right:14,fontSize:16,color:(accent||"#84cc16")+"60"}}>↗</div>
+              {children}
+            </div>
+          );
+
+          return(
+            <div className="anim-up">
+              <div style={{...S.label(),marginBottom:4}}>Cartes de résultats</div>
+              <div style={{fontSize:11,color:"#4b5563",marginBottom:16}}>Appuyez sur une carte pour l'agrandir et la partager</div>
+
+              {/* Gagnant overall */}
+              {overall&&(
+                <ClickCard accent="#ca8a04" onClick={()=>setWinnerCard({type:"overall"})}>
+                  <div style={{...S.row(),gap:10}}>
+                    <span style={{fontSize:32}}>🥇</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
+                        color:"#ca8a04",letterSpacing:2,marginBottom:2}}>GAGNANT PURINSTINCT GAMES</div>
+                      <div style={{color:"#fff",fontWeight:700,fontSize:17,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{overall.name}</div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#84cc16"}}>{overall.globalPoints} pts</div>
+                    </div>
+                  </div>
+                </ClickCard>
+              )}
+
+              {/* Top 5 */}
+              {top5.length>0&&(
+                <ClickCard accent="#6366f1" onClick={()=>setWinnerCard({type:"top5"})}>
+                  <div style={{...S.row(),gap:10,marginBottom:10}}>
+                    <span style={{fontSize:28}}>🏆</span>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
+                      color:"#6366f1",letterSpacing:2}}>TOP {top5.length} CLASSEMENT</div>
+                  </div>
+                  {top5.slice(0,3).map((p,i)=>(
+                    <div key={p.id} style={{...S.row(),gap:8,padding:"3px 0"}}>
+                      <span style={{fontSize:14,width:20}}>{medals[i]}</span>
+                      <span style={{color:"#e5e7eb",fontSize:13,flex:1}}>{p.name}</span>
+                      <span style={{color:"#84cc16",fontWeight:700,fontSize:13}}>{p.globalPoints}</span>
+                    </div>
+                  ))}
+                  {top5.length>3&&<div style={{fontSize:11,color:"#4b5563",marginTop:4}}>+{top5.length-3} autres…</div>}
+                </ClickCard>
+              )}
+
+              {/* Champions par zone — une carte par zone */}
+              {ZK.filter(zk=>zoneChamps[zk]).map(zk=>{
+                const champ=zoneChamps[zk];
+                const z=ZONES[zk];
+                return(
+                  <ClickCard key={zk} accent={z.color} onClick={()=>setWinnerCard({type:"zone",zk})}>
+                    <div style={{...S.row(),gap:10}}>
+                      <span style={{fontSize:28,flexShrink:0}}>{zoneIcons[zk]}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:10,
+                          color:z.color,letterSpacing:2,marginBottom:2}}>CHAMPION {zoneNames[zk].toUpperCase()}</div>
+                        <div style={{color:"#fff",fontWeight:700,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{champ.name}</div>
+                        <div style={{...S.row(),gap:6,marginTop:2}}>
+                          <span style={{color:z.color,fontWeight:700,fontSize:13}}>{champ.zoneScores[zk]||50} pts zone</span>
+                          {(champ.zoneStreaks[zk]||0)>=2&&<span style={{color:"#f97316",fontSize:11}}>🔥×{champ.zoneStreaks[zk]}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </ClickCard>
+                );
+              })}
+
+              {ranked.length===0&&(
+                <div style={{textAlign:"center",padding:"40px 0",color:"#4b5563",fontSize:13}}>
+                  Aucun joueur enregistré pour l'instant.
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
