@@ -1244,8 +1244,8 @@ function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
 // ----------------------------------------------------------------
 // LIVE LOGIN VIEW
 // ----------------------------------------------------------------
-const ADMIN_PIN="1234";
-const STATION_PIN="5678";
+const ADMIN_PIN="1111";
+const STATION_PIN="2222";
 
 function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest}){
   const [screen,setScreen]=useState("home"); // "home"|"player"|"admin"|"station"
