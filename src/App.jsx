@@ -732,23 +732,21 @@ function ProgressChart({player}){
 
   const zoneColors={purinstinct:"#84cc16",speed:"#f97316",handAgility:"#3b82f6",
     footAgility:"#22c55e",generalAgility:"#eab308",iq:"#a855f7"};
-  const zoneLabels={purinstinct:"🏟️",speed:"⚡",handAgility:"✋",footAgility:"👟",generalAgility:"🎯",iq:"🧠"};
+  const zoneShort={purinstinct:"PurI.",speed:"Vitesse",handAgility:"Main",
+    footAgility:"Pied",generalAgility:"Agilité",iq:"IQ"};
 
-  // Construire les points : point 0 = départ, puis un point par entrée d'historique
   const gpPoints=[0,...history.map(h=>h.gp||0)];
   const zsPoints={};
   ZK.forEach(zk=>{zsPoints[zk]=[50,...history.map(h=>h.zs?h.zs[zk]||50:50)];});
 
-  const W=320, H=140, PAD=28, INNER_W=W-PAD*2, INNER_H=H-PAD*2;
+  const W=320, H=160, PAD_L=8, PAD_R=50, PAD_V=20;
+  const INNER_W=W-PAD_L-PAD_R, INNER_H=H-PAD_V*2;
   const n=gpPoints.length;
-  const xScale=(i)=>PAD+i*(INNER_W/(n-1||1));
+  const xScale=(i)=>PAD_L+i*(INNER_W/(n-1||1));
 
-  // Echelle GP : 0 à max(gpPoints)*1.2 ou 20 minimum
   const maxGP=Math.max(...gpPoints,20);
-  const gpY=(v)=>PAD+INNER_H-(v/maxGP)*INNER_H;
-
-  // Echelle zones : 0-100
-  const zsY=(v)=>PAD+INNER_H-((v-0)/100)*INNER_H;
+  const gpY=(v)=>PAD_V+INNER_H-(v/maxGP)*INNER_H;
+  const zsY=(v)=>PAD_V+INNER_H-((v)/100)*INNER_H;
 
   const makePath=(pts,yFn)=>pts.map((v,i)=>(i===0?"M":"L")+xScale(i).toFixed(1)+","+yFn(v).toFixed(1)).join(" ");
 
@@ -756,40 +754,37 @@ function ProgressChart({player}){
     <div>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{overflow:"visible"}}>
         {/* Grille */}
-        {[0,0.25,0.5,0.75,1].map(t=>(
-          <line key={t} x1={PAD} y1={PAD+INNER_H*(1-t)} x2={W-PAD} y2={PAD+INNER_H*(1-t)}
+        {[0,0.5,1].map(t=>(
+          <line key={t} x1={PAD_L} y1={PAD_V+INNER_H*(1-t)} x2={W-PAD_R} y2={PAD_V+INNER_H*(1-t)}
             stroke="#1f2937" strokeWidth="1"/>
         ))}
-        {/* Lignes zones (fines) */}
-        {ZK.map(zk=>(
-          <path key={zk} d={makePath(zsPoints[zk],zsY)}
-            fill="none" stroke={zoneColors[zk]} strokeWidth="1.5" strokeOpacity="0.6"
-            strokeDasharray="4 2"/>
-        ))}
-        {/* Ligne GP (épaisse) */}
+        {/* Lignes zones avec label au bout */}
+        {ZK.map(zk=>{
+          const pts=zsPoints[zk];
+          const lastVal=pts[pts.length-1];
+          const lastX=xScale(n-1);
+          const lastY=zsY(lastVal);
+          return(
+            <g key={zk}>
+              <path d={makePath(pts,zsY)}
+                fill="none" stroke={zoneColors[zk]} strokeWidth="1" strokeOpacity="0.55"
+                strokeDasharray="3 2"/>
+              <text x={lastX+4} y={lastY+4} fill={zoneColors[zk]} fontSize="8" opacity="0.8">
+                {zoneShort[zk]}
+              </text>
+            </g>
+          );
+        })}
+        {/* Ligne GP (moins épaisse) */}
         <path d={makePath(gpPoints,gpY)}
-          fill="none" stroke="#84cc16" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-        {/* Point actuel GP */}
-        <circle cx={xScale(n-1)} cy={gpY(gpPoints[n-1])} r="4" fill="#84cc16"/>
-        {/* Label valeur GP actuelle */}
-        <text x={xScale(n-1)+6} y={gpY(gpPoints[n-1])+4}
-          fill="#84cc16" fontSize="10" fontWeight="bold">{gpPoints[n-1]}</text>
+          fill="none" stroke="#84cc16" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        {/* Point + label GP actuel */}
+        <circle cx={xScale(n-1)} cy={gpY(gpPoints[n-1])} r="3.5" fill="#84cc16"/>
+        <text x={xScale(n-1)+5} y={gpY(gpPoints[n-1])-5}
+          fill="#84cc16" fontSize="10" fontWeight="bold">{gpPoints[n-1]} pts</text>
       </svg>
-      {/* Légende */}
-      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:6}}>
-        <div style={{...S.row(),gap:4}}>
-          <div style={{width:20,height:3,background:"#84cc16",borderRadius:2}}/>
-          <span style={{fontSize:10,color:"#84cc16",fontWeight:700}}>Pts globaux</span>
-        </div>
-        {ZK.map(zk=>(
-          <div key={zk} style={{...S.row(),gap:4}}>
-            <div style={{width:14,height:2,background:zoneColors[zk],borderRadius:2,opacity:0.7}}/>
-            <span style={{fontSize:10,color:zoneColors[zk]}}>{zoneLabels[zk]}</span>
-          </div>
-        ))}
-      </div>
-      <div style={{fontSize:10,color:"#374151",marginTop:6,textAlign:"center"}}>
-        {n-1} partie{n>2?"s":""} jouée{n>2?"s":""}
+      <div style={{fontSize:10,color:"#374151",textAlign:"center",marginTop:4}}>
+        {n-1} partie{n-1>1?"s":""} · pts globaux —— zones - - -
       </div>
     </div>
   );
@@ -924,6 +919,40 @@ function PlayerDossier({player,onSave,onBack,embedded}){
         <div style={{...S.card()}}>
           <div style={{...S.label(),marginBottom:12}}>📈 Progression en séance</div>
           <ProgressChart player={player}/>
+        </div>
+      )}
+
+      {/* Historique des activités */}
+      {(player.history||[]).length>0&&(
+        <div style={{...S.card()}}>
+          <div style={{...S.label(),marginBottom:10}}>Historique ({(player.history||[]).length})</div>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            {[...(player.history||[])].reverse().map((h,i)=>{
+              const zc=ZONES[h.zone];
+              return(
+                <div key={i} style={{...S.row(),padding:"8px 12px",borderRadius:10,
+                  background:h.isWin?"#0d150899":"#1a060699",
+                  border:"1px solid "+(h.isWin?zc.color+"30":"#dc262630")}}>
+                  <span style={{fontSize:16,flexShrink:0}}>{zc.icon}</span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,color:"#fff",fontWeight:600}}>{zc.name}</div>
+                    <div style={{fontSize:11,color:"#4b5563",marginTop:1}}>
+                      {h.isWin?"Victoire":h.isSecond?"2e place":"Défaite"}
+                      {h.bonus?" · Bonus x1.5":""}
+                      {h.newStreak>=2?" · Série "+h.newStreak+" 🔥":""}
+                    </div>
+                  </div>
+                  <div style={{textAlign:"right",flexShrink:0}}>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+                      color:h.delta>=0?"#84cc16":"#ef4444"}}>
+                      {h.delta>0?"+":""}{h.delta} pts
+                    </div>
+                    {h.gp!==undefined&&<div style={{fontSize:10,color:"#4b5563"}}>{h.gp} total</div>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -2852,38 +2881,6 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
                 </div>}
             </div>
 
-            {/* ACTIVITY HISTORY */}
-            {(player.history||[]).length>0&&(
-              <div>
-                <div style={{...S.label(),marginBottom:10}}>{T.fr.historyCount} ({(player.history||[]).length})</div>
-                <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                  {[...(player.history||[])].reverse().map((h,i)=>{
-                    const zc=ZONES[h.zone];
-                    return(
-                      <div key={i} style={{...S.row(),padding:"8px 12px",borderRadius:10,
-                        background:h.isWin?"#0d150899":"#1a060699",
-                        border:"1px solid "+(h.isWin?zc.color+"30":"#dc262630")}}>
-                        <span style={{fontSize:16,flexShrink:0}}>{zc.icon}</span>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:13,color:"#fff",fontWeight:600}}>{zc.name}</div>
-                          <div style={{fontSize:11,color:"#4b5563",marginTop:1}}>
-                            {h.isWin?"Victoire":"Defaite"}
-                            {h.bonus?" · Bonus x1.5":""}
-                            {h.newStreak>=2?" · Serie "+h.newStreak+" 🔥":""}
-                          </div>
-                        </div>
-                        <div style={{textAlign:"right",flexShrink:0}}>
-                          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-                            color:h.delta>=0?"#84cc16":"#ef4444"}}>
-                            {h.delta>0?"+":""}{h.delta} pts
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         )}
         {tab==="leaderboard"&&(
