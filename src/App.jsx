@@ -1199,8 +1199,11 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
                   <div key={p.id} style={{borderRadius:12,background:"#0d0f1a",overflow:"hidden",
                     border:"1px solid "+(playingAt?"#fbbf2430":inQueues.length>0?"#84cc1630":"#1f2937")}}>
 
-                    {/* Top row: identity + status + points + dossier link */}
-                    <div style={{...S.row(),padding:"9px 12px",gap:10}}>
+                    {/* Top row: identity + status + points + dossier link — full row is clickable */}
+                    <div onClick={()=>setDossierPlayerId(p.id)} title="Ouvrir le dossier"
+                      style={{...S.row(),padding:"9px 12px",gap:10,cursor:"pointer"}}
+                      onMouseEnter={e=>e.currentTarget.style.background="#ffffff08"}
+                      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                       <div style={{width:8,height:8,borderRadius:"50%",background:statusDot,flexShrink:0,marginTop:1}}/>
                       <Bib n={p.number} size="sm"/>
                       <div style={{flex:1,minWidth:0}}>
@@ -1208,10 +1211,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
                         <div style={{fontSize:11,marginTop:1,fontWeight:600,color:statusColor}}>{statusText}</div>
                       </div>
                       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#84cc16",flexShrink:0}}>{p.globalPoints} pts</div>
-                      <button onClick={()=>setDossierPlayerId(p.id)} title="Ouvrir le dossier"
-                        style={{background:"none",border:"none",cursor:"pointer",color:"#4b5563",fontSize:18,lineHeight:1,padding:"0 2px"}}
-                        onMouseEnter={e=>e.target.style.color="#84cc16"}
-                        onMouseLeave={e=>e.target.style.color="#4b5563"}>→</button>
+                      <span style={{color:"#4b5563",fontSize:18,lineHeight:1}}>→</span>
                     </div>
 
                     {/* Action row - only if not playing */}
