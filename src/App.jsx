@@ -284,10 +284,10 @@ function createPlayersFromRoster(roster) {
     const fake=generateFakeHistory(i+1);
     return{
       id:i+1, number:i+1, name:e.name, gender:e.gender||"M",
-      globalPoints:fake.gp,
+      globalPoints:0,
       zoneScores:fake.zs,
       zoneStreaks:{ purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0 },
-      zonesPlayed:fake.zonesPlayed, lastResult:fake.history[fake.history.length-1]||null,
+      zonesPlayed:[], lastResult:null,
       history:fake.history,
       age:"", email:"", instagram:"", tiktok:"", snapchat:"",
       photoConsent:false, videoConsent:false, profilePhoto:null, highlights:[]
