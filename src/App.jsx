@@ -1766,14 +1766,54 @@ function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReorder,high
   const z=ZONES[zone];
   const [dragIdx,setDragIdx]=useState(null);
   const [overIdx,setOverIdx]=useState(null);
+  const touchDragRef=useRef({active:false,fromIdx:null,longPressTimer:null,ghost:null});
+  const listRef=useRef(null);
 
   const handleDrop=(toIdx)=>{
-    if(dragIdx===null||dragIdx===toIdx) { setDragIdx(null);setOverIdx(null); return; }
+    if(dragIdx===null||dragIdx===toIdx){setDragIdx(null);setOverIdx(null);return;}
     const ids=qPlayers.map(p=>p.id);
     const [moved]=ids.splice(dragIdx,1);
     ids.splice(toIdx,0,moved);
     onReorder(zone,ids);
     setDragIdx(null);setOverIdx(null);
+  };
+
+  // Touch drag — long press puis glisser
+  const handleTouchStart=(e,idx)=>{
+    const td=touchDragRef.current;
+    td.longPressTimer=setTimeout(()=>{
+      td.active=true; td.fromIdx=idx;
+      setDragIdx(idx);
+      // vibration courte si disponible
+      navigator.vibrate&&navigator.vibrate(40);
+    },400);
+  };
+
+  const handleTouchMove=(e)=>{
+    const td=touchDragRef.current;
+    clearTimeout(td.longPressTimer);
+    if(!td.active) return;
+    e.preventDefault();
+    const touch=e.touches[0];
+    const list=listRef.current;
+    if(!list) return;
+    const items=[...list.children];
+    for(let i=0;i<items.length;i++){
+      const rect=items[i].getBoundingClientRect();
+      if(touch.clientY>=rect.top&&touch.clientY<=rect.bottom){
+        setOverIdx(i); break;
+      }
+    }
+  };
+
+  const handleTouchEnd=()=>{
+    const td=touchDragRef.current;
+    clearTimeout(td.longPressTimer);
+    if(td.active&&td.fromIdx!==null){
+      handleDrop(overIdx!==null?overIdx:td.fromIdx);
+    }
+    td.active=false; td.fromIdx=null;
+    setDragIdx(null); setOverIdx(null);
   };
 
   if(qPlayers.length===0) return(
@@ -1784,11 +1824,13 @@ function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReorder,high
   );
 
   return(
-    <div style={{display:"flex",flexDirection:"column",gap:5}}>
+    <div ref={listRef} style={{display:"flex",flexDirection:"column",gap:5,touchAction:dragIdx!==null?"none":"auto"}}
+      onTouchMove={(e)=>{if(dragIdx!==null)e.preventDefault();handleTouchMove(e);}} onTouchEnd={handleTouchEnd}>
       {qPlayers.map((p,idx)=>{
         const zs=p.zoneScores[zone]||50;
         const streak=p.zoneStreaks[zone]||0;
         const isOver=overIdx===idx;
+        const isDragging=dragIdx===idx;
         return(
           <div key={p.id}
             draggable
@@ -1796,29 +1838,30 @@ function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReorder,high
             onDragOver={e=>{e.preventDefault();setOverIdx(idx);}}
             onDrop={()=>handleDrop(idx)}
             onDragEnd={()=>{setDragIdx(null);setOverIdx(null);}}
+            onTouchStart={(e)=>handleTouchStart(e,idx)}
             style={{...S.row(),padding:"8px 10px",borderRadius:10,
-              background:p.id===highlightId?"#1a2e05":dragIdx===idx?"#1a2e05":isOver?"#1a1a2e":"#0d0f1a",
-              border:p.id===highlightId?"2px solid "+z.color:isOver?"1px solid "+z.color+"60":"1px solid transparent",
-              cursor:"grab",transition:"all .15s",
+              background:p.id===highlightId?"#1a2e05":isDragging?"#1a2e05":isOver?"#1a1a2e":"#0d0f1a",
+              border:p.id===highlightId?"2px solid "+z.color:isOver?"2px solid "+z.color+"80":isDragging?"2px solid #84cc1660":"1px solid transparent",
+              cursor:"grab",transition:"all .15s",opacity:isDragging?0.5:1,
               animation:p.id===highlightId?"pulseLime 0.6s ease-in-out 4":"none"}}>
-            {/* drag handle */}
-            <div style={{color:"#374151",fontSize:16,flexShrink:0,cursor:"grab",userSelect:"none"}}>⠿</div>
+            {/* drag handle — indique le long press sur mobile */}
+            <div style={{color:isDragging?"#84cc16":"#374151",fontSize:18,flexShrink:0,cursor:"grab",
+              userSelect:"none",touchAction:"none",paddingRight:2}}>⠿</div>
             <div style={{fontSize:11,color:"#374151",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,width:16,flexShrink:0}}>{idx+1}</div>
             <Bib n={p.number} size="sm" color={z.color}/>
             <span style={{fontSize:13,color:"#fff",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
             {zone==="speed"&&<TierBadge score={zs}/>}
             {zone!=="speed"&&<div style={{...S.tag(z.color),fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{zs}</div>}
             {streak>=2&&<span style={{fontSize:11,color:"#f97316",flexShrink:0}}>🔥x{streak}</span>}
-            {/* presence buttons */}
-            <button onClick={(e)=>{e.stopPropagation();onMoveTop(p.id,zone);}} title="Jouer maintenant (placer en tete)"
+            <button onClick={(e)=>{e.stopPropagation();onMoveTop(p.id,zone);}}
               style={{background:"none",border:"none",cursor:"pointer",color:"#4b5563",fontSize:16,lineHeight:1,padding:"0 2px"}}
               onMouseEnter={e=>e.target.style.color="#84cc16"}
               onMouseLeave={e=>e.target.style.color="#4b5563"}>↑</button>
-            <button onClick={(e)=>{e.stopPropagation();onMoveBottom(p.id,zone);}} title="Plus tard (placer en bas)"
+            <button onClick={(e)=>{e.stopPropagation();onMoveBottom(p.id,zone);}}
               style={{background:"none",border:"none",cursor:"pointer",color:"#4b5563",fontSize:16,lineHeight:1,padding:"0 2px"}}
               onMouseEnter={e=>e.target.style.color="#f97316"}
               onMouseLeave={e=>e.target.style.color="#4b5563"}>↓</button>
-            <button onClick={(e)=>{e.stopPropagation();onRemove(p.id,zone);}} title="Retirer de la file"
+            <button onClick={(e)=>{e.stopPropagation();onRemove(p.id,zone);}}
               style={{background:"none",border:"none",cursor:"pointer",color:"#374151",fontSize:16,lineHeight:1,padding:"0 2px"}}
               onMouseEnter={e=>e.target.style.color="#ef4444"}
               onMouseLeave={e=>e.target.style.color="#374151"}>×</button>
