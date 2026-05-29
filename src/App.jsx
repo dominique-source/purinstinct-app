@@ -161,15 +161,15 @@ const T={
     legend3:"boutons + Zone = ajouter à cette file",
     totalPlayers:"joueurs",
     savedLists:"Listes sauvegardées (NEXT GAME)",
-    activeSession:"{T.fr.activeSession}",
-    addNow:"{T.fr.addNow}",
+    activeSession:"Session active",
+    addNow:"Ajouter un joueur maintenant",
     playerName:"Nom du joueur",
     newList:"+ Créer une nouvelle liste",
     modify:"Modifier", activate:"Activer",
     back:"← Retour", save:"Sauvegarder", saveOK:"✓ OK",
-    savedMsg:"✓ Modifications sauvegardées!", saveBtn:"{T.fr.saveBtn}",
+    savedMsg:"✓ Modifications sauvegardées!", saveBtn:"Sauvegarder",
     dossierTitle:"DOSSIER",
-    fullName:"{T.fr.fullName}", sex:"Sexe", age:"Âge",
+    fullName:"Nom complet", sex:"Sexe", age:"Âge",
     consents:"Consentements",
     photoConsent:"📷 Consentement photo", photoConsentDesc:"Autoriser la publication de photos",
     videoConsent:"🎬 Consentement vidéo", videoConsentDesc:"Autoriser la publication de vidéos et highlights",
@@ -183,7 +183,7 @@ const T={
     gameStats:"Statistiques de jeu",
     globalPts:"Pts globaux", zones:"Zones", victories:"Victoires", defeats:"Défaites",
     nowPlay:"Jouer maintenant", later:"Plus tard", removeFromQ:"Retirer de la file",
-    autoRefill:"{T.fr.autoRefill}",
+    autoRefill:"File vide — rechargement automatique en cours...",
     coureurs:"coureurs", groupFront:"Groupe A (avant):", groupBack:"Groupe B (arrière):",
     raceSizeTitle:"Taille du groupe",
     series:"Série", bonusX:"Bonus x1.5",
@@ -199,7 +199,7 @@ const T={
     man:"Homme", woman:"Femme", other:"Autre / N/A",
     male:"Masculin", female:"Féminin",
     newRoster:"Nouvelle liste",
-    playerCount:"{T.fr.playerCount}",
+    playerCount:"joueurs",
     retirer:"Retirer",
     infoBack:"← Retour",
     addBack:"← Retour",
@@ -899,7 +899,7 @@ function PlayerDossier({player,onSave,onBack,embedded}){
         padding:"14px",borderRadius:14,border:"none",cursor:"pointer",width:"100%",
         fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
         background:saved?"#22c55e":"#84cc16",color:"#000",transition:"background .3s"}}>
-        {saved?"{T.fr.savedMsg}":"{T.fr.saveBtn}"}
+        {saved?T.fr.savedMsg:T.fr.saveBtn}
       </button>
     </div>
   );
