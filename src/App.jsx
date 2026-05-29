@@ -1386,9 +1386,12 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
   const [newName,setNewName]=useState("");
   const [newGender,setNewGender]=useState("M");
   const [soloSubmitted,setSoloSubmitted]=useState(false);
+  const [activeGroupId,setActiveGroupId]=useState("main");
 
+  // Filtrer par groupe actif
+  const groupPlayers=players.filter(p=>(p.groupId||"main")===activeGroupId);
   const filtered=search.trim().length>0
-    ?players.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())||String(p.number).includes(search))
+    ?groupPlayers.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())||String(p.number).includes(search))
     :[];
 
   const handleCreateSolo=()=>{
@@ -1402,29 +1405,35 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
     if(!newName.trim()) return;
     onAddPlayer&&onAddPlayer(newName.trim(),newGender,(newId)=>{
       onLogin("player",newId);
-    });
+    },activeGroupId);
   };
 
   const handleAddToGroupWithName=(name)=>{
     if(!name.trim()) return;
     onAddPlayer&&onAddPlayer(name.trim(),newGender,(newId)=>{
       onLogin("player",newId);
-    });
+    },activeGroupId);
   };
 
   // Valider le code de session
   const handleSessionCode=(code)=>{
     const c=code||sessionCode;
     if(c==="0000"){
-      // Session solo — demander le nom
       setScreen("newPlayer"); setSessionCodeError(false); return;
     }
-    const validCodes=rosterCodes?Object.values(rosterCodes):[];
-    if(validCodes.includes(c)){
-      setScreen("player"); setSessionCodeError(false);
-    } else {
-      setSessionCodeError(true);
+    // Trouver le groupId associé au code
+    if(rosterCodes){
+      const entry=Object.entries(rosterCodes).find(([,v])=>v===c);
+      if(entry){
+        const rosterId=entry[0];
+        // Sessions solo ont un id "solo_XXX" → groupId unique
+        // Sessions régulières → groupId "main"
+        const gId=rosterId.startsWith("solo_")?rosterId:"main";
+        setActiveGroupId(gId);
+        setScreen("player"); setSessionCodeError(false); return;
+      }
     }
+    setSessionCodeError(true);
   };
 
   // PIN Admin / Station
