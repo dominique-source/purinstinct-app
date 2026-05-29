@@ -1324,28 +1324,37 @@ function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
 const ADMIN_PIN="1111";
 const STATION_PIN="2222";
 
-function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCodes}){
+function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCodes,onAddPlayer}){
   // Détecter le code de session dans l'URL
   const urlCode=new URLSearchParams(window.location.search).get("session");
 
-  // screen: "sessionCode" | "player" | "admin" | "station" | "stationPick"
+  // screen: "sessionCode" | "player" | "newPlayer" | "admin" | "station" | "stationPick"
   const [screen,setScreen]=useState(urlCode?"player":"sessionCode");
   const [sessionCode,setSessionCode]=useState(urlCode||"");
   const [sessionCodeError,setSessionCodeError]=useState(false);
   const [search,setSearch]=useState("");
   const [pin,setPin]=useState("");
   const [pinError,setPinError]=useState(false);
+  const [newName,setNewName]=useState("");
+  const [newGender,setNewGender]=useState("M");
 
   const filtered=search.trim().length>0
     ?players.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())||String(p.number).includes(search))
     :[];
 
+  const handleCreateSolo=()=>{
+    if(!newName.trim()) return;
+    onAddPlayer&&onAddPlayer(newName.trim(),newGender,(newId)=>{
+      onLogin("player",newId);
+    });
+  };
+
   // Valider le code de session
   const handleSessionCode=(code)=>{
     const c=code||sessionCode;
     if(c==="0000"){
-      // Session vide — joueur unique
-      setScreen("player"); setSessionCodeError(false); return;
+      // Session solo — demander le nom
+      setScreen("newPlayer"); setSessionCodeError(false); return;
     }
     const validCodes=rosterCodes?Object.values(rosterCodes):[];
     if(validCodes.includes(c)||c.length===4){
@@ -1455,6 +1464,53 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
               onMouseEnter={e=>e.currentTarget.style.borderColor="#f97316"}
               onMouseLeave={e=>e.currentTarget.style.borderColor="#374151"}>
               📍 Station
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ÉTAPE 2b — Nouveau joueur solo (code 0000) */}
+      {screen==="newPlayer"&&(
+        <div className="anim-up" style={{width:"100%",maxWidth:360}}>
+          <button onClick={()=>{setScreen("sessionCode");setNewName("");}}
+            style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>
+            ← Retour
+          </button>
+          <div style={{textAlign:"center",marginBottom:24}}>
+            <div style={{fontSize:40,marginBottom:8}}>👤</div>
+            <div style={{color:"#fff",fontWeight:700,fontSize:20,marginBottom:4}}>Bienvenue !</div>
+            <div style={{color:"#4b5563",fontSize:13}}>Comment vous appelez-vous ?</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            <input value={newName} onChange={e=>setNewName(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter"&&newName.trim())handleCreateSolo();}}
+              placeholder="Votre nom complet"
+              autoFocus
+              style={{width:"100%",padding:"14px 16px",borderRadius:14,border:"2px solid #374151",
+                background:"#111827",color:"#fff",fontSize:16,outline:"none",boxSizing:"border-box"}}
+              onFocus={e=>e.target.style.borderColor="#84cc16"}
+              onBlur={e=>e.target.style.borderColor="#374151"}/>
+            <div style={{display:"flex",gap:8}}>
+              {[["M","👨 Homme"],["F","👩 Femme"]].map(([v,l])=>(
+                <button key={v} onClick={()=>setNewGender(v)}
+                  style={{flex:1,padding:"12px",borderRadius:12,
+                    border:"2px solid "+(newGender===v?"#84cc16":"#374151"),
+                    background:newGender===v?"#1a2e05":"#111827",
+                    color:newGender===v?"#84cc16":"#6b7280",
+                    cursor:"pointer",fontWeight:600,fontSize:14}}>
+                  {l}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={handleCreateSolo}
+              disabled={!newName.trim()}
+              style={{padding:"14px",borderRadius:14,border:"none",cursor:newName.trim()?"pointer":"not-allowed",
+                background:newName.trim()?"#84cc16":"#1f2937",
+                color:newName.trim()?"#000":"#4b5563",
+                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+                opacity:newName.trim()?1:0.5}}>
+              Entrer dans ma session →
             </button>
           </div>
         </div>
@@ -3659,7 +3715,7 @@ export default function PurInstinctApp(){
     const newR={id:"r"+Date.now(),name:"Nouvelle liste",entries:[]};
     setRosters(r=>[...r,newR]);
   };
-  const addPlayerToSession=(name,gender)=>{
+  const addPlayerToSession=(name,gender,callback)=>{
     const newId=players.length>0?Math.max(...players.map(p=>p.id))+1:1;
     const newPlayer={id:newId,number:newId,name,gender:gender||"M",globalPoints:0,
       zoneScores:{purinstinct:50,speed:50,handAgility:50,footAgility:50,generalAgility:50,iq:50},
@@ -3668,6 +3724,7 @@ export default function PurInstinctApp(){
       age:"",email:"",instagram:"",tiktok:"",snapchat:"",
       photoConsent:false,videoConsent:false,profilePhoto:null,highlights:[]};
     setPlayers(p=>[...p,newPlayer]);
+    if(callback) callback(newId);
   };
 
   // --- Queue management ---
@@ -3801,6 +3858,7 @@ export default function PurInstinctApp(){
   if(view.type==="login") return liveMode
     ?<LiveLoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         rosterCodes={rosterCodes}
+        onAddPlayer={addPlayerToSession}
         onLogin={(t,id)=>setView({type:t,id})}
         onGoTest={()=>{setLiveMode(false);setQueues(q=>buildInitialQueues(players));}}/>
     :<LoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
