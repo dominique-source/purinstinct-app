@@ -300,7 +300,7 @@ function computeTeamResult(players, teamA, teamB, winner, zone) {
   });
 }
 
-function computeIndividualResult(players, participants, winnerId, zone) {
+function computeIndividualResult(players, participants, winnerId, zone, secondId=null) {
   const z = ZONES[zone];
   const pMap = {}; players.forEach(p=>{pMap[p.id]=p;});
   let favoredId = null;
@@ -312,6 +312,7 @@ function computeIndividualResult(players, participants, winnerId, zone) {
   return players.map(p => {
     if (!participants.includes(p.id)) return p;
     const isWin = p.id===winnerId;
+    const isSecond = zone==="speed" && secondId && p.id===secondId;
     const isFav = favoredId===p.id, isUnd = favoredId!==null&&!isFav;
     const prev = p.zoneStreaks[zone]||0;
     const newStreak = isWin?prev+1:0;
@@ -327,21 +328,24 @@ function computeIndividualResult(players, participants, winnerId, zone) {
       let pts=z.winPts;
       if(isFav) pts=Math.max(1,pts-1); if(isUnd) pts+=1; if(bonus) pts=Math.round(pts*1.5);
       pts=Math.max(1,pts+tierAdj); delta=pts;
+    } else if (isSecond) {
+      // 2e place vitesse : +2 pts globaux, +5 pts de zone
+      delta=2;
     } else {
       let pts=z.lossPts;
       if(isFav) pts+=1; if(isUnd) pts=Math.max(0,pts-1);
       pts=Math.max(0,pts-tierAdj); delta=-pts;
     }
     const curZS=p.zoneScores[zone];
-    const newZS=isWin?Math.min(100,Math.round(curZS+(bonus?22:13))):Math.max(0,Math.round(curZS-9));
-    const newEntry={zone,isWin,delta,bonus,newStreak,ts:Date.now()};
+    const newZS=isWin?Math.min(100,Math.round(curZS+(bonus?22:13))):isSecond?Math.min(100,Math.round(curZS+5)):Math.max(0,Math.round(curZS-9));
+    const newEntry={zone,isWin,isSecond:isSecond||false,delta,bonus,newStreak,ts:Date.now()};
     return {
       ...p,
       globalPoints:Math.max(0,p.globalPoints+delta),
       zoneScores:{...p.zoneScores,[zone]:newZS},
       zoneStreaks:{...p.zoneStreaks,[zone]:newStreak},
       zonesPlayed:p.zonesPlayed.includes(zone)?p.zonesPlayed:[...p.zonesPlayed,zone],
-      lastResult:{zone,isWin,delta,bonus,newStreak},
+      lastResult:{zone,isWin,isSecond:isSecond||false,delta,bonus,newStreak},
       history:[...(p.history||[]),newEntry]
     };
   });
@@ -1833,6 +1837,14 @@ function SprintGameView({game,players,zone,onWinner,onRemove,onReplace}){
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
   const participants=game.participants||[];
   const pList=participants.map(id=>pMap[id]).filter(Boolean);
+  const [selectedFirst,setSelectedFirst]=useState(null);
+  const [selectedSecond,setSelectedSecond]=useState(null);
+
+  const handleConfirm=()=>{
+    if(!selectedFirst) return;
+    onWinner(selectedFirst, selectedSecond||null);
+    setSelectedFirst(null); setSelectedSecond(null);
+  };
 
   return(
     <div>
@@ -1850,21 +1862,26 @@ function SprintGameView({game,players,zone,onWinner,onRemove,onReplace}){
         ))}
       </div>
 
-      {/* Participants in tier order */}
+      {/* Participants */}
       <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:16}}>
         {pList.map((p,i)=>{
           const tier=getSprintTier(p.zoneScores.speed||50);
           const t=TIERS[tier];
           const streak=p.zoneStreaks[zone]||0;
+          const isFirst=selectedFirst===p.id;
+          const isSecond=selectedSecond===p.id;
           return(
             <div key={p.id} style={{...S.row(),padding:"8px 10px",borderRadius:10,
-              background:"#0d0f1a",border:"2px solid "+t.color+"40"}}>
+              background:isFirst?"#1a2e05":isSecond?"#1a1400":"#0d0f1a",
+              border:"2px solid "+(isFirst?"#84cc16":isSecond?"#ca8a04":t.color+"40")}}>
               <div style={{width:24,height:24,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",
                 fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
                 background:t.color+"22",color:t.color,flexShrink:0}}>{i+1}</div>
               <TierBadge score={p.zoneScores.speed||50}/>
               <Bib n={p.number} size="sm" color={t.color}/>
               <span style={{flex:1,color:"#fff",fontWeight:600,fontSize:13}}>{p.name}</span>
+              {isFirst&&<span style={{fontSize:11,color:"#84cc16",fontWeight:700}}>🥇 1er</span>}
+              {isSecond&&<span style={{fontSize:11,color:"#ca8a04",fontWeight:700}}>🥈 2e</span>}
               {streak>=2&&<span style={{fontSize:11,color:"#f97316"}}>🔥x{streak}</span>}
               <span style={{fontSize:11,color:t.color,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{p.zoneScores.speed||50}</span>
               <button onClick={()=>onRemove(p.id)} title="Retirer de la course"
@@ -1880,21 +1897,46 @@ function SprintGameView({game,players,zone,onWinner,onRemove,onReplace}){
         {T.fr.substitute}
       </button>
 
-      <div style={{...S.label(),textAlign:"center",marginBottom:10}}>{T.fr.whichWon}</div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-        {pList.map(p=>{
+      {/* Sélection 1er place */}
+      <div style={{...S.label(),textAlign:"center",marginBottom:8}}>
+        {!selectedFirst?"🥇 Sélectionner le gagnant":"🥈 Sélectionner le 2e place (optionnel)"}
+      </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
+        {pList.filter(p=>p.id!==selectedSecond).map(p=>{
           const tier=getSprintTier(p.zoneScores.speed||50);
           const t=TIERS[tier];
+          const isFirst=selectedFirst===p.id;
           return(
-            <button key={p.id} onClick={()=>onWinner(p.id)}
-              style={{flex:"1 1 45%",padding:"12px 10px",borderRadius:12,border:"none",cursor:"pointer",
-                background:t.color,color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
+            <button key={p.id} onClick={()=>{
+              if(!selectedFirst){setSelectedFirst(p.id);}
+              else if(p.id===selectedFirst){setSelectedFirst(null);setSelectedSecond(null);}
+              else{setSelectedSecond(p.id===selectedSecond?null:p.id);}
+            }}
+              style={{flex:"1 1 45%",padding:"12px 10px",borderRadius:12,border:"2px solid "+(isFirst?"#84cc16":selectedFirst?"#ca8a0460":"transparent"),cursor:"pointer",
+                background:isFirst?"#84cc16":selectedFirst?t.color+"90":t.color,
+                color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
                 boxShadow:"0 3px 12px "+t.color+"40"}}>
-              #{p.number} {p.name.split(" ")[0]}
+              {isFirst?"🥇 ":""}#{p.number} {p.name.split(" ")[0]}
             </button>
           );
         })}
       </div>
+
+      {/* Confirmer */}
+      {selectedFirst&&(
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={handleConfirm}
+            style={{flex:1,padding:"14px",borderRadius:12,border:"none",cursor:"pointer",
+              background:"#84cc16",color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16}}>
+            ✓ Confirmer{selectedSecond?" (1er + 2e)":" (1er seulement)"}
+          </button>
+          <button onClick={()=>{setSelectedFirst(null);setSelectedSecond(null);}}
+            style={{padding:"14px 16px",borderRadius:12,border:"1px solid #374151",cursor:"pointer",
+              background:"#111827",color:"#6b7280",fontSize:13}}>
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -2096,10 +2138,10 @@ function StationView({zone,players,queue,activeGame,disabled,onAddQ,onRemoveQ,on
     onReorderQ(z2,q);
   };
 
-  const handleWinner=(id)=>{
+  const handleWinner=(id,secondId=null)=>{
     const p=pMap[id];
     if(p) handleFlashResult(p.name.split(" ")[0]+" GAGNE!");
-    onResult(id);
+    onResult(id,secondId);
   };
   const handleTeamResult=(winner)=>{
     handleFlashResult("EQUIPE "+winner+" GAGNE!");
@@ -3143,14 +3185,14 @@ export default function PurInstinctApp(){
   };
 
   // --- Submit result ---
-  const submitResult=(zone,winner)=>{
+  const submitResult=(zone,winner,secondId=null)=>{
     const game=activeGames[zone];
     if(!game) return;
     let updated;
     if(game.type==="team"){
       updated=computeTeamResult(players,game.teamA||[],game.teamB||[],winner,zone);
     } else {
-      updated=computeIndividualResult(players,game.participants||[],winner,zone);
+      updated=computeIndividualResult(players,game.participants||[],winner,zone,secondId);
     }
     const newGames={...activeGames,[zone]:null};
     const refilled=refillQueues(updated,queues,newGames);
@@ -3235,7 +3277,7 @@ export default function PurInstinctApp(){
       disabled={(arenaState.disabledZones||[]).includes(view.id)}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onGenerate={(p)=>generateTeams(view.id,p)}
-      onResult={(w)=>submitResult(view.id,w)}
+      onResult={(w,second)=>submitResult(view.id,w,second)}
       onRemoveFromGame={removeFromGame}
       onReplaceInGame={replaceInGame}
       onReorderQ={reorderQueue}
