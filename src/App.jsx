@@ -1057,7 +1057,7 @@ function LoginView({players,queues,onLogin,disabledZones}){
 // ----------------------------------------------------------------
 // ADMIN VIEW
 // ----------------------------------------------------------------
-function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onAddPlayer,onCreateRoster,onUpdatePlayer}){
+function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners}){
   const [tab,setTab]=useState("leaderboard");
   const [timer,setTimer]=useState("75:00");
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
@@ -1621,6 +1621,24 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
 
           return(
             <div className="anim-up">
+              {/* Bouton publier */}
+              <div style={{...S.card(),marginBottom:16,border:"1px solid "+(winnersPublished?"#84cc1640":"#374151"),
+                display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+                <div>
+                  <div style={{color:"#fff",fontWeight:700,fontSize:13}}>
+                    {winnersPublished?"🏆 Gagnants publiés":"Publier les gagnants"}
+                  </div>
+                  <div style={{color:"#4b5563",fontSize:11,marginTop:2}}>
+                    {winnersPublished?"Les joueurs voient les résultats dans leur classement":"Les joueurs ne voient pas encore les résultats"}
+                  </div>
+                </div>
+                <button onClick={winnersPublished?onUnpublishWinners:onPublishWinners}
+                  style={{...S.btn(winnersPublished?"#374151":"#84cc16"),padding:"8px 16px",fontSize:12,
+                    color:winnersPublished?"#9ca3af":"#000",flexShrink:0}}>
+                  {winnersPublished?"Retirer":"Publier"}
+                </button>
+              </div>
+
               <div style={{...S.label(),marginBottom:4}}>Cartes de résultats</div>
               <div style={{fontSize:11,color:"#4b5563",marginBottom:16}}>Appuyez sur une carte pour l'agrandir et la partager</div>
 
@@ -2334,13 +2352,30 @@ function PlayerRulesView(){
   );
 }
 
-function PlayerView({playerId,players,queues,activeGames,disabledZones,onJoin,onLeave,onLogout,onUpdatePlayer}){
+function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPublished,onJoin,onLeave,onLogout,onUpdatePlayer}){
   const player=players.find(p=>p.id===playerId);
   const [tab,setTab]=useState("stats");
   const [skinIdx,setSkinIdx]=useState(2);
   const [hairIdx,setHairIdx]=useState(3);
   const [morphology,setMorphology]=useState(1);
+  const [playerWinnerCard,setPlayerWinnerCard]=useState(null);
+  const [savingPlayerCard,setSavingPlayerCard]=useState(false);
+  const playerCardRef=useRef(null);
   if(!player) return null;
+
+  const savePlayerCard=async()=>{
+    if(!playerCardRef.current||savingPlayerCard) return;
+    setSavingPlayerCard(true);
+    try{
+      const canvas=await html2canvas(playerCardRef.current,{
+        backgroundColor:"#0a0c14",scale:3,useCORS:true,logging:false,removeContainer:true
+      });
+      const url=canvas.toDataURL("image/png");
+      const a=document.createElement("a");
+      a.href=url; a.download="purinstinct-gagnant.png"; a.click();
+    }catch(e){console.error(e);}
+    setSavingPlayerCard(false);
+  };
 
   // Full-screen dossier view
   if(tab==="profil") return(
@@ -2382,7 +2417,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,onJoin,on
           </div>
         </div>
         <div style={{display:"flex",gap:4}}>
-          {[["stats",T.fr.myStats],["leaderboard",T.fr.myRank],["rules",T.fr.myRules],["profil",T.fr.myProfile]].map(([t,l])=>(
+          {[["stats",T.fr.myStats],["leaderboard",T.fr.myRank],["rules",T.fr.myRules],["profil",T.fr.myProfile],...(winnersPublished?[["winners","🏆 Gagnants"]]:[])] .map(([t,l])=>(
             <button key={t} onClick={()=>setTab(t)} style={{
               padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
               background:tab===t?"#84cc16":"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
@@ -2665,6 +2700,190 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,onJoin,on
         {tab==="rules"&&(
           <PlayerRulesView/>
         )}
+
+        {tab==="winners"&&winnersPublished&&(()=>{
+          const today=new Date().toLocaleDateString("fr-CA",{year:"numeric",month:"long",day:"numeric"});
+          const ranked=[...players].sort((a,b)=>b.globalPoints-a.globalPoints);
+          const top5=ranked.slice(0,5);
+          const overall=ranked[0]||null;
+          const activeZK=ZK.filter(zk=>!(disabledZones||[]).includes(zk));
+          const zoneChamps={};
+          activeZK.forEach(zk=>{
+            const played=players.filter(p=>p.zonesPlayed.includes(zk));
+            if(played.length>0) zoneChamps[zk]=[...played].sort((a,b)=>(b.zoneScores[zk]||50)-(a.zoneScores[zk]||50))[0];
+          });
+          const zoneIcons={purinstinct:"🏟️",speed:"⚡",handAgility:"✋",footAgility:"👟",generalAgility:"🏃",iq:"🧠"};
+          const zoneNames={purinstinct:"PurInstinct",speed:"Vitesse",handAgility:"Habileté Main",footAgility:"Habileté Pied",generalAgility:"Agilité",iq:"IQ de Jeu"};
+          const medals=["🥇","🥈","🥉","4️⃣","5️⃣"];
+
+          // Plein écran
+          if(playerWinnerCard){
+            const {type,zk}=playerWinnerCard;
+            const FullCard=({accent,children})=>(
+              <div style={{position:"fixed",inset:0,zIndex:60,background:"rgba(0,0,0,.95)",
+                display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
+                <div ref={playerCardRef} onClick={savePlayerCard} style={{width:"100%",maxWidth:380,borderRadius:24,
+                  background:"#0a0c14",border:"2px solid "+(accent||"#84cc16"),padding:28,
+                  position:"relative",overflow:"hidden",cursor:"pointer",
+                  boxShadow:"0 0 60px "+(accent||"#84cc16")+"40"}}>
+                  <div style={{position:"absolute",top:0,left:0,right:0,height:4,
+                    background:`linear-gradient(90deg,${accent||"#84cc16"},${accent||"#84cc16"}88)`}}/>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:10,
+                    color:(accent||"#84cc16")+"80",letterSpacing:3,marginBottom:16,textAlign:"center",marginTop:8}}>
+                    PURINSTINCT GAMES · {today}
+                  </div>
+                  {children}
+                  <div data-html2canvas-ignore="true" style={{textAlign:"center",marginTop:12,fontSize:10,color:"#374151"}}>
+                    Appuyez pour enregistrer
+                  </div>
+                </div>
+                <div style={{marginTop:16}}>
+                  <button onClick={()=>setPlayerWinnerCard(null)}
+                    style={{padding:"10px 24px",borderRadius:10,background:"#111827",color:"#9ca3af",
+                      border:"1px solid #374151",cursor:"pointer",fontWeight:700,fontSize:13}}>
+                    ← Retour
+                  </button>
+                </div>
+              </div>
+            );
+
+            if(type==="overall"&&overall){
+              const streaks=activeZK.filter(zk=>(overall.zoneStreaks[zk]||0)>=2);
+              return(<FullCard accent="#ca8a04">
+                <div style={{textAlign:"center",marginBottom:16}}>
+                  <div style={{fontSize:52,lineHeight:1,marginBottom:8}}>🥇</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,color:"#ca8a04",letterSpacing:3,marginBottom:6}}>GAGNANT</div>
+                  <div style={{color:"#fff",fontWeight:700,fontSize:26,marginBottom:4}}>{overall.name}</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:48,color:"#84cc16",lineHeight:1}}>{overall.globalPoints}</div>
+                  <div style={{fontSize:12,color:"#4b5563",marginTop:2}}>points globaux</div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:12}}>
+                  {activeZK.map(zk=>{
+                    const played=overall.zonesPlayed.includes(zk);
+                    return(<div key={zk} style={{borderRadius:10,padding:"8px 6px",textAlign:"center",
+                      background:played?"#1a2e05":"#111827",border:"1px solid "+(played?"#84cc1650":"#1f2937")}}>
+                      <div style={{fontSize:18}}>{zoneIcons[zk]}</div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:played?"#84cc16":"#374151"}}>{overall.zoneScores[zk]||50}</div>
+                      <div style={{fontSize:9,color:played?"#6b7280":"#1f2937",marginTop:1}}>{zoneNames[zk].split(" ")[0]}</div>
+                    </div>);
+                  })}
+                </div>
+                {streaks.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center"}}>
+                  {streaks.map(zk=>(<span key={zk} style={{padding:"3px 8px",borderRadius:6,background:"#f9731620",color:"#f97316",fontSize:11,fontWeight:700}}>🔥 {zoneNames[zk]} ×{overall.zoneStreaks[zk]}</span>))}
+                </div>}
+              </FullCard>);
+            }
+            if(type==="top5"&&top5.length>0){
+              return(<FullCard accent="#6366f1">
+                <div style={{textAlign:"center",marginBottom:20}}>
+                  <div style={{fontSize:42,lineHeight:1,marginBottom:6}}>🏆</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,color:"#6366f1",letterSpacing:3}}>CLASSEMENT FINAL</div>
+                </div>
+                {top5.map((p,i)=>(
+                  <div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:12,marginBottom:6,
+                    background:i===0?"#1a1a2e":i===1?"#12121e":i===2?"#111118":"#0d0f1a",
+                    border:"1px solid "+(p.id===playerId?"#84cc1650":i===0?"#6366f140":"#1f2937")}}>
+                    <span style={{fontSize:20,width:28,textAlign:"center"}}>{medals[i]}</span>
+                    <span style={{color:p.id===playerId?"#84cc16":"#fff",fontWeight:700,fontSize:15,flex:1}}>{p.name}{p.id===playerId?" 👈":""}</span>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
+                        color:i===0?"#ca8a04":i===1?"#9ca3af":i===2?"#b45309":"#6b7280"}}>{p.globalPoints}</div>
+                    </div>
+                  </div>
+                ))}
+              </FullCard>);
+            }
+            if(type==="zone"&&zk&&zoneChamps[zk]){
+              const champ=zoneChamps[zk]; const z=ZONES[zk];
+              const hasStreak=(champ.zoneStreaks[zk]||0)>=2;
+              return(<FullCard accent={z.color}>
+                <div style={{textAlign:"center",marginBottom:20}}>
+                  <div style={{fontSize:56,lineHeight:1,marginBottom:10}}>{zoneIcons[zk]}</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,color:z.color,letterSpacing:3,marginBottom:4}}>CHAMPION</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:z.color,marginBottom:16}}>{zoneNames[zk].toUpperCase()}</div>
+                  <div style={{color:champ.id===playerId?"#84cc16":"#fff",fontWeight:700,fontSize:28,marginBottom:8}}>{champ.name}{champ.id===playerId?" 👈":""}</div>
+                  <div style={{display:"inline-block",padding:"12px 24px",borderRadius:16,background:z.color+"20",border:"2px solid "+z.color+"60"}}>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:52,color:z.color,lineHeight:1}}>{champ.zoneScores[zk]||50}</div>
+                    <div style={{fontSize:11,color:z.color+"80",marginTop:2}}>score de zone</div>
+                  </div>
+                  {hasStreak&&<div style={{marginTop:14,padding:"6px 16px",borderRadius:20,background:"#f9731620",display:"inline-block"}}>
+                    <span style={{color:"#f97316",fontWeight:700,fontSize:14}}>🔥 Série ×{champ.zoneStreaks[zk]}</span>
+                  </div>}
+                </div>
+              </FullCard>);
+            }
+            return null;
+          }
+
+          // Liste cliquable
+          const ClickCard=({accent,onClick,children})=>(
+            <div onClick={onClick} style={{borderRadius:16,background:"#0d0f1a",border:"2px solid "+(accent||"#84cc16"),
+              padding:20,marginBottom:12,position:"relative",overflow:"hidden",cursor:"pointer"}}
+              onMouseEnter={e=>{e.currentTarget.style.background="#111827";}}
+              onMouseLeave={e=>{e.currentTarget.style.background="#0d0f1a";}}>
+              <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:accent||"#84cc16"}}/>
+              <div style={{position:"absolute",top:12,right:14,fontSize:16,color:(accent||"#84cc16")+"60"}}>↗</div>
+              {children}
+            </div>
+          );
+
+          return(
+            <div className="anim-up">
+              <div style={{...S.label(),marginBottom:4}}>🏆 Résultats finals</div>
+              <div style={{fontSize:11,color:"#4b5563",marginBottom:16}}>Appuyez sur une carte pour l'agrandir et enregistrer</div>
+
+              {overall&&(
+                <ClickCard accent="#ca8a04" onClick={()=>setPlayerWinnerCard({type:"overall"})}>
+                  <div style={{...S.row(),gap:10}}>
+                    <span style={{fontSize:32}}>🥇</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:10,color:"#ca8a04",fontWeight:700,letterSpacing:2,marginBottom:2}}>GAGNANT</div>
+                      <div style={{color:"#fff",fontWeight:700,fontSize:18,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{overall.name}{overall.id===playerId?" 👈":""}</div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:24,color:"#84cc16"}}>{overall.globalPoints} pts</div>
+                    </div>
+                  </div>
+                </ClickCard>
+              )}
+
+              {top5.length>0&&(
+                <ClickCard accent="#6366f1" onClick={()=>setPlayerWinnerCard({type:"top5"})}>
+                  <div style={{...S.row(),gap:10,marginBottom:10}}>
+                    <span style={{fontSize:28}}>🏆</span>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,color:"#6366f1",letterSpacing:2}}>TOP {top5.length}</div>
+                  </div>
+                  {top5.slice(0,3).map((p,i)=>(
+                    <div key={p.id} style={{...S.row(),gap:8,padding:"3px 0"}}>
+                      <span style={{fontSize:14,width:20}}>{medals[i]}</span>
+                      <span style={{color:p.id===playerId?"#84cc16":"#e5e7eb",fontSize:13,flex:1}}>{p.name}{p.id===playerId?" 👈":""}</span>
+                      <span style={{color:"#84cc16",fontWeight:700,fontSize:13}}>{p.globalPoints}</span>
+                    </div>
+                  ))}
+                </ClickCard>
+              )}
+
+              {activeZK.filter(zk=>zoneChamps[zk]).map(zk=>{
+                const champ=zoneChamps[zk]; const z=ZONES[zk];
+                return(
+                  <ClickCard key={zk} accent={z.color} onClick={()=>setPlayerWinnerCard({type:"zone",zk})}>
+                    <div style={{...S.row(),gap:10}}>
+                      <span style={{fontSize:28,flexShrink:0}}>{zoneIcons[zk]}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:10,color:z.color,fontWeight:700,letterSpacing:2,marginBottom:2}}>CHAMPION {zoneNames[zk].toUpperCase()}</div>
+                        <div style={{color:champ.id===playerId?"#84cc16":"#fff",fontWeight:700,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                          {champ.name}{champ.id===playerId?" 👈":""}
+                        </div>
+                        <div style={{...S.row(),gap:6,marginTop:2}}>
+                          <span style={{color:z.color,fontWeight:700,fontSize:13}}>{champ.zoneScores[zk]||50} pts</span>
+                          {(champ.zoneStreaks[zk]||0)>=2&&<span style={{color:"#f97316",fontSize:11}}>🔥×{champ.zoneStreaks[zk]}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </ClickCard>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -2679,6 +2898,7 @@ export default function PurInstinctApp(){
   const [queues,setQueues]=useState(()=>buildInitialQueues(createPlayersFromRoster(INITIAL_ROSTERS[0])));
   const [activeGames,setActiveGames]=useState(makeEmptyGames);
   const [arenaState,setArenaState]=useState({active:false,ended:false,startTime:null,disabledZones:[]});
+  const [winnersPublished,setWinnersPublished]=useState(false);
   const [view,setView]=useState({type:"login"});
   const [setLang]=useState("fr");
 
@@ -2861,7 +3081,10 @@ export default function PurInstinctApp(){
       onLogout={()=>setView({type:"login"})}
       onActivateRoster={activateRoster} onUpdateRoster={updateRoster}
       onAddPlayer={addPlayerToSession} onCreateRoster={createRoster}
-      onUpdatePlayer={updatePlayer}/>
+      onUpdatePlayer={updatePlayer}
+      winnersPublished={winnersPublished}
+      onPublishWinners={()=>setWinnersPublished(true)}
+      onUnpublishWinners={()=>setWinnersPublished(false)}/>
   );
 
   if(view.type==="station") return(
@@ -2883,6 +3106,7 @@ export default function PurInstinctApp(){
     if(p) return(
       <PlayerView playerId={view.id} players={players} queues={queues} activeGames={activeGames}
         disabledZones={arenaState.disabledZones||[]}
+        winnersPublished={winnersPublished}
         onJoin={addToQueue} onLeave={removeFromQueue}
         onLogout={()=>setView({type:"login"})}
         onUpdatePlayer={updatePlayer}/>
