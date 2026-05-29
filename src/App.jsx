@@ -697,7 +697,7 @@ function RosterEditor({roster,onSave,onCancel}){
 // ----------------------------------------------------------------
 const BASE_URL=window.location.origin;
 
-function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onCreateRoster,rosterCodes,onUpdateCodes}){
+function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onCreateRoster,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending}){
   const [editIdx,setEditIdx]=useState(null);
   const [addName,setAddName]=useState("");
   const [addGender,setAddGender]=useState("M");
@@ -805,6 +805,41 @@ function SessionPanel({rosters,players,onActivate,onUpdateRoster,onAddPlayer,onC
           </div>
         );
       })()}
+
+      {/* Sessions solo en attente */}
+      {pendingSessions&&pendingSessions.length>0&&(
+        <div style={{marginBottom:16}}>
+          <div style={{...S.label(),marginBottom:10,color:"#f97316"}}>⏳ Sessions en attente de code ({pendingSessions.length})</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {pendingSessions.map(s=>{
+              const code=getCode(s.id);
+              return(
+                <div key={s.id} style={{...S.card(),border:"2px solid "+(code?"#84cc1640":"#f9731640")}}>
+                  <div style={{...S.row(),gap:10,marginBottom:10}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{color:"#fff",fontWeight:700,fontSize:14}}>{s.name}</div>
+                      <div style={{...S.row(),gap:8,marginTop:3}}>
+                        <span style={{fontSize:11,color:"#4b5563"}}>{s.gender==="F"?"Femme":"Homme"}</span>
+                        <span style={{fontSize:11,color:"#f97316"}}>Arrivé à {s.createdAt}</span>
+                        {code&&<span style={{fontSize:11,color:"#84cc16",fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif"}}>Code : {code}</span>}
+                      </div>
+                    </div>
+                    <button onClick={()=>onDismissPending&&onDismissPending(s.id)}
+                      style={{background:"none",border:"none",cursor:"pointer",color:"#374151",fontSize:16}}
+                      onMouseEnter={e=>e.target.style.color="#ef4444"}
+                      onMouseLeave={e=>e.target.style.color="#374151"}>×</button>
+                  </div>
+                  <button onClick={()=>generateQR(s)}
+                    style={{...S.btn(code?"#111827":"#84cc16"),width:"100%",padding:"8px",fontSize:12,
+                      border:"1px solid "+(code?"#374151":"none"),color:code?"#6b7280":"#000"}}>
+                    📲 {code?"Voir / Régénérer le code de partie":"Générer code de partie"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Saved rosters */}
       <div style={{...S.label(),marginBottom:10}}>{T.fr.savedLists}</div>
@@ -1324,7 +1359,7 @@ function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
 const ADMIN_PIN="1111";
 const STATION_PIN="2222";
 
-function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCodes,onAddPlayer}){
+function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCodes,onAddPlayer,onRequestSolo}){
   // Détecter le code de session dans l'URL
   const urlCode=new URLSearchParams(window.location.search).get("session");
 
@@ -1337,6 +1372,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
   const [pinError,setPinError]=useState(false);
   const [newName,setNewName]=useState("");
   const [newGender,setNewGender]=useState("M");
+  const [soloSubmitted,setSoloSubmitted]=useState(false);
 
   const filtered=search.trim().length>0
     ?players.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())||String(p.number).includes(search))
@@ -1344,7 +1380,21 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 
   const handleCreateSolo=()=>{
     if(!newName.trim()) return;
+    onRequestSolo&&onRequestSolo(newName.trim(),newGender,(newId)=>{
+      onLogin("player",newId);
+    });
+  };
+
+  const handleAddToGroup=()=>{
+    if(!newName.trim()) return;
     onAddPlayer&&onAddPlayer(newName.trim(),newGender,(newId)=>{
+      onLogin("player",newId);
+    });
+  };
+
+  const handleAddToGroupWithName=(name)=>{
+    if(!name.trim()) return;
+    onAddPlayer&&onAddPlayer(name.trim(),newGender,(newId)=>{
       onLogin("player",newId);
     });
   };
@@ -1472,47 +1522,70 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
       {/* ÉTAPE 2b — Nouveau joueur solo (code 0000) */}
       {screen==="newPlayer"&&(
         <div className="anim-up" style={{width:"100%",maxWidth:360}}>
-          <button onClick={()=>{setScreen("sessionCode");setNewName("");}}
+          {!soloSubmitted&&<button onClick={()=>{setScreen("sessionCode");setNewName("");setSoloSubmitted(false);}}
             style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>
             ← Retour
-          </button>
-          <div style={{textAlign:"center",marginBottom:24}}>
-            <div style={{fontSize:40,marginBottom:8}}>👤</div>
-            <div style={{color:"#fff",fontWeight:700,fontSize:20,marginBottom:4}}>Bienvenue !</div>
-            <div style={{color:"#4b5563",fontSize:13}}>Comment vous appelez-vous ?</div>
-          </div>
-          <div style={{display:"flex",flexDirection:"column",gap:12}}>
-            <input value={newName} onChange={e=>setNewName(e.target.value)}
-              onKeyDown={e=>{if(e.key==="Enter"&&newName.trim())handleCreateSolo();}}
-              placeholder="Votre nom complet"
-              autoFocus
-              style={{width:"100%",padding:"14px 16px",borderRadius:14,border:"2px solid #374151",
-                background:"#111827",color:"#fff",fontSize:16,outline:"none",boxSizing:"border-box"}}
-              onFocus={e=>e.target.style.borderColor="#84cc16"}
-              onBlur={e=>e.target.style.borderColor="#374151"}/>
-            <div style={{display:"flex",gap:8}}>
-              {[["M","👨 Homme"],["F","👩 Femme"]].map(([v,l])=>(
-                <button key={v} onClick={()=>setNewGender(v)}
-                  style={{flex:1,padding:"12px",borderRadius:12,
-                    border:"2px solid "+(newGender===v?"#84cc16":"#374151"),
-                    background:newGender===v?"#1a2e05":"#111827",
-                    color:newGender===v?"#84cc16":"#6b7280",
-                    cursor:"pointer",fontWeight:600,fontSize:14}}>
-                  {l}
-                </button>
-              ))}
+          </button>}
+
+          {soloSubmitted?(
+            /* Confirmation en attente */
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:56,marginBottom:16}}>⏳</div>
+              <div style={{color:"#fff",fontWeight:700,fontSize:20,marginBottom:8}}>
+                Demande envoyée !
+              </div>
+              <div style={{color:"#84cc16",fontWeight:700,fontSize:16,marginBottom:12}}>{newName}</div>
+              <div style={{color:"#6b7280",fontSize:13,lineHeight:1.6,marginBottom:24}}>
+                Votre session est en attente.<br/>
+                L'administrateur va créer votre session<br/>
+                et vous fournir un code ou un QR code.
+              </div>
+              <div style={{...S.card(),border:"1px solid #84cc1630",textAlign:"left"}}>
+                <div style={{fontSize:11,color:"#4b5563",marginBottom:6}}>EN ATTENTE DE VALIDATION</div>
+                <div style={{color:"#fff",fontWeight:600}}>{newName}</div>
+                <div style={{color:"#6b7280",fontSize:12}}>{newGender==="F"?"Femme":"Homme"}</div>
+              </div>
             </div>
-            <button
-              onClick={handleCreateSolo}
-              disabled={!newName.trim()}
-              style={{padding:"14px",borderRadius:14,border:"none",cursor:newName.trim()?"pointer":"not-allowed",
-                background:newName.trim()?"#84cc16":"#1f2937",
-                color:newName.trim()?"#000":"#4b5563",
-                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-                opacity:newName.trim()?1:0.5}}>
-              Entrer dans ma session →
-            </button>
-          </div>
+          ):(
+            /* Formulaire */
+            <div>
+              <div style={{textAlign:"center",marginBottom:24}}>
+                <div style={{fontSize:40,marginBottom:8}}>👤</div>
+                <div style={{color:"#fff",fontWeight:700,fontSize:20,marginBottom:4}}>Nouvelle session</div>
+                <div style={{color:"#4b5563",fontSize:13}}>Entrez votre nom complet</div>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                <input value={newName} onChange={e=>setNewName(e.target.value)}
+                  onKeyDown={e=>{if(e.key==="Enter"&&newName.trim())handleCreateSolo();}}
+                  placeholder="Prénom et nom"
+                  autoFocus
+                  style={{width:"100%",padding:"14px 16px",borderRadius:14,border:"2px solid #374151",
+                    background:"#111827",color:"#fff",fontSize:16,outline:"none",boxSizing:"border-box"}}
+                  onFocus={e=>e.target.style.borderColor="#84cc16"}
+                  onBlur={e=>e.target.style.borderColor="#374151"}/>
+                <div style={{display:"flex",gap:8}}>
+                  {[["M","👨 Homme"],["F","👩 Femme"]].map(([v,l])=>(
+                    <button key={v} onClick={()=>setNewGender(v)}
+                      style={{flex:1,padding:"12px",borderRadius:12,
+                        border:"2px solid "+(newGender===v?"#84cc16":"#374151"),
+                        background:newGender===v?"#1a2e05":"#111827",
+                        color:newGender===v?"#84cc16":"#6b7280",
+                        cursor:"pointer",fontWeight:600,fontSize:14}}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={handleCreateSolo} disabled={!newName.trim()}
+                  style={{padding:"14px",borderRadius:14,border:"none",cursor:newName.trim()?"pointer":"not-allowed",
+                    background:newName.trim()?"#84cc16":"#1f2937",
+                    color:newName.trim()?"#000":"#4b5563",
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+                    opacity:newName.trim()?1:0.5}}>
+                  Envoyer ma demande
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1552,7 +1625,34 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
               </div>
             )}
             {search.trim().length>0&&filtered.length===0&&(
-              <div style={{textAlign:"center",color:"#4b5563",fontSize:12,padding:"8px 0"}}>Aucun joueur trouvé</div>
+              <div style={{marginTop:10}}>
+                <div style={{textAlign:"center",color:"#4b5563",fontSize:12,marginBottom:12}}>
+                  Aucun joueur trouvé pour <strong style={{color:"#fff"}}>"{search}"</strong>
+                </div>
+                <div style={{borderTop:"1px solid #1f2937",paddingTop:12}}>
+                  <div style={{fontSize:12,color:"#6b7280",marginBottom:10,textAlign:"center"}}>
+                    Vous n'êtes pas encore dans ce groupe ?
+                  </div>
+                  <div style={{display:"flex",gap:8,marginBottom:8}}>
+                    {[["M","👨 Homme"],["F","👩 Femme"]].map(([v,l])=>(
+                      <button key={v} onClick={()=>setNewGender(v)}
+                        style={{flex:1,padding:"8px",borderRadius:10,
+                          border:"2px solid "+(newGender===v?"#84cc16":"#374151"),
+                          background:newGender===v?"#1a2e05":"#111827",
+                          color:newGender===v?"#84cc16":"#6b7280",
+                          cursor:"pointer",fontWeight:600,fontSize:12}}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={()=>{setNewName(search);handleAddToGroupWithName(search);}}
+                    style={{width:"100%",padding:"10px",borderRadius:10,border:"none",cursor:"pointer",
+                      background:"#84cc16",color:"#000",fontFamily:"'Barlow Condensed',sans-serif",
+                      fontWeight:900,fontSize:15}}>
+                    + Rejoindre comme "{search}"
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -1623,7 +1723,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes}){
+function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending}){
   const [tab,setTab]=useState("leaderboard");
   const [timer,setTimer]=useState("75:00");
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
@@ -2032,6 +2132,8 @@ function AdminView({players,queues,activeGames,arenaState,rosters,onStart,onEnd,
             onActivate={onActivateRoster} onUpdateRoster={onUpdateRoster}
             onAddPlayer={onAddPlayer} onCreateRoster={onCreateRoster}
             rosterCodes={rosterCodes} onUpdateCodes={onUpdateCodes}
+            pendingSessions={pendingSessions}
+            onDismissPending={onDismissPending}
           />
         )}
 
@@ -3680,6 +3782,7 @@ export default function PurInstinctApp(){
   const [arenaState,setArenaState]=useState({active:false,ended:false,startTime:null,disabledZones:[]});
   const [winnersPublished,setWinnersPublished]=useState(false);
   const [rosterCodes,setRosterCodes]=useState({});
+  const [pendingSessions,setPendingSessions]=useState([]); // sessions solo en attente
   const [view,setView]=useState({type:"login"});
   const [liveMode,setLiveMode]=useState(false);
   const [setLang]=useState("fr");
@@ -3726,6 +3829,7 @@ export default function PurInstinctApp(){
     setPlayers(p=>[...p,newPlayer]);
     if(callback) callback(newId);
   };
+
 
   // --- Queue management ---
   const addToQueue=(id,zone,force=false)=>{
@@ -3859,6 +3963,19 @@ export default function PurInstinctApp(){
     ?<LiveLoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         rosterCodes={rosterCodes}
         onAddPlayer={addPlayerToSession}
+        onRequestSolo={(name,gender,callback)=>{
+          addPlayerToSession(name,gender,(newId)=>{
+            // Joueur connecté immédiatement
+            if(callback) callback(newId);
+            // Admin voit la session en attente de code
+            setPendingSessions(prev=>[...prev,{
+              id:"solo_"+Date.now(),
+              name,gender,playerId:newId,
+              createdAt:new Date().toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit"}),
+              status:"pending"
+            }]);
+          });
+        }}
         onLogin={(t,id)=>setView({type:t,id})}
         onGoTest={()=>{setLiveMode(false);setQueues(q=>buildInitialQueues(players));}}/>
     :<LoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
@@ -3879,6 +3996,8 @@ export default function PurInstinctApp(){
       onAddPlayer={addPlayerToSession} onCreateRoster={createRoster}
       onUpdatePlayer={updatePlayer}
       rosterCodes={rosterCodes} onUpdateCodes={setRosterCodes}
+      pendingSessions={pendingSessions}
+      onDismissPending={(id)=>setPendingSessions(prev=>prev.filter(x=>x.id!==id))}
       winnersPublished={winnersPublished}
       onPublishWinners={()=>setWinnersPublished(true)}
       onUnpublishWinners={()=>setWinnersPublished(false)}/>
