@@ -739,16 +739,47 @@ function ProgressChart({player}){
   const zsPoints={};
   ZK.forEach(zk=>{zsPoints[zk]=[50,...history.map(h=>h.zs?h.zs[zk]||50:50)];});
 
-  const W=320, H=160, PAD_L=8, PAD_R=50, PAD_V=20;
+  const W=320, H=180, PAD_L=8, PAD_R=56, PAD_V=24;
   const INNER_W=W-PAD_L-PAD_R, INNER_H=H-PAD_V*2;
   const n=gpPoints.length;
   const xScale=(i)=>PAD_L+i*(INNER_W/(n-1||1));
+  const lastX=xScale(n-1);
 
   const maxGP=Math.max(...gpPoints,20);
   const gpY=(v)=>PAD_V+INNER_H-(v/maxGP)*INNER_H;
-  const zsY=(v)=>PAD_V+INNER_H-((v)/100)*INNER_H;
+  const zsY=(v)=>PAD_V+INNER_H-(v/100)*INNER_H;
 
   const makePath=(pts,yFn)=>pts.map((v,i)=>(i===0?"M":"L")+xScale(i).toFixed(1)+","+yFn(v).toFixed(1)).join(" ");
+
+  // Calcul des positions Y brutes des labels de zones
+  const LABEL_H=10; // hauteur approximative d'une ligne de texte
+  const MIN_GAP=LABEL_H+1;
+  const rawLabels=ZK.map(zk=>({
+    zk, color:zoneColors[zk], text:zoneShort[zk],
+    rawY:zsY(zsPoints[zk][n-1])
+  })).sort((a,b)=>a.rawY-b.rawY);
+
+  // Algorithme anti-overlap : passe descendante puis remontante
+  const adjustedY=[...rawLabels.map(l=>l.rawY)];
+  // Passe vers le bas
+  for(let i=1;i<adjustedY.length;i++){
+    if(adjustedY[i]<adjustedY[i-1]+MIN_GAP) adjustedY[i]=adjustedY[i-1]+MIN_GAP;
+  }
+  // Passe vers le haut (clamp au bas du graphique)
+  const maxLabelY=PAD_V+INNER_H;
+  for(let i=adjustedY.length-1;i>=0;i--){
+    if(adjustedY[i]>maxLabelY) adjustedY[i]=maxLabelY;
+    if(i<adjustedY.length-1&&adjustedY[i]>adjustedY[i+1]-MIN_GAP)
+      adjustedY[i]=adjustedY[i+1]-MIN_GAP;
+  }
+  // Clamp au haut
+  const minLabelY=PAD_V;
+  for(let i=0;i<adjustedY.length;i++){
+    if(adjustedY[i]<minLabelY) adjustedY[i]=minLabelY;
+    if(i>0&&adjustedY[i]<adjustedY[i-1]+MIN_GAP) adjustedY[i]=adjustedY[i-1]+MIN_GAP;
+  }
+
+  const gpLabelY=Math.max(PAD_V+4, gpY(gpPoints[n-1])-6);
 
   return(
     <div>
@@ -758,30 +789,37 @@ function ProgressChart({player}){
           <line key={t} x1={PAD_L} y1={PAD_V+INNER_H*(1-t)} x2={W-PAD_R} y2={PAD_V+INNER_H*(1-t)}
             stroke="#1f2937" strokeWidth="1"/>
         ))}
-        {/* Lignes zones avec label au bout */}
-        {ZK.map(zk=>{
-          const pts=zsPoints[zk];
-          const lastVal=pts[pts.length-1];
-          const lastX=xScale(n-1);
-          const lastY=zsY(lastVal);
+        {/* Lignes zones */}
+        {ZK.map(zk=>(
+          <path key={zk} d={makePath(zsPoints[zk],zsY)}
+            fill="none" stroke={zoneColors[zk]} strokeWidth="1" strokeOpacity="0.5"
+            strokeDasharray="3 2"/>
+        ))}
+        {/* Ligne GP */}
+        <path d={makePath(gpPoints,gpY)}
+          fill="none" stroke="#84cc16" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        {/* Point GP */}
+        <circle cx={lastX} cy={gpY(gpPoints[n-1])} r="3" fill="#84cc16"/>
+        {/* Trait de connexion + label GP */}
+        <line x1={lastX} y1={gpY(gpPoints[n-1])} x2={lastX+4} y2={gpLabelY+1}
+          stroke="#84cc16" strokeWidth="0.7" strokeOpacity="0.5"/>
+        <text x={lastX+6} y={gpLabelY+4} fill="#84cc16" fontSize="9" fontWeight="bold">
+          {gpPoints[n-1]} pts
+        </text>
+        {/* Labels zones avec trait de connexion et position anti-overlap */}
+        {rawLabels.map((l,i)=>{
+          const lineEndY=l.rawY;
+          const labelY=adjustedY[i];
           return(
-            <g key={zk}>
-              <path d={makePath(pts,zsY)}
-                fill="none" stroke={zoneColors[zk]} strokeWidth="1" strokeOpacity="0.55"
-                strokeDasharray="3 2"/>
-              <text x={lastX+4} y={lastY+4} fill={zoneColors[zk]} fontSize="8" opacity="0.8">
-                {zoneShort[zk]}
+            <g key={l.zk}>
+              <line x1={lastX} y1={lineEndY} x2={lastX+4} y2={labelY+1}
+                stroke={l.color} strokeWidth="0.7" strokeOpacity="0.4"/>
+              <text x={lastX+6} y={labelY+4} fill={l.color} fontSize="8" opacity="0.85">
+                {l.text}
               </text>
             </g>
           );
         })}
-        {/* Ligne GP (moins épaisse) */}
-        <path d={makePath(gpPoints,gpY)}
-          fill="none" stroke="#84cc16" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        {/* Point + label GP actuel */}
-        <circle cx={xScale(n-1)} cy={gpY(gpPoints[n-1])} r="3.5" fill="#84cc16"/>
-        <text x={xScale(n-1)+5} y={gpY(gpPoints[n-1])-5}
-          fill="#84cc16" fontSize="10" fontWeight="bold">{gpPoints[n-1]} pts</text>
       </svg>
       <div style={{fontSize:10,color:"#374151",textAlign:"center",marginTop:4}}>
         {n-1} partie{n-1>1?"s":""} · pts globaux —— zones - - -
@@ -2760,7 +2798,6 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
                   </div>
                 ))}
               </div>
-              {(player.history||[]).length>0&&<ProgressChart player={player}/>}
             </div>
 
             {/* FILES INDICATOR */}
