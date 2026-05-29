@@ -241,16 +241,58 @@ function getStatus(id, queues, activeGames) {
   return { inQueues, playingAt };
 }
 
+function generateFakeHistory(seed){
+  // Génère un historique réaliste pour les séances du 15 et 20 mai 2026
+  const ts15=new Date("2026-05-15T14:00:00").getTime();
+  const ts20=new Date("2026-05-20T14:00:00").getTime();
+  const rng=(n)=>((seed*9301+49297)%233280/233280*n)|0; // pseudo-random basé sur seed
+  const r=(max,min=0)=>min+Math.abs((seed*7+max*13)%( max-min+1));
+
+  const history=[];
+  let gp=0;
+  const zs={purinstinct:50,speed:50,handAgility:50,footAgility:50,generalAgility:50,iq:50};
+
+  // Séance 15 mai — 3 zones jouées
+  const zones15=[ZK[(seed)%6],ZK[(seed+1)%6],ZK[(seed+2)%6]];
+  zones15.forEach((zone,j)=>{
+    const isWin=(seed+j*3)%3!==0;
+    const delta=isWin?ZONES[zone].winPts:-ZONES[zone].lossPts;
+    gp=Math.max(0,gp+delta);
+    zs[zone]=Math.min(100,Math.max(0,zs[zone]+(isWin?13:-9)));
+    history.push({zone,isWin,delta,bonus:false,newStreak:isWin?1:0,
+      ts:ts15+j*1800000,gp,zs:{...zs}});
+  });
+
+  // Séance 20 mai — 4 zones jouées
+  const zones20=[ZK[(seed+3)%6],ZK[(seed+4)%6],ZK[(seed+1)%6],ZK[(seed+5)%6]];
+  zones20.forEach((zone,j)=>{
+    const isWin=(seed+j*2+1)%3!==2;
+    const bonus=isWin&&j===2;
+    const pts=isWin?ZONES[zone].winPts*(bonus?1.5:1):ZONES[zone].lossPts;
+    const delta=isWin?Math.round(pts):-Math.round(pts);
+    gp=Math.max(0,gp+delta);
+    zs[zone]=Math.min(100,Math.max(0,zs[zone]+(isWin?bonus?22:13:-9)));
+    history.push({zone,isWin,delta,bonus,newStreak:isWin?j+1:0,
+      ts:ts20+j*1800000,gp,zs:{...zs}});
+  });
+
+  return{history,gp,zs,zonesPlayed:[...new Set([...zones15,...zones20])]};
+}
+
 function createPlayersFromRoster(roster) {
-  return roster.entries.map((e,i) => ({
-    id:i+1, number:i+1, name:e.name, gender:e.gender||"M",
-    globalPoints:0,
-    zoneScores:{ purinstinct:50,speed:50,handAgility:50,footAgility:50,generalAgility:50,iq:50 },
-    zoneStreaks:{ purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0 },
-    zonesPlayed:[], lastResult:null, history:[],
-    age:"", email:"", instagram:"", tiktok:"", snapchat:"",
-    photoConsent:false, videoConsent:false, profilePhoto:null, highlights:[]
-  }));
+  return roster.entries.map((e,i) => {
+    const fake=generateFakeHistory(i+1);
+    return{
+      id:i+1, number:i+1, name:e.name, gender:e.gender||"M",
+      globalPoints:fake.gp,
+      zoneScores:fake.zs,
+      zoneStreaks:{ purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0 },
+      zonesPlayed:fake.zonesPlayed, lastResult:fake.history[fake.history.length-1]||null,
+      history:fake.history,
+      age:"", email:"", instagram:"", tiktok:"", snapchat:"",
+      photoConsent:false, videoConsent:false, profilePhoto:null, highlights:[]
+    };
+  });
 }
 
 function makeEmptyGames() { const g={}; ZK.forEach(k=>{g[k]=null;}); return g; }
