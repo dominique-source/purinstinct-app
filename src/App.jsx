@@ -3018,11 +3018,6 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
             background:"#1f2937",color:"#9ca3af",marginLeft:"auto"}}>
             👥 Participants ({players.length})
           </button>
-          <button onClick={onLogout} title="Déconnecter la session"
-            style={{padding:"6px 10px",borderRadius:8,fontSize:12,border:"1px solid #374151",cursor:"pointer",
-              background:"none",color:"#4b5563"}}>
-            🚪
-          </button>
         </div>
       </div>
 
