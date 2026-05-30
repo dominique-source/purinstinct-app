@@ -1756,9 +1756,9 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
+function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onUpdateDuration,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
   const [tab,setTab]=useState("leaderboard");
-  const [sessionMins,setSessionMins]=useState(75);
+  const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
   const [timer,setTimer]=useState("75:00");
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
   const [dossierOrigin,setDossierOrigin]=useState(null);
@@ -1826,18 +1826,20 @@ function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:"#fff"}}>ADMIN</div>
             <div style={{fontSize:11,color:"#4b5563"}}>{eligible.length} eligible{eligible.length!==1?"s":""} / {sorted.length} joueurs</div>
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <div style={{textAlign:"center"}}>
-              <div className={arenaState.active?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:24,color:timerColor}}>{timer}</div>
-              <div style={{fontSize:10,color:"#4b5563"}}>{arenaState.active?T.fr.active:arenaState.ended?T.fr.ended:T.fr.waiting}</div>
-            </div>
-            {!arenaState.active&&!arenaState.ended&&<div style={{display:"flex",alignItems:"center",gap:6}}>
-              <select value={sessionMins} onChange={e=>setSessionMins(Number(e.target.value))}
-                style={{background:"#111827",color:"#d1d5db",border:"1px solid #374151",borderRadius:8,padding:"4px 6px",fontSize:12,cursor:"pointer"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+              <select value={sessionMins} onChange={e=>{
+                  const m=Number(e.target.value);
+                  setSessionMins(m);
+                  if(arenaState.active) onUpdateDuration(m);
+                }}
+                style={{background:"#111827",color:"#d1d5db",border:"1px solid #374151",borderRadius:8,padding:"3px 6px",fontSize:11,cursor:"pointer"}}>
                 {[30,45,60,75,90,120].map(m=><option key={m} value={m}>{m} min</option>)}
               </select>
-              <button onClick={()=>onStart(sessionMins)} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12}}>{T.fr.start}</button>
-            </div>}
+              <div className={arenaState.active?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:timerColor,lineHeight:1}}>{timer}</div>
+              <div style={{fontSize:9,color:"#4b5563"}}>{arenaState.active?T.fr.active:arenaState.ended?T.fr.ended:T.fr.waiting}</div>
+            </div>
+            {!arenaState.active&&!arenaState.ended&&<button onClick={()=>onStart(sessionMins)} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12}}>{T.fr.start}</button>}
             {arenaState.active&&<button onClick={onEnd} style={{...S.btn("#dc2626"),padding:"6px 12px",fontSize:12,color:"#fff"}}>{T.fr.end}</button>}
             <button onClick={onLogout} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>×</button>
           </div>
@@ -4106,6 +4108,7 @@ export default function PurInstinctApp(){
     <AdminView players={players.filter(p=>(p.groupId||"main")===activeRosterId)} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId}
       onStart={(mins)=>syncArena({...arenaState,active:true,ended:false,startTime:Date.now(),sessionMins:mins||75})}
       onEnd={()=>syncArena({...arenaState,active:false,ended:true})}
+      onUpdateDuration={(mins)=>syncArena({...arenaState,sessionMins:mins})}
       onToggleZone={(zk)=>{
         const dz=arenaState.disabledZones||[];
         syncArena({...arenaState,disabledZones:dz.includes(zk)?dz.filter(z=>z!==zk):[...dz,zk]});
