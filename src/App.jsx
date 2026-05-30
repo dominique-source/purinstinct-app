@@ -2886,7 +2886,7 @@ function StationView({zone,players,queue,activeGame,disabled,onAddQ,onRemoveQ,on
     onResult(winner);
   };
 
-  const minForIQ=iqCount;
+
 
   if(disabled) return(
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
@@ -3003,46 +3003,28 @@ function StationView({zone,players,queue,activeGame,disabled,onAddQ,onRemoveQ,on
                   </div>
                 )}
 
-                {/* IQ player count selector */}
-                {zone==="iq"&&(
-                  <div style={{borderRadius:14,padding:12,marginBottom:12,background:z.bg,border:"1px solid "+z.border}}>
-                    <div style={{...S.label(),color:z.color,marginBottom:10}}>{T.fr.iqFormat}</div>
-                    <div style={{display:"flex",gap:8}}>
-                      {[{n:2,label:"1v1 (2 joueurs)"},{n:3,label:"1v2 (3 joueurs)"},{n:4,label:"1v3 (4 joueurs)"}].map(({n,label})=>(
-                        <button key={n} onClick={()=>setIqCount(n)} style={{
-                          flex:1,padding:"10px",borderRadius:10,border:"none",cursor:"pointer",
-                          fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,
-                          background:iqCount===n?z.color:"#1f2937",color:iqCount===n?"#000":"#9ca3af"}}>
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Generate */}
                 <div style={{...S.card(),marginBottom:12,textAlign:"center"}}>
-                  {(zone==="iq"?qPlayers.length>=iqCount:canGen)?(
+                  {canGen?(
                     <div>
                       <div style={{fontSize:13,color:"#6b7280",marginBottom:12}}>
                         {zone==="speed"?(()=>{const eff=sprintSize==="tous"?qPlayers.length:sprintSize; return qPlayers.length+" joueurs en file — course de "+eff;})()
-                          :zone==="iq"?qPlayers.length+" joueurs - format "+iqCount
                           :qPlayers.length+" joueurs en file"}
                       </div>
-                      <button onClick={()=>onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):zone==="iq"?iqCount:null)}
+                      <button onClick={()=>onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):null)}
                         style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:z.color,color:"#000"}}>
-                        {zone==="speed"?T.fr.launchRace+" ("+(sprintSize==="tous"?qPlayers.length:sprintSize)+")":zone==="iq"?T.fr.generateIQ:T.fr.generateTeams}
+                        {zone==="speed"?T.fr.launchRace+" ("+(sprintSize==="tous"?qPlayers.length:sprintSize)+")":T.fr.generateTeams}
                       </button>
                     </div>
                   ):(
                     <div>
                       <div style={{color:"#4b5563",fontSize:13,marginBottom:8}}>{T.fr.noGameInProgress}</div>
                       <div style={{color:z.color,fontSize:12,marginBottom:8}}>
-                        {zone==="iq"?qPlayers.length+"/"+iqCount+" requis":qPlayers.length+"/"+z.minP+" minimum"}
+                        {qPlayers.length}/{z.minP} minimum
                       </div>
                       <div style={{height:6,borderRadius:4,maxWidth:160,margin:"0 auto",background:"#1f2937"}}>
                         <div style={{height:"100%",borderRadius:4,background:z.color,
-                          width:Math.min(100,(qPlayers.length/((zone==="iq"?iqCount:z.minP)))*100)+"%",transition:"width .5s"}}/>
+                          width:Math.min(100,(qPlayers.length/z.minP)*100)+"%",transition:"width .5s"}}/>
                       </div>
                     </div>
                   )}
