@@ -1756,7 +1756,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onUpdateDuration,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
+function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onPause,onResume,onUpdateDuration,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
   const [tab,setTab]=useState("leaderboard");
   const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
   const [timer,setTimer]=useState("75:00");
@@ -1782,7 +1782,8 @@ function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId
   useEffect(()=>{
     const totalSecs=(arenaState.sessionMins||75)*60;
     const fmt=(s)=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(Math.floor(s%60)).padStart(2,"0");
-    if(!arenaState.active||!arenaState.startTime){setTimer(fmt(totalSecs));return;}
+    if(!arenaState.active&&!arenaState.paused){setTimer(fmt(totalSecs));return;}
+    if(arenaState.paused){setTimer(fmt(arenaState.pausedRemaining||totalSecs));return;}
     const tick=()=>{
       const rem=Math.max(0,totalSecs-(Date.now()-arenaState.startTime)/1000);
       setTimer(fmt(rem));
@@ -1793,7 +1794,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId
   const sorted=[...players].sort((a,b)=>b.globalPoints-a.globalPoints);
   const eligible=sorted.filter(p=>(p.zonesPlayed||[]).length===6);
   const winner=arenaState.ended&&eligible.length>0?eligible[0]:null;
-  const timerColor=arenaState.active?"#84cc16":arenaState.ended?"#dc2626":"#374151";
+  const timerColor=arenaState.active?"#84cc16":arenaState.paused?"#f97316":arenaState.ended?"#dc2626":"#374151";
 
   if(dossierPlayer) return(
     <PlayerDossier player={dossierPlayer}
@@ -1837,10 +1838,12 @@ function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId
                 {[30,45,60,75,90,120].map(m=><option key={m} value={m}>{m} min</option>)}
               </select>
               <div className={arenaState.active?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:timerColor,lineHeight:1}}>{timer}</div>
-              <div style={{fontSize:9,color:"#4b5563"}}>{arenaState.active?T.fr.active:arenaState.ended?T.fr.ended:T.fr.waiting}</div>
+              <div style={{fontSize:9,color:"#4b5563"}}>{arenaState.active?T.fr.active:arenaState.paused?"EN PAUSE":arenaState.ended?T.fr.ended:T.fr.waiting}</div>
             </div>
-            {!arenaState.active&&!arenaState.ended&&<button onClick={()=>onStart(sessionMins)} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12}}>{T.fr.start}</button>}
-            {arenaState.active&&<button onClick={onEnd} style={{...S.btn("#dc2626"),padding:"6px 12px",fontSize:12,color:"#fff"}}>{T.fr.end}</button>}
+            {!arenaState.active&&!arenaState.paused&&<button onClick={()=>onStart(sessionMins)} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12}}>{T.fr.start}</button>}
+            {arenaState.active&&<button onClick={onPause} style={{...S.btn("#f97316"),padding:"6px 12px",fontSize:12,color:"#000",fontWeight:700}}>⏸ Pause</button>}
+            {arenaState.paused&&<button onClick={onResume} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12,color:"#000",fontWeight:700}}>▶ Reprendre</button>}
+            {(arenaState.active||arenaState.paused)&&<button onClick={onEnd} style={{...S.btn("#dc2626"),padding:"6px 12px",fontSize:12,color:"#fff"}}>■ Terminer</button>}
             <button onClick={onLogout} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>×</button>
           </div>
         </div>
@@ -2841,8 +2844,8 @@ function useArenaTimer(arenaState){
   useEffect(()=>{
     const totalSecs=(arenaState?.sessionMins||75)*60;
     const fmt=(s)=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(Math.floor(s%60)).padStart(2,"0");
-    if(!arenaState?.active&&!arenaState?.ended){setTimer(fmt(totalSecs));setStatus("waiting");return;}
-    if(arenaState?.ended){setTimer("00:00");setStatus("ended");return;}
+    if(arenaState?.paused){setTimer(fmt(arenaState.pausedRemaining||totalSecs));setStatus("paused");return;}
+    if(!arenaState?.active){setTimer(fmt(totalSecs));setStatus("waiting");return;}
     const tick=()=>{
       const rem=Math.max(0,totalSecs-(Date.now()-arenaState.startTime)/1000);
       setTimer(fmt(rem));
@@ -2961,10 +2964,10 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,onAddQ,o
             <div style={{...S.tag(z.color)}}>{qPlayers.length} en file</div>
             {arenaState&&<div style={{textAlign:"center",minWidth:52}}>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-                color:arenaStatus==="active"?"#84cc16":arenaStatus==="ended"?"#dc2626":"#374151",
+                color:arenaStatus==="active"?"#84cc16":arenaStatus==="paused"?"#f97316":arenaStatus==="ended"?"#dc2626":"#374151",
                 lineHeight:1}}>{arenaTimer}</div>
               <div style={{fontSize:9,color:"#4b5563"}}>
-                {arenaStatus==="active"?"EN COURS":arenaStatus==="ended"?"TERMINÉ":"EN ATTENTE"}
+                {arenaStatus==="active"?"EN COURS":arenaStatus==="paused"?"EN PAUSE":arenaStatus==="ended"?"TERMINÉ":"EN ATTENTE"}
               </div>
             </div>}
             <button onClick={onLogout} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>×</button>
@@ -3274,9 +3277,9 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
           <div style={{...S.row(),gap:12}}>
             {arenaState&&<div style={{textAlign:"center",minWidth:52}}>
               <div className={arenaStatus==="active"?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
-                color:arenaStatus==="active"?"#84cc16":arenaStatus==="ended"?"#dc2626":"#374151",lineHeight:1}}>{arenaTimer}</div>
+                color:arenaStatus==="active"?"#84cc16":arenaStatus==="paused"?"#f97316":arenaStatus==="ended"?"#dc2626":"#374151",lineHeight:1}}>{arenaTimer}</div>
               <div style={{fontSize:9,color:"#4b5563"}}>
-                {arenaStatus==="active"?"EN COURS":arenaStatus==="ended"?"TERMINÉ":"EN ATTENTE"}
+                {arenaStatus==="active"?"EN COURS":arenaStatus==="paused"?"EN PAUSE":arenaStatus==="ended"?"TERMINÉ":"EN ATTENTE"}
               </div>
             </div>}
             <div style={{textAlign:"right"}}>
@@ -4106,8 +4109,13 @@ export default function PurInstinctApp(){
 
   if(view.type==="admin") return(
     <AdminView players={players.filter(p=>(p.groupId||"main")===activeRosterId)} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId}
-      onStart={(mins)=>syncArena({...arenaState,active:true,ended:false,startTime:Date.now(),sessionMins:mins||75})}
-      onEnd={()=>syncArena({...arenaState,active:false,ended:true})}
+      onStart={(mins)=>syncArena({...arenaState,active:true,ended:false,paused:false,startTime:Date.now(),sessionMins:mins||75})}
+      onEnd={()=>syncArena({active:false,ended:false,paused:false,startTime:null,pausedRemaining:null,disabledZones:arenaState.disabledZones||[],sessionMins:arenaState.sessionMins||75})}
+      onPause={()=>{
+        const rem=Math.max(0,(arenaState.sessionMins||75)*60-(Date.now()-arenaState.startTime)/1000);
+        syncArena({...arenaState,active:false,paused:true,pausedRemaining:rem});
+      }}
+      onResume={()=>syncArena({...arenaState,active:true,paused:false,startTime:Date.now()-((arenaState.sessionMins||75)*60-arenaState.pausedRemaining)*1000,pausedRemaining:null})}
       onUpdateDuration={(mins)=>syncArena({...arenaState,sessionMins:mins})}
       onToggleZone={(zk)=>{
         const dz=arenaState.disabledZones||[];
