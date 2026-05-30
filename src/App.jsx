@@ -4234,7 +4234,7 @@ export default function PurInstinctApp(){
   );
 
   if(view.type==="station") return(
-    <StationView zone={view.id} players={players}
+    <StationView zone={view.id} players={players.filter(p=>(p.groupId||"main")===activeRosterId)}
       queue={queues[view.id]||[]}
       activeGame={activeGames[view.id]}
       disabled={(arenaState.disabledZones||[]).includes(view.id)}
