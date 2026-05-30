@@ -699,7 +699,7 @@ function RosterEditor({roster,onSave,onCancel}){
 // ----------------------------------------------------------------
 const BASE_URL=window.location.origin;
 
-function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onUpdateRoster,onAddPlayer,onCreateRoster,onDeleteRoster,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
+function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onUpdateRoster,onAddPlayer,onCreateRoster,onDeleteRoster,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onAddGroupToQueue}){
   const [editIdx,setEditIdx]=useState(null);
   const [addName,setAddName]=useState("");
   const [addGender,setAddGender]=useState("M");
@@ -873,11 +873,26 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onUp
                       onMouseEnter={e=>e.target.style.color="#ef4444"}
                       onMouseLeave={e=>e.target.style.color="#374151"}>×</button>
                   </div>
-                  <button onClick={()=>generateQR(s,true)}
-                    style={{...S.btn(code?"#111827":"#84cc16"),width:"100%",padding:"8px",fontSize:12,
-                      border:"1px solid "+(code?"#374151":"none"),color:code?"#6b7280":"#000"}}>
-                    📲 {code?"Voir / Régénérer le code de partie":"Générer code de partie"}
-                  </button>
+                  {(()=>{
+                    const groupPlayers=(allPlayers||[]).filter(p=>p.groupId===s.id);
+                    return groupPlayers.length>0&&(
+                      <div style={{fontSize:11,color:"#84cc16",marginBottom:8,fontWeight:600}}>
+                        👥 {groupPlayers.length} joueur{groupPlayers.length>1?"s":""} dans cette session :&nbsp;
+                        {groupPlayers.map(p=>p.name.split(" ")[0]).join(", ")}
+                      </div>
+                    );
+                  })()}
+                  <div style={{display:"flex",gap:6,marginBottom:6}}>
+                    <button onClick={()=>generateQR(s,true)}
+                      style={{...S.btn(code?"#111827":"#84cc16"),flex:1,padding:"8px",fontSize:12,
+                        border:"1px solid "+(code?"#374151":"none"),color:code?"#6b7280":"#000"}}>
+                      📲 {code?"QR / Code":"Générer code"}
+                    </button>
+                    {onAddGroupToQueue&&<button onClick={()=>onAddGroupToQueue(s.id)}
+                      style={{...S.btn("#84cc16"),flex:1,padding:"8px",fontSize:12,color:"#000",fontWeight:700}}>
+                      ➕ Mettre en file
+                    </button>}
+                  </div>
                 </div>
               );
             })}
@@ -1781,7 +1796,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
+function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
   const [tab,setTab]=useState("leaderboard");
   const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
   const [timer,setTimer]=useState("75:00");
@@ -2213,6 +2228,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId
             pendingSessions={pendingSessions}
             onDismissPending={onDismissPending}
             onPromotePending={onPromotePending}
+            onAddGroupToQueue={onAddGroupToQueue}
           />
         )}
 
@@ -4233,13 +4249,14 @@ export default function PurInstinctApp(){
           fbSet("rosterCodes",newCodes);
           addPlayerToSession(name,gender,(newId)=>{
             if(callback) callback(newId);
-            setPendingSessions(prev=>[...prev,{
-              id:soloGroupId,
-              name,gender,playerId:newId,
-              groupId:soloGroupId,
-              createdAt:new Date().toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit"}),
-              status:"pending"
-            }]);
+            const newSession={id:soloGroupId,name,gender,playerId:newId,groupId:soloGroupId,
+              createdAt:new Date().toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit"}),status:"pending"};
+            setPendingSessions(prev=>{
+              const updated=[...prev,newSession];
+              const obj={};updated.forEach(s=>{obj[s.id]=s;});
+              fbSet("pendingSessions",obj); // ← persister immédiatement dans Firebase
+              return updated;
+            });
           },soloGroupId);
         }}
         onLogin={(t,id)=>setView({type:t,id})}
@@ -4264,6 +4281,16 @@ export default function PurInstinctApp(){
         syncArena({...arenaState,disabledZones:dz.includes(zk)?dz.filter(z=>z!==zk):[...dz,zk]});
       }}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
+      onAddGroupToQueue={(groupId)=>{
+        const groupP=players.filter(p=>p.groupId===groupId);
+        let newQ={...queues};
+        groupP.forEach(p=>{
+          ZK.forEach(zk=>{
+            if(!newQ[zk].includes(p.id)) newQ={...newQ,[zk]:[...newQ[zk],p.id]};
+          });
+        });
+        syncQueues(newQ);
+      }}
       onLogout={()=>setView({type:"login"})}
       onActivateRoster={activateRoster} onUpdateRoster={updateRoster} onDeleteRoster={deleteRoster}
       activeRosterId={activeRosterId}
