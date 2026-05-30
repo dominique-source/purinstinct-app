@@ -340,7 +340,7 @@ function computeTeamResult(players, teamA, teamB, winner, zone) {
       globalPoints:newGP,
       zoneScores:newZoneScores,
       zoneStreaks:{...p.zoneStreaks,[zone]:newStreak},
-      zonesPlayed:(p.zonesPlayed||[]).includes(zone)?p.zonesPlayed:[...p.zonesPlayed,zone],
+      zonesPlayed:(p.zonesPlayed||[]).includes(zone)?(p.zonesPlayed||[]):[...(p.zonesPlayed||[]),zone],
       lastResult:{zone,isWin,delta,bonus,newStreak},
       history:[...(p.history||[]),newEntry]
     };
@@ -393,7 +393,7 @@ function computeIndividualResult(players, participants, winnerId, zone, secondId
       globalPoints:newGP,
       zoneScores:newZoneScores,
       zoneStreaks:{...p.zoneStreaks,[zone]:newStreak},
-      zonesPlayed:(p.zonesPlayed||[]).includes(zone)?p.zonesPlayed:[...p.zonesPlayed,zone],
+      zonesPlayed:(p.zonesPlayed||[]).includes(zone)?(p.zonesPlayed||[]):[...(p.zonesPlayed||[]),zone],
       lastResult:{zone,isWin,isSecond:isSecond||false,delta,bonus,newStreak},
       history:[...(p.history||[]),newEntry]
     };
