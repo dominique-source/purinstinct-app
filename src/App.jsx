@@ -614,7 +614,6 @@ function RulesCard({zone}){
           <span style={{fontSize:24}}>{z.icon}</span>
           <div>
             <div style={{color:"#fff",fontWeight:700,fontSize:16,fontFamily:"'Barlow Condensed',sans-serif"}}>{zl.name}</div>
-            <div style={{color:z.color,fontSize:12,fontWeight:600}}>{zl.sub}</div>
           </div>
         </div>
         <ul style={{listStyle:"none",display:"flex",flexDirection:"column",gap:8}}>
@@ -2923,7 +2922,6 @@ function StationView({zone,players,queue,activeGame,disabled,onAddQ,onRemoveQ,on
             <div style={{width:44,height:44,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,background:z.bg,border:"1px solid "+z.border}}>{z.icon}</div>
             <div>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#fff"}}>{zl.name.toUpperCase()}</div>
-              <div style={{color:z.color,fontSize:12,fontWeight:600}}>{zl.sub}</div>
             </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
