@@ -1820,7 +1820,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId
         </div>
       )}
 
-      <div style={{position:"sticky",top:0,zIndex:10,padding:"20px 16px 12px",background:"#06070f",borderBottom:"1px solid #111827"}}>
+      <div style={{position:"sticky",top:0,zIndex:10,paddingTop:"calc(env(safe-area-inset-top) + 16px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",background:"#06070f",borderBottom:"1px solid #111827"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
           <div>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:"#fff"}}>ADMIN</div>
@@ -2946,7 +2946,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,onAddQ,o
       )}
 
       {/* Header */}
-      <div style={{position:"sticky",top:0,zIndex:10,padding:"20px 16px 12px",background:"#06070f",borderBottom:"1px solid "+z.color+"25"}}>
+      <div style={{position:"sticky",top:0,zIndex:10,paddingTop:"calc(env(safe-area-inset-top) + 16px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",background:"#06070f",borderBottom:"1px solid "+z.color+"25"}}>
         <div style={{...S.row(),justifyContent:"space-between",marginBottom:12}}>
           <div style={{...S.row()}}>
             <div style={{width:44,height:44,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,background:z.bg,border:"1px solid "+z.border}}>{z.icon}</div>
@@ -3256,7 +3256,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
   return(
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
-      <div style={{position:"sticky",top:0,zIndex:10,padding:"20px 16px 12px",background:"#06070f",borderBottom:"1px solid #111827"}}>
+      <div style={{position:"sticky",top:0,zIndex:10,paddingTop:"calc(env(safe-area-inset-top) + 16px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",background:"#06070f",borderBottom:"1px solid #111827"}}>
         <div style={{...S.row(),justifyContent:"space-between",marginBottom:12}}>
           <div style={{...S.row()}}>
             <Bib n={player.number} size="lg"/>
