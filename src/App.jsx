@@ -3212,10 +3212,12 @@ function PlayerRulesView(){
   );
 }
 
-function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaState,winnersPublished,onJoin,onLeave,onLogout,onUpdatePlayer}){
+function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaState,rosterCodes,sessionRosterId,winnersPublished,onJoin,onLeave,onLogout,onUpdatePlayer}){
   const player=players.find(p=>p.id===playerId);
   const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
   const [tab,setTab]=useState("stats");
+  const [sessionQR,setSessionQR]=useState(null);
+  const [showQR,setShowQR]=useState(false);
   const [skinIdx,setSkinIdx]=useState(2);
   const [hairIdx,setHairIdx]=useState(3);
   const [morphology,setMorphology]=useState(1);
@@ -3559,6 +3561,45 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                 </div>}
             </div>
 
+            {/* CODE DE SESSION */}
+            {(()=>{
+              const code=rosterCodes&&sessionRosterId?rosterCodes[sessionRosterId]:null;
+              if(!code) return null;
+              return(
+                <div style={{...S.card(),marginBottom:14,textAlign:"center"}}>
+                  <div style={{...S.label(),marginBottom:8}}>Code de la partie</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:48,
+                    color:"#84cc16",letterSpacing:12,lineHeight:1,marginBottom:12}}>{code}</div>
+                  <button onClick={async()=>{
+                    if(!sessionQR){
+                      const url=window.location.origin+"?code="+code;
+                      const dataUrl=await QRCode.toDataURL(url,{width:240,margin:2,color:{dark:"#ffffff",light:"#06070f"}});
+                      setSessionQR(dataUrl);
+                    }
+                    setShowQR(true);
+                  }} style={{...S.btn("#84cc16"),padding:"10px 24px",fontSize:14,fontWeight:700}}>
+                    📲 Voir le QR code
+                  </button>
+                  {showQR&&sessionQR&&(
+                    <div onClick={()=>setShowQR(false)} style={{
+                      position:"fixed",inset:0,zIndex:100,background:"rgba(0,0,0,.85)",
+                      display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <div style={{background:"#06070f",borderRadius:20,padding:24,border:"2px solid #84cc16",textAlign:"center"}}
+                        onClick={e=>e.stopPropagation()}>
+                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:"#fff",marginBottom:4}}>
+                          Scannez pour rejoindre
+                        </div>
+                        <div style={{fontSize:13,color:"#4b5563",marginBottom:16}}>Code : <span style={{color:"#84cc16",fontWeight:700,letterSpacing:4}}>{code}</span></div>
+                        <img src={sessionQR} alt="QR" style={{width:220,height:220,borderRadius:12,display:"block",margin:"0 auto"}}/>
+                        <button onClick={()=>setShowQR(false)}
+                          style={{marginTop:16,...S.btn(),padding:"8px 24px",fontSize:13}}>Fermer</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
           </div>
         )}
         {tab==="leaderboard"&&(
@@ -3895,7 +3936,15 @@ export default function PurInstinctApp(){
       if(data.activeGames) setActiveGames(data.activeGames);
       if(data.arenaState) setArenaState(data.arenaState);
       if(typeof data.winnersPublished==="boolean") setWinnersPublished(data.winnersPublished);
-      if(data.rosterCodes) setRosterCodes(data.rosterCodes);
+      const loadedCodes=data.rosterCodes||{};
+      // S'assurer que la session principale a toujours un code
+      const mainId=data.activeRosterId||INITIAL_ROSTERS[0]?.id||"main";
+      if(!loadedCodes[mainId]){
+        const code=String(Math.floor(1000+Math.random()*9000));
+        loadedCodes[mainId]=code;
+        set(fbRef("state/rosterCodes"),loadedCodes);
+      }
+      setRosterCodes(loadedCodes);
       if(data.pendingSessions) setPendingSessions(Object.values(data.pendingSessions));
       if(typeof data.liveMode==="boolean") setLiveMode(data.liveMode);
       if(data.activeRosterId) setActiveRosterId(data.activeRosterId);
@@ -4174,6 +4223,8 @@ export default function PurInstinctApp(){
         <PlayerView playerId={view.id} players={groupPlayers} queues={queues} activeGames={activeGames}
           disabledZones={arenaState.disabledZones||[]}
           arenaState={arenaState}
+          rosterCodes={rosterCodes}
+          sessionRosterId={p.groupId||"main"}
           winnersPublished={winnersPublished}
           onJoin={addToQueue} onLeave={removeFromQueue}
           onLogout={()=>setView({type:"login"})}
