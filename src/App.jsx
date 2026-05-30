@@ -2884,7 +2884,7 @@ function useArenaTimer(arenaState){
 // ----------------------------------------------------------------
 // STATION VIEW
 // ----------------------------------------------------------------
-function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,onAddQ,onRemoveQ,onGenerate,onResult,onRemoveFromGame,onReplaceInGame,onReorderQ,onLogout}){
+function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,onAddQ,onRemoveQ,onGenerate,onResult,onRemoveFromGame,onReplaceInGame,onReorderQ,onLogout}){
   const z=ZONES[zone];
   const zl=zn(zone);
   const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
@@ -2984,7 +2984,10 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
             <div>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#fff"}}>{zl.name.toUpperCase()}</div>
               <div style={{color:z.color,fontSize:12,fontWeight:600}}>{z.minP} joueurs minimum</div>
-              {sessionName&&<div style={{fontSize:10,color:"#4b5563",marginTop:2,fontWeight:600}}>📋 {sessionName}</div>}
+              {sessionName&&<div style={{fontSize:10,color:"#4b5563",marginTop:2,fontWeight:600,display:"flex",gap:6,alignItems:"center"}}>
+                <span>📋 {sessionName}</span>
+                {sessionCode&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,color:"#84cc16",letterSpacing:2}}>{sessionCode}</span>}
+              </div>}
             </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -4242,6 +4245,7 @@ export default function PurInstinctApp(){
       disabled={(arenaState.disabledZones||[]).includes(view.id)}
       arenaState={arenaState}
       sessionName={(rosters.find(r=>r.id===activeRosterId)||{name:"Session Standard"}).name}
+      sessionCode={(rosterCodes||{})[activeRosterId]||null}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onGenerate={(p)=>generateTeams(view.id,p)}
       onResult={(w,second)=>submitResult(view.id,w,second)}
