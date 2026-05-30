@@ -2886,7 +2886,7 @@ function useArenaTimer(arenaState){
 // ----------------------------------------------------------------
 // STATION VIEW
 // ----------------------------------------------------------------
-function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,onAddQ,onRemoveQ,onGenerate,onResult,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onLogout}){
+function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,onAddQ,onRemoveQ,onGenerate,onResult,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout}){
   const z=ZONES[zone];
   const zl=zn(zone);
   const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
@@ -2963,6 +2963,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
       </div>
       {sessionName&&<div style={{fontSize:11,color:"#374151",fontWeight:600}}>📋 {sessionName}</div>}
       <button onClick={onBack||onLogout} style={{marginTop:16,...S.btn(),padding:"8px 20px",fontSize:13}}>← Retour aux stations</button>
+      {onGoAdmin&&<button onClick={onGoAdmin} style={{marginTop:8,...S.btn("#84cc16"),padding:"8px 20px",fontSize:13,color:"#000"}}>🛡️ Admin</button>}
       <button onClick={onLogout} style={{marginTop:8,background:"none",border:"none",color:"#4b5563",fontSize:12,cursor:"pointer"}}>🚪 Déconnecter</button>
     </div>
   );
@@ -3007,7 +3008,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
             <button onClick={onBack||onLogout} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>←</button>
           </div>
         </div>
-        <div style={{display:"flex",gap:4,alignItems:"center"}}>
+        <div style={{display:"flex",gap:4,alignItems:"center",justifyContent:"space-between"}}>
           {[["game",T.fr.tabGame],["rules",T.fr.tabRules]].map(([t,l])=>(
             <button key={t} onClick={()=>setTab(t)} style={{
               padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
@@ -3015,11 +3016,18 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
               {l}
             </button>
           ))}
-          <button onClick={()=>setShowRoster(true)} style={{
-            padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
-            background:"#1f2937",color:"#9ca3af",marginLeft:"auto"}}>
-            👥 Participants ({players.length})
-          </button>
+          <div style={{display:"flex",gap:4,marginLeft:"auto"}}>
+            <button onClick={()=>setShowRoster(true)} style={{
+              padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
+              background:"#1f2937",color:"#9ca3af"}}>
+              👥 Participants ({players.length})
+            </button>
+            {onGoAdmin&&<button onClick={onGoAdmin} title="Basculer en mode admin"
+              style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:700,border:"1px solid #84cc1640",cursor:"pointer",
+                background:"#111827",color:"#84cc16"}}>
+              🛡️ Admin
+            </button>}
+          </div>
         </div>
       </div>
 
@@ -4299,6 +4307,7 @@ export default function PurInstinctApp(){
       onReplaceInGame={replaceInGame}
       onReorderQ={reorderQueue}
       onBack={()=>setView({type:"stationPick"})}
+      onGoAdmin={()=>setView({type:"admin"})}
       onLogout={()=>setView({type:"login"})}/>
   );
 
@@ -4331,6 +4340,11 @@ export default function PurInstinctApp(){
             );
           })}
         </div>
+        <button onClick={()=>setView({type:"admin"})}
+          style={{width:"100%",padding:"12px",borderRadius:12,background:"#111827",
+            border:"1px solid #84cc1640",color:"#84cc16",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
+          🛡️ Basculer en mode Admin
+        </button>
         <button onClick={()=>setView({type:"login"})}
           style={{width:"100%",padding:"12px",borderRadius:12,background:"none",
             border:"1px solid #374151",color:"#6b7280",cursor:"pointer",fontSize:13,fontWeight:600}}>
