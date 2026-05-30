@@ -1781,7 +1781,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onPause,onResume,onUpdateDuration,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
+function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
   const [tab,setTab]=useState("leaderboard");
   const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
   const [timer,setTimer]=useState("75:00");
@@ -1869,6 +1869,8 @@ function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId
             {arenaState.active&&<button onClick={onPause} style={{...S.btn("#f97316"),padding:"6px 12px",fontSize:12,color:"#000",fontWeight:700}}>⏸ Pause</button>}
             {arenaState.paused&&<button onClick={onResume} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12,color:"#000",fontWeight:700}}>▶ Reprendre</button>}
             {(arenaState.active||arenaState.paused)&&<button onClick={onEnd} style={{...S.btn("#dc2626"),padding:"6px 12px",fontSize:12,color:"#fff"}}>■ Terminer</button>}
+            <button onClick={onGoStation} title="Mode responsable de plateau"
+              style={{padding:8,borderRadius:10,background:"#111827",color:"#84cc16",border:"1px solid #84cc1640",cursor:"pointer",fontSize:15}}>📍</button>
             <button onClick={onLogout} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>×</button>
           </div>
         </div>
@@ -4248,6 +4250,7 @@ export default function PurInstinctApp(){
       }}
       onResume={()=>syncArena({...arenaState,active:true,paused:false,startTime:Date.now()-((arenaState.sessionMins||75)*60-arenaState.pausedRemaining)*1000,pausedRemaining:null})}
       onUpdateDuration={(mins)=>syncArena({...arenaState,sessionMins:mins})}
+      onGoStation={()=>setView({type:"stationPick"})}
       onToggleZone={(zk)=>{
         const dz=arenaState.disabledZones||[];
         syncArena({...arenaState,disabledZones:dz.includes(zk)?dz.filter(z=>z!==zk):[...dz,zk]});
