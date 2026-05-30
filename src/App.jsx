@@ -2884,7 +2884,7 @@ function useArenaTimer(arenaState){
 // ----------------------------------------------------------------
 // STATION VIEW
 // ----------------------------------------------------------------
-function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,onAddQ,onRemoveQ,onGenerate,onResult,onRemoveFromGame,onReplaceInGame,onReorderQ,onLogout}){
+function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,onAddQ,onRemoveQ,onGenerate,onResult,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onLogout}){
   const z=ZONES[zone];
   const zl=zn(zone);
   const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
@@ -2960,7 +2960,8 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
         Cette station a été désactivée par l'admin pour cette session.
       </div>
       {sessionName&&<div style={{fontSize:11,color:"#374151",fontWeight:600}}>📋 {sessionName}</div>}
-      <button onClick={onLogout} style={{marginTop:16,...S.btn(),padding:"8px 20px",fontSize:13}}>← Retour</button>
+      <button onClick={onBack||onLogout} style={{marginTop:16,...S.btn(),padding:"8px 20px",fontSize:13}}>← Retour aux stations</button>
+      <button onClick={onLogout} style={{marginTop:8,background:"none",border:"none",color:"#4b5563",fontSize:12,cursor:"pointer"}}>🚪 Déconnecter</button>
     </div>
   );
 
@@ -3001,10 +3002,10 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                 {arenaStatus==="active"?"EN COURS":arenaStatus==="paused"?"EN PAUSE":arenaStatus==="ended"?"TERMINÉ":"EN ATTENTE"}
               </div>
             </div>}
-            <button onClick={onLogout} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>×</button>
+            <button onClick={onBack||onLogout} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>←</button>
           </div>
         </div>
-        <div style={{display:"flex",gap:4}}>
+        <div style={{display:"flex",gap:4,alignItems:"center"}}>
           {[["game",T.fr.tabGame],["rules",T.fr.tabRules]].map(([t,l])=>(
             <button key={t} onClick={()=>setTab(t)} style={{
               padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
@@ -3016,6 +3017,11 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
             padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
             background:"#1f2937",color:"#9ca3af",marginLeft:"auto"}}>
             👥 Participants ({players.length})
+          </button>
+          <button onClick={onLogout} title="Déconnecter la session"
+            style={{padding:"6px 10px",borderRadius:8,fontSize:12,border:"1px solid #374151",cursor:"pointer",
+              background:"none",color:"#4b5563"}}>
+            🚪
           </button>
         </div>
       </div>
@@ -4294,7 +4300,46 @@ export default function PurInstinctApp(){
       onRemoveFromGame={removeFromGame}
       onReplaceInGame={replaceInGame}
       onReorderQ={reorderQueue}
+      onBack={()=>setView({type:"stationPick"})}
       onLogout={()=>setView({type:"login"})}/>
+  );
+
+  if(view.type==="stationPick") return(
+    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
+      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=DM+Sans:wght@400;600;700&display=swap');`}</style>
+      <div style={{width:"100%",maxWidth:380}}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#fff"}}>📍 Choisissez votre station</div>
+          {(rosterCodes||{})[activeRosterId]&&<div style={{fontSize:12,color:"#4b5563",marginTop:4}}>
+            {(rosters.find(r=>r.id===activeRosterId)||{name:"Session Standard"}).name}
+            <span style={{color:"#84cc16",fontWeight:700,letterSpacing:3,marginLeft:8}}>{(rosterCodes||{})[activeRosterId]}</span>
+          </div>}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:24}}>
+          {ZK.map(zk=>{
+            const z=ZONES[zk];const zl=zn(zk);
+            const isOff=(arenaState.disabledZones||[]).includes(zk);
+            return(
+              <button key={zk} onClick={()=>setView({type:"station",id:zk})}
+                style={{padding:"14px 16px",borderRadius:14,border:"1px solid "+(isOff?"#ef444440":z.border),
+                  background:isOff?"#1a0a0a":z.bg,color:isOff?"#ef4444":z.color,cursor:"pointer",
+                  display:"flex",alignItems:"center",gap:12,opacity:isOff?0.7:1}}>
+                <span style={{fontSize:22}}>{z.icon}</span>
+                <span style={{fontWeight:700,fontSize:14,flex:1,textAlign:"left"}}>{zl.name}</span>
+                {isOff&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,
+                  background:"#ef444420",color:"#ef4444",border:"1px solid #ef444440"}}>DÉSACTIVÉE</span>}
+              </button>
+            );
+          })}
+        </div>
+        <button onClick={()=>setView({type:"login"})}
+          style={{width:"100%",padding:"12px",borderRadius:12,background:"none",
+            border:"1px solid #374151",color:"#6b7280",cursor:"pointer",fontSize:13,fontWeight:600}}>
+          🚪 Déconnecter la session
+        </button>
+      </div>
+    </div>
   );
 
   if(view.type==="player"){
