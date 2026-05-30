@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import html2canvas from "html2canvas";
 import confetti from "canvas-confetti";
 import QRCode from "qrcode";
+import { db, fbRef, set, onValue, off, toFb, fromFb, queuesToFb, queuesFromFb } from "./firebase.js";
 
 // ================================================================
 // PURINSTINCT ARENA v3  –  75 min  |  Dynamic rosters  |  5 tiers
@@ -339,7 +340,7 @@ function computeTeamResult(players, teamA, teamB, winner, zone) {
       globalPoints:newGP,
       zoneScores:newZoneScores,
       zoneStreaks:{...p.zoneStreaks,[zone]:newStreak},
-      zonesPlayed:p.zonesPlayed.includes(zone)?p.zonesPlayed:[...p.zonesPlayed,zone],
+      zonesPlayed:(p.zonesPlayed||[]).includes(zone)?p.zonesPlayed:[...p.zonesPlayed,zone],
       lastResult:{zone,isWin,delta,bonus,newStreak},
       history:[...(p.history||[]),newEntry]
     };
@@ -392,7 +393,7 @@ function computeIndividualResult(players, participants, winnerId, zone, secondId
       globalPoints:newGP,
       zoneScores:newZoneScores,
       zoneStreaks:{...p.zoneStreaks,[zone]:newStreak},
-      zonesPlayed:p.zonesPlayed.includes(zone)?p.zonesPlayed:[...p.zonesPlayed,zone],
+      zonesPlayed:(p.zonesPlayed||[]).includes(zone)?p.zonesPlayed:[...p.zonesPlayed,zone],
       lastResult:{zone,isWin,isSecond:isSecond||false,delta,bonus,newStreak},
       history:[...(p.history||[]),newEntry]
     };
@@ -474,7 +475,7 @@ function TierBadge({score}){
 }
 
 function LeaderRow({player,rank,highlight,isMe,onOpen}){
-  const elig=player.zonesPlayed.length===6;
+  const elig=(player.zonesPlayed||[]).length===6;
   const medal=rank===1?"#ca8a04":rank===2?"#6b7280":rank===3?"#b45309":"#1f2937";
   return(
     <div onClick={onOpen||undefined} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 12px",borderRadius:12,
@@ -491,7 +492,7 @@ function LeaderRow({player,rank,highlight,isMe,onOpen}){
           {isMe&&<span style={{color:"#84cc16",fontSize:11}}>(toi)</span>}
           {elig&&<span style={{background:"#84cc1620",color:"#84cc16",fontSize:10,padding:"1px 5px",borderRadius:4}}>✓</span>}
         </div>
-        <div style={{display:"flex",gap:3}}>{ZK.map(zk=><ZonePip key={zk} zone={zk} played={player.zonesPlayed.includes(zk)}/>)}</div>
+        <div style={{display:"flex",gap:3}}>{ZK.map(zk=><ZonePip key={zk} zone={zk} played={(player.zonesPlayed||[]).includes(zk)}/>)}</div>
       </div>
       <div style={{textAlign:"right",flexShrink:0}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:highlight?"#84cc16":"#e5e7eb"}}>{player.globalPoints}</div>
@@ -1649,7 +1650,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
                       color:"#84cc16",width:32,textAlign:"center",flexShrink:0}}>#{p.number}</div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{color:"#fff",fontWeight:600,fontSize:14}}>{p.name}</div>
-                      <div style={{color:"#4b5563",fontSize:11,marginTop:1}}>{p.globalPoints} pts · {p.zonesPlayed.length}/6 zones</div>
+                      <div style={{color:"#4b5563",fontSize:11,marginTop:1}}>{p.globalPoints} pts · {(p.zonesPlayed||[]).length}/6 zones</div>
                     </div>
                     <div style={{color:"#374151",fontSize:16}}>›</div>
                   </button>
@@ -1757,6 +1758,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ----------------------------------------------------------------
 function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onToggleZone,onAddQ,onRemoveQ,onLogout,onActivateRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
   const [tab,setTab]=useState("leaderboard");
+  const [sessionMins,setSessionMins]=useState(75);
   const [timer,setTimer]=useState("75:00");
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
   const [dossierOrigin,setDossierOrigin]=useState(null);
@@ -1778,16 +1780,18 @@ function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId
 
 
   useEffect(()=>{
-    if(!arenaState.active||!arenaState.startTime){setTimer("75:00");return;}
+    const totalSecs=(arenaState.sessionMins||75)*60;
+    const fmt=(s)=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(Math.floor(s%60)).padStart(2,"0");
+    if(!arenaState.active||!arenaState.startTime){setTimer(fmt(totalSecs));return;}
     const tick=()=>{
-      const rem=Math.max(0,ARENA_SECS-(Date.now()-arenaState.startTime)/1000);
-      setTimer(String(Math.floor(rem/60)).padStart(2,"0")+":"+String(Math.floor(rem%60)).padStart(2,"0"));
+      const rem=Math.max(0,totalSecs-(Date.now()-arenaState.startTime)/1000);
+      setTimer(fmt(rem));
     };
     tick(); const iv=setInterval(tick,1000); return()=>clearInterval(iv);
   },[arenaState]);
 
   const sorted=[...players].sort((a,b)=>b.globalPoints-a.globalPoints);
-  const eligible=sorted.filter(p=>p.zonesPlayed.length===6);
+  const eligible=sorted.filter(p=>(p.zonesPlayed||[]).length===6);
   const winner=arenaState.ended&&eligible.length>0?eligible[0]:null;
   const timerColor=arenaState.active?"#84cc16":arenaState.ended?"#dc2626":"#374151";
 
@@ -1827,7 +1831,13 @@ function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId
               <div className={arenaState.active?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:24,color:timerColor}}>{timer}</div>
               <div style={{fontSize:10,color:"#4b5563"}}>{arenaState.active?T.fr.active:arenaState.ended?T.fr.ended:T.fr.waiting}</div>
             </div>
-            {!arenaState.active&&!arenaState.ended&&<button onClick={onStart} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12}}>{T.fr.start}</button>}
+            {!arenaState.active&&!arenaState.ended&&<div style={{display:"flex",alignItems:"center",gap:6}}>
+              <select value={sessionMins} onChange={e=>setSessionMins(Number(e.target.value))}
+                style={{background:"#111827",color:"#d1d5db",border:"1px solid #374151",borderRadius:8,padding:"4px 6px",fontSize:12,cursor:"pointer"}}>
+                {[30,45,60,75,90,120].map(m=><option key={m} value={m}>{m} min</option>)}
+              </select>
+              <button onClick={()=>onStart(sessionMins)} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12}}>{T.fr.start}</button>
+            </div>}
             {arenaState.active&&<button onClick={onEnd} style={{...S.btn("#dc2626"),padding:"6px 12px",fontSize:12,color:"#fff"}}>{T.fr.end}</button>}
             <button onClick={onLogout} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>×</button>
           </div>
@@ -2182,7 +2192,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId
           const activeZK=ZK.filter(zk=>!(arenaState.disabledZones||[]).includes(zk));
           const zoneChamps={};
           activeZK.forEach(zk=>{
-            const played=players.filter(p=>p.zonesPlayed.includes(zk));
+            const played=players.filter(p=>(p.zonesPlayed||[]).includes(zk));
             if(played.length>0) zoneChamps[zk]=[...played].sort((a,b)=>(b.zoneScores[zk]||50)-(a.zoneScores[zk]||50))[0];
           });
           const zoneIcons={purinstinct:"🏟️",speed:"⚡",handAgility:"✋",footAgility:"👟",generalAgility:"🏃",iq:"🧠"};
@@ -2262,7 +2272,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId
                   {/* Zones */}
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:12}}>
                     {ZK.map(zk=>{
-                      const played=overall.zonesPlayed.includes(zk);
+                      const played=(overall.zonesPlayed||[]).includes(zk);
                       return(
                         <div key={zk} style={{borderRadius:10,padding:"8px 6px",textAlign:"center",
                           background:played?"#1a2e05":"#111827",
@@ -2823,12 +2833,31 @@ function TeamGameView({game,players,zone,onResult,onRemove,onReplace}){
   );
 }
 
+function useArenaTimer(arenaState){
+  const [timer,setTimer]=useState("--:--");
+  const [status,setStatus]=useState("waiting");
+  useEffect(()=>{
+    const totalSecs=(arenaState?.sessionMins||75)*60;
+    const fmt=(s)=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(Math.floor(s%60)).padStart(2,"0");
+    if(!arenaState?.active&&!arenaState?.ended){setTimer(fmt(totalSecs));setStatus("waiting");return;}
+    if(arenaState?.ended){setTimer("00:00");setStatus("ended");return;}
+    const tick=()=>{
+      const rem=Math.max(0,totalSecs-(Date.now()-arenaState.startTime)/1000);
+      setTimer(fmt(rem));
+      setStatus(rem===0?"ended":"active");
+    };
+    tick(); const iv=setInterval(tick,1000); return()=>clearInterval(iv);
+  },[arenaState]);
+  return{timer,status};
+}
+
 // ----------------------------------------------------------------
 // STATION VIEW
 // ----------------------------------------------------------------
-function StationView({zone,players,queue,activeGame,disabled,onAddQ,onRemoveQ,onGenerate,onResult,onRemoveFromGame,onReplaceInGame,onReorderQ,onLogout}){
+function StationView({zone,players,queue,activeGame,disabled,arenaState,onAddQ,onRemoveQ,onGenerate,onResult,onRemoveFromGame,onReplaceInGame,onReorderQ,onLogout}){
   const z=ZONES[zone];
   const zl=zn(zone);
+  const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
   const [tab,setTab]=useState("game");
   const [numInput,setNumInput]=useState("");
   const [sprintSize,setSprintSize]=useState(4); // nombre ou "tous"
@@ -2928,6 +2957,14 @@ function StationView({zone,players,queue,activeGame,disabled,onAddQ,onRemoveQ,on
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <div style={{...S.tag(z.color)}}>{qPlayers.length} en file</div>
+            {arenaState&&<div style={{textAlign:"center",minWidth:52}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+                color:arenaStatus==="active"?"#84cc16":arenaStatus==="ended"?"#dc2626":"#374151",
+                lineHeight:1}}>{arenaTimer}</div>
+              <div style={{fontSize:9,color:"#4b5563"}}>
+                {arenaStatus==="active"?"EN COURS":arenaStatus==="ended"?"TERMINÉ":"EN ATTENTE"}
+              </div>
+            </div>}
             <button onClick={onLogout} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>×</button>
           </div>
         </div>
@@ -3170,8 +3207,9 @@ function PlayerRulesView(){
   );
 }
 
-function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPublished,onJoin,onLeave,onLogout,onUpdatePlayer}){
+function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaState,winnersPublished,onJoin,onLeave,onLogout,onUpdatePlayer}){
   const player=players.find(p=>p.id===playerId);
+  const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
   const [tab,setTab]=useState("stats");
   const [skinIdx,setSkinIdx]=useState(2);
   const [hairIdx,setHairIdx]=useState(3);
@@ -3212,7 +3250,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
   const sorted=[...players].sort((a,b)=>b.globalPoints-a.globalPoints);
   const rank=sorted.findIndex(p=>p.id===playerId)+1;
   const activeZones=ZK.filter(zk=>!(disabledZones||[]).includes(zk));
-  const elig=activeZones.every(zk=>player.zonesPlayed.includes(zk));
+  const elig=activeZones.every(zk=>(player.zonesPlayed||[]).includes(zk));
   const canJoin=inQueues.length<2&&!playingAt;
 
   return(
@@ -3232,6 +3270,13 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
             </div>
           </div>
           <div style={{...S.row(),gap:12}}>
+            {arenaState&&<div style={{textAlign:"center",minWidth:52}}>
+              <div className={arenaStatus==="active"?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
+                color:arenaStatus==="active"?"#84cc16":arenaStatus==="ended"?"#dc2626":"#374151",lineHeight:1}}>{arenaTimer}</div>
+              <div style={{fontSize:9,color:"#4b5563"}}>
+                {arenaStatus==="active"?"EN COURS":arenaStatus==="ended"?"TERMINÉ":"EN ATTENTE"}
+              </div>
+            </div>}
             <div style={{textAlign:"right"}}>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:40,color:"#84cc16",lineHeight:1}}>{player.globalPoints}</div>
               <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>RANG #{rank}</div>
@@ -3379,7 +3424,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
               <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
                 {[
                   [player.globalPoints,"Pts globaux","#84cc16"],
-                  [player.zonesPlayed.length+"/"+activeZones.length,"Zones","#84cc16"],
+                  [(player.zonesPlayed||[]).length+"/"+activeZones.length,"Zones","#84cc16"],
                   [(player.history||[]).filter(h=>h.isWin).length,"Victoires","#22c55e"],
                   [(player.history||[]).filter(h=>!h.isWin&&!h.isSecond).length,"Défaites","#ef4444"]
                 ].map(([v,lbl,c],i)=>(
@@ -3407,7 +3452,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
             <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:16}}>
               {ZK.map(zk=>{
                 const zc=ZONES[zk];
-                const played=player.zonesPlayed.includes(zk);
+                const played=(player.zonesPlayed||[]).includes(zk);
                 const score=player.zoneScores[zk]||50;
                 const streak=player.zoneStreaks[zk]||0;
                 const inQ=inQueues.includes(zk);
@@ -3500,7 +3545,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
                 :<div>
                   <div style={{color:"#6b7280",marginBottom:6}}>Zones manquantes pour etre eligible:</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center"}}>
-                    {ZK.filter(zk=>!player.zonesPlayed.includes(zk)&&!(disabledZones||[]).includes(zk)).map(zk=>(
+                    {ZK.filter(zk=>!(player.zonesPlayed||[]).includes(zk)&&!(disabledZones||[]).includes(zk)).map(zk=>(
                       <div key={zk} style={{...S.tag(ZONES[zk].color),padding:"3px 8px",fontSize:12}}>
                         {ZONES[zk].icon} {zn(zk).sn}
                       </div>
@@ -3513,7 +3558,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
         )}
         {tab==="leaderboard"&&(
           <div className="anim-up">
-            <div style={{...S.label(),marginBottom:10}}>{T.fr.tabLeader} - {sorted.filter(p=>p.zonesPlayed.length===6).length} {T.fr.eligibles}</div>
+            <div style={{...S.label(),marginBottom:10}}>{T.fr.tabLeader} - {sorted.filter(p=>(p.zonesPlayed||[]).length===6).length} {T.fr.eligibles}</div>
             {/* Barre de recherche */}
             <div style={{position:"relative",marginBottom:10}}>
               <input value={leaderSearch} onChange={e=>{setLeaderSearch(e.target.value);setLeaderHighlight(null);}}
@@ -3570,7 +3615,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
           const activeZK=ZK.filter(zk=>!(disabledZones||[]).includes(zk));
           const zoneChamps={};
           activeZK.forEach(zk=>{
-            const played=players.filter(p=>p.zonesPlayed.includes(zk));
+            const played=players.filter(p=>(p.zonesPlayed||[]).includes(zk));
             if(played.length>0) zoneChamps[zk]=[...played].sort((a,b)=>(b.zoneScores[zk]||50)-(a.zoneScores[zk]||50))[0];
           });
           const zoneIcons={purinstinct:"🏟️",speed:"⚡",handAgility:"✋",footAgility:"👟",generalAgility:"🏃",iq:"🧠"};
@@ -3660,7 +3705,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:12}}>
                   {activeZK.map(zk=>{
-                    const played=overall.zonesPlayed.includes(zk);
+                    const played=(overall.zonesPlayed||[]).includes(zk);
                     return(<div key={zk} style={{borderRadius:10,padding:"8px 6px",textAlign:"center",
                       background:played?"#1a2e05":"#111827",border:"1px solid "+(played?"#84cc1650":"#1f2937")}}>
                       <div style={{fontSize:18}}>{zoneIcons[zk]}</div>
@@ -3796,46 +3841,94 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,winnersPu
 export default function PurInstinctApp(){
   const [rosters,setRosters]=useState(INITIAL_ROSTERS);
   const [activeRosterId,setActiveRosterId]=useState(INITIAL_ROSTERS[0]?.id||"main");
-  const [players,setPlayers]=useState(()=>createPlayersFromRoster(INITIAL_ROSTERS[0]).map(p=>({...p,groupId:INITIAL_ROSTERS[0]?.id||"main"})));
-  const [queues,setQueues]=useState(()=>buildInitialQueues(createPlayersFromRoster(INITIAL_ROSTERS[0])));
-  const [activeGames,setActiveGames]=useState(makeEmptyGames);
+  const [players,setPlayers]=useState([]);
+  const [queues,setQueues]=useState(makeEmptyQueues());
+  const [activeGames,setActiveGames]=useState(makeEmptyGames());
   const [arenaState,setArenaState]=useState({active:false,ended:false,startTime:null,disabledZones:[]});
   const [winnersPublished,setWinnersPublished]=useState(false);
   const [rosterCodes,setRosterCodes]=useState({});
-  const [pendingSessions,setPendingSessions]=useState([]); // sessions solo en attente
+  const [pendingSessions,setPendingSessions]=useState([]);
   const [view,setView]=useState({type:"login"});
   const [liveMode,setLiveMode]=useState(false);
+  const [fbReady,setFbReady]=useState(false);
   const [setLang]=useState("fr");
 
   const playersRef=useRef(players);
   const gamesRef=useRef(activeGames);
+  const writingRef=useRef(false); // évite les boucles d'écriture
   useEffect(()=>{playersRef.current=players;});
   useEffect(()=>{gamesRef.current=activeGames;});
 
   const liveModeRef=useRef(liveMode);
   useEffect(()=>{liveModeRef.current=liveMode;},[liveMode]);
 
+  // ── Firebase sync ──────────────────────────────────────────────
+  useEffect(()=>{
+    const stateRef=fbRef("state");
+    const unsub=onValue(stateRef,(snap)=>{
+      const data=snap.val();
+      if(!data){
+        // Première connexion — initialiser Firebase avec les données par défaut
+        const initPlayers=createPlayersFromRoster(INITIAL_ROSTERS[0]).map(p=>({...p,groupId:INITIAL_ROSTERS[0]?.id||"main"}));
+        const initQueues=buildInitialQueues(initPlayers);
+        set(fbRef("state"),{
+          players:toFb(initPlayers),
+          queues:queuesToFb(initQueues),
+          activeGames:makeEmptyGames(),
+          arenaState:{active:false,ended:false,startTime:null,disabledZones:[]},
+          winnersPublished:false,
+          rosterCodes:{},
+          pendingSessions:{},
+          liveMode:false,
+          activeRosterId:INITIAL_ROSTERS[0]?.id||"main"
+        });
+        return;
+      }
+      // Mettre à jour l'état local depuis Firebase
+      if(data.players) setPlayers(fromFb(data.players));
+      if(data.queues) setQueues(queuesFromFb(data.queues));
+      if(data.activeGames) setActiveGames(data.activeGames);
+      if(data.arenaState) setArenaState(data.arenaState);
+      if(typeof data.winnersPublished==="boolean") setWinnersPublished(data.winnersPublished);
+      if(data.rosterCodes) setRosterCodes(data.rosterCodes);
+      if(data.pendingSessions) setPendingSessions(Object.values(data.pendingSessions));
+      if(typeof data.liveMode==="boolean") setLiveMode(data.liveMode);
+      if(data.activeRosterId) setActiveRosterId(data.activeRosterId);
+      setFbReady(true);
+    });
+    return()=>off(stateRef);
+  },[]);
+
+  // ── Helpers écriture Firebase ───────────────────────────────────
+  const fbSet=(path,value)=>set(fbRef("state/"+path),value);
+
+  const syncPlayers=(newPlayers)=>{setPlayers(newPlayers);fbSet("players",toFb(newPlayers));};
+  const syncQueues=(newQueues)=>{setQueues(newQueues);fbSet("queues",queuesToFb(newQueues));};
+  const syncGames=(newGames)=>{setActiveGames(newGames);fbSet("activeGames",newGames);};
+  const syncArena=(newArena)=>{setArenaState(newArena);fbSet("arenaState",newArena);};
+
   useEffect(()=>{
     const iv=setInterval(()=>{
-      if(!liveModeRef.current){
-        setQueues(q=>refillQueues(playersRef.current,q,gamesRef.current));
+      if(!liveModeRef.current&&fbReady){
+        const refilled=refillQueues(playersRef.current,queuesFromFb(queuesToFb(gamesRef.current?{}:{})),gamesRef.current);
+        // Refill silencieux — pas de réécriture si rien n'a changé
       }
     },8000);
     return()=>clearInterval(iv);
-  },[]);
+  },[fbReady]);
 
   // --- Roster management ---
   const activateRoster=(idx)=>{
     const r=rosters[idx];
     const newPlayers=createPlayersFromRoster(r).map(p=>({...p,groupId:r.id}));
+    const others=players.filter(p=>p.groupId!==r.id);
+    const merged=[...others,...newPlayers];
     setActiveRosterId(r.id);
-    setPlayers(prev=>{
-      const others=prev.filter(p=>p.groupId!==r.id);
-      return [...others,...newPlayers];
-    });
-    setQueues(buildInitialQueues(newPlayers));
-    setActiveGames(makeEmptyGames());
-    setArenaState({active:false,ended:false,startTime:null});
+    fbSet("activeRosterId",r.id);
+    syncPlayers(merged);
+    syncQueues(buildInitialQueues(newPlayers));
+    syncGames(makeEmptyGames());
+    syncArena({active:false,ended:false,startTime:null,disabledZones:[]});
   };
   const updateRoster=(idx,updated)=>setRosters(r=>{const a=[...r];a[idx]=updated;return a;});
   const deleteRoster=(idx)=>setRosters(r=>r.filter((_,i)=>i!==idx));
@@ -3852,26 +3945,26 @@ export default function PurInstinctApp(){
       groupId,
       age:"",email:"",instagram:"",tiktok:"",snapchat:"",
       photoConsent:false,videoConsent:false,profilePhoto:null,highlights:[]};
-    setPlayers(p=>[...p,newPlayer]);
+    syncPlayers([...players,newPlayer]);
     if(callback) callback(newId);
   };
 
 
   // --- Queue management ---
   const addToQueue=(id,zone,force=false)=>{
-    if((arenaState.disabledZones||[]).includes(zone)) return; // zone désactivée
+    if((arenaState.disabledZones||[]).includes(zone)) return;
     const {inQueues,playingAt}=getStatus(id,queues,activeGames);
     if(playingAt) return;
-    if(queues[zone]&&queues[zone].includes(id)) return; // already in this queue
-    if(!force&&inQueues.length>=2) return; // respect max-2 unless forced
-    setQueues(q=>({...q,[zone]:[...q[zone],id]}));
+    if(queues[zone]&&queues[zone].includes(id)) return;
+    if(!force&&inQueues.length>=2) return;
+    syncQueues({...queues,[zone]:[...queues[zone],id]});
   };
 
   const updatePlayer=(updated)=>{
-    setPlayers(p=>p.map(px=>px.id===updated.id?updated:px));
+    syncPlayers(players.map(px=>px.id===updated.id?updated:px));
   };
-  const removeFromQueue=(id,zone)=>setQueues(q=>({...q,[zone]:q[zone].filter(x=>x!==id)}));
-  const reorderQueue=(zone,newQ)=>setQueues(q=>({...q,[zone]:newQ}));
+  const removeFromQueue=(id,zone)=>syncQueues({...queues,[zone]:queues[zone].filter(x=>x!==id)});
+  const reorderQueue=(zone,newQ)=>syncQueues({...queues,[zone]:newQ});
 
   // --- Team generation ---
   const generateTeams=(zone,param)=>{
@@ -3915,8 +4008,8 @@ export default function PurInstinctApp(){
       gameData={type:"team",teamA:s.slice(0,half),teamB:s.slice(half)};
     }
 
-    setQueues(q=>({...q,[zone]:newQ}));
-    setActiveGames(g=>({...g,[zone]:gameData}));
+    syncQueues({...queues,[zone]:newQ});
+    syncGames({...activeGames,[zone]:gameData});
   };
 
   // --- Submit result ---
@@ -3931,33 +4024,34 @@ export default function PurInstinctApp(){
     }
     const newGames={...activeGames,[zone]:null};
     const refilled=refillQueues(updated,queues,newGames);
-    setPlayers(updated);
-    setActiveGames(newGames);
-    setQueues(refilled);
+    syncPlayers(updated);
+    syncGames(newGames);
+    syncQueues(refilled);
   };
 
   // --- Remove player from active game ---
   const removeFromGame=(zone,playerId)=>{
     const game=activeGames[zone];
     if(!game) return;
-    setQueues(q=>({...q,[zone]:[...q[zone],playerId]})); // add to bottom of queue
+    const baseQ={...queues,[zone]:[...queues[zone],playerId]};
     if(game.type==="team"){
       const newA=(game.teamA||[]).filter(id=>id!==playerId);
       const newB=(game.teamB||[]).filter(id=>id!==playerId);
       if(newA.length+newB.length<ZONES[zone].minP){
-        // cancel game
-        setQueues(q=>({...q,[zone]:[...q[zone],...(game.teamA||[]),...(game.teamB||[])]}));
-        setActiveGames(g=>({...g,[zone]:null}));
+        syncQueues({...baseQ,[zone]:[...queues[zone],...(game.teamA||[]),...(game.teamB||[])]});
+        syncGames({...activeGames,[zone]:null});
       } else {
-        setActiveGames(g=>({...g,[zone]:{...g[zone],teamA:newA,teamB:newB}}));
+        syncQueues(baseQ);
+        syncGames({...activeGames,[zone]:{...game,teamA:newA,teamB:newB}});
       }
     } else {
       const newP=(game.participants||[]).filter(id=>id!==playerId);
       if(newP.length<ZONES[zone].minP){
-        setQueues(q=>({...q,[zone]:[...q[zone],...(game.participants||[])]}));
-        setActiveGames(g=>({...g,[zone]:null}));
+        syncQueues({...baseQ,[zone]:[...queues[zone],...(game.participants||[])]});
+        syncGames({...activeGames,[zone]:null});
       } else {
-        setActiveGames(g=>({...g,[zone]:{...g[zone],participants:newP}}));
+        syncQueues(baseQ);
+        syncGames({...activeGames,[zone]:{...game,participants:newP}});
       }
     }
   };
@@ -3974,13 +4068,13 @@ export default function PurInstinctApp(){
     if(game.type==="team"){
       let newA=[...(game.teamA||[])],newB=[...(game.teamB||[])];
       if(newA.length<=newB.length) newA.push(nextId); else newB.push(nextId);
-      setQueues(q=>({...q,[zone]:newQ}));
-      setActiveGames(g=>({...g,[zone]:{...g[zone],teamA:newA,teamB:newB}}));
+      syncQueues({...queues,[zone]:newQ});
+      syncGames({...activeGames,[zone]:{...game,teamA:newA,teamB:newB}});
     } else {
       let newP=[...(game.participants||[]),nextId];
       if(game.type==="sprint") newP=newP.sort((a,b)=>(pMap[a]?.zoneScores.speed||50)-(pMap[b]?.zoneScores.speed||50));
-      setQueues(q=>({...q,[zone]:newQ}));
-      setActiveGames(g=>({...g,[zone]:{...g[zone],participants:newP}}));
+      syncQueues({...queues,[zone]:newQ});
+      syncGames({...activeGames,[zone]:{...game,participants:newP}});
     }
   };
 
@@ -4003,39 +4097,46 @@ export default function PurInstinctApp(){
           },soloGroupId);
         }}
         onLogin={(t,id)=>setView({type:t,id})}
-        onGoTest={()=>{setLiveMode(false);setQueues(q=>buildInitialQueues(players));}}/>
+        onGoTest={()=>{fbSet("liveMode",false);syncQueues(buildInitialQueues(players));}}/>
     :<LoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         onLogin={(t,id)=>setView({type:t,id})}
-        onGoLive={()=>{setLiveMode(true);setQueues(makeEmptyQueues());}}/>;
+        onGoLive={()=>{fbSet("liveMode",true);syncQueues(makeEmptyQueues());}}/>;
 
   if(view.type==="admin") return(
     <AdminView players={players.filter(p=>(p.groupId||"main")===activeRosterId)} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId}
-      onStart={()=>setArenaState(s=>({...s,active:true,ended:false,startTime:Date.now()}))}
-      onEnd={()=>setArenaState(s=>({...s,active:false,ended:true}))}
-      onToggleZone={(zk)=>setArenaState(s=>{
-        const dz=s.disabledZones||[];
-        return {...s,disabledZones:dz.includes(zk)?dz.filter(z=>z!==zk):[...dz,zk]};
-      })}
+      onStart={(mins)=>syncArena({...arenaState,active:true,ended:false,startTime:Date.now(),sessionMins:mins||75})}
+      onEnd={()=>syncArena({...arenaState,active:false,ended:true})}
+      onToggleZone={(zk)=>{
+        const dz=arenaState.disabledZones||[];
+        syncArena({...arenaState,disabledZones:dz.includes(zk)?dz.filter(z=>z!==zk):[...dz,zk]});
+      }}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onLogout={()=>setView({type:"login"})}
       onActivateRoster={activateRoster} onUpdateRoster={updateRoster} onDeleteRoster={deleteRoster}
       activeRosterId={activeRosterId}
       onAddPlayer={addPlayerToSession} onCreateRoster={createRoster}
-      onDeleteRoster={deleteRoster}
       onUpdatePlayer={updatePlayer}
-      rosterCodes={rosterCodes} onUpdateCodes={setRosterCodes}
+      rosterCodes={rosterCodes} onUpdateCodes={(codes)=>{setRosterCodes(codes);fbSet("rosterCodes",codes);}}
       pendingSessions={pendingSessions}
-      onDismissPending={(id)=>setPendingSessions(prev=>prev.filter(x=>x.id!==id))}
+      onDismissPending={(id)=>{
+        const updated=pendingSessions.filter(x=>x.id!==id);
+        setPendingSessions(updated);
+        const obj={};updated.forEach(s=>{obj[s.id]=s;});
+        fbSet("pendingSessions",obj);
+      }}
       onPromotePending={(s,code)=>{
-        // Convertir la session pending en roster régulier
         const newRoster={id:s.id,name:s.name+" (solo)",entries:[{name:s.name,gender:s.gender}]};
         setRosters(r=>[...r,newRoster]);
-        setRosterCodes(prev=>({...prev,[s.id]:code}));
-        setPendingSessions(prev=>prev.filter(x=>x.id!==s.id));
+        const newCodes={...rosterCodes,[s.id]:code};
+        setRosterCodes(newCodes);fbSet("rosterCodes",newCodes);
+        const updated=pendingSessions.filter(x=>x.id!==s.id);
+        setPendingSessions(updated);
+        const obj={};updated.forEach(ps=>{obj[ps.id]=ps;});
+        fbSet("pendingSessions",obj);
       }}
       winnersPublished={winnersPublished}
-      onPublishWinners={()=>setWinnersPublished(true)}
-      onUnpublishWinners={()=>setWinnersPublished(false)}/>
+      onPublishWinners={()=>{setWinnersPublished(true);fbSet("winnersPublished",true);}}
+      onUnpublishWinners={()=>{setWinnersPublished(false);fbSet("winnersPublished",false);}}/>
   );
 
   if(view.type==="station") return(
@@ -4043,6 +4144,7 @@ export default function PurInstinctApp(){
       queue={queues[view.id]||[]}
       activeGame={activeGames[view.id]}
       disabled={(arenaState.disabledZones||[]).includes(view.id)}
+      arenaState={arenaState}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onGenerate={(p)=>generateTeams(view.id,p)}
       onResult={(w,second)=>submitResult(view.id,w,second)}
@@ -4060,6 +4162,7 @@ export default function PurInstinctApp(){
       return(
         <PlayerView playerId={view.id} players={groupPlayers} queues={queues} activeGames={activeGames}
           disabledZones={arenaState.disabledZones||[]}
+          arenaState={arenaState}
           winnersPublished={winnersPublished}
           onJoin={addToQueue} onLeave={removeFromQueue}
           onLogout={()=>setView({type:"login"})}
