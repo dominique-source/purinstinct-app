@@ -2884,7 +2884,7 @@ function useArenaTimer(arenaState){
 // ----------------------------------------------------------------
 // STATION VIEW
 // ----------------------------------------------------------------
-function StationView({zone,players,queue,activeGame,disabled,arenaState,onAddQ,onRemoveQ,onGenerate,onResult,onRemoveFromGame,onReplaceInGame,onReorderQ,onLogout}){
+function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,onAddQ,onRemoveQ,onGenerate,onResult,onRemoveFromGame,onReplaceInGame,onReorderQ,onLogout}){
   const z=ZONES[zone];
   const zl=zn(zone);
   const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
@@ -2958,6 +2958,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,onAddQ,o
       <div style={{fontSize:13,color:"#4b5563",textAlign:"center",maxWidth:260}}>
         Cette station a été désactivée par l'admin pour cette session.
       </div>
+      {sessionName&&<div style={{fontSize:11,color:"#374151",fontWeight:600}}>📋 {sessionName}</div>}
       <button onClick={onLogout} style={{marginTop:16,...S.btn(),padding:"8px 20px",fontSize:13}}>← Retour</button>
     </div>
   );
@@ -2983,6 +2984,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,onAddQ,o
             <div>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#fff"}}>{zl.name.toUpperCase()}</div>
               <div style={{color:z.color,fontSize:12,fontWeight:600}}>{z.minP} joueurs minimum</div>
+              {sessionName&&<div style={{fontSize:10,color:"#4b5563",marginTop:2,fontWeight:600}}>📋 {sessionName}</div>}
             </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -4239,6 +4241,7 @@ export default function PurInstinctApp(){
       activeGame={activeGames[view.id]}
       disabled={(arenaState.disabledZones||[]).includes(view.id)}
       arenaState={arenaState}
+      sessionName={(rosters.find(r=>r.id===activeRosterId)||{name:"Session Standard"}).name}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onGenerate={(p)=>generateTeams(view.id,p)}
       onResult={(w,second)=>submitResult(view.id,w,second)}
