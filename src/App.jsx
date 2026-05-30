@@ -4164,6 +4164,15 @@ export default function PurInstinctApp(){
         onAddPlayer={addPlayerToSession}
         onRequestSolo={(name,gender,callback)=>{
           const soloGroupId="solo_"+Date.now();
+          // Générer un code unique qui n'est pas déjà utilisé
+          let soloCode;
+          const usedCodes=Object.values(rosterCodes||{});
+          do { soloCode=String(Math.floor(1000+Math.random()*9000)); }
+          while(usedCodes.includes(soloCode));
+          // Sauvegarder le code dans Firebase
+          const newCodes={...(rosterCodes||{}),[soloGroupId]:soloCode};
+          setRosterCodes(newCodes);
+          fbSet("rosterCodes",newCodes);
           addPlayerToSession(name,gender,(newId)=>{
             if(callback) callback(newId);
             setPendingSessions(prev=>[...prev,{
