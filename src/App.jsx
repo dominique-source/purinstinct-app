@@ -2889,6 +2889,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
   const zl=zn(zone);
   const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
   const [tab,setTab]=useState("game");
+  const [showRoster,setShowRoster]=useState(false);
   const [numInput,setNumInput]=useState("");
   const [sprintSize,setSprintSize]=useState(4); // nombre ou "tous"
   const [iqCount,setIqCount]=useState(2);
@@ -3011,8 +3012,49 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
               {l}
             </button>
           ))}
+          <button onClick={()=>setShowRoster(true)} style={{
+            padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
+            background:"#1f2937",color:"#9ca3af",marginLeft:"auto"}}>
+            👥 Participants ({players.length})
+          </button>
         </div>
       </div>
+
+      {/* Overlay liste des participants */}
+      {showRoster&&(
+        <div style={{position:"fixed",inset:0,zIndex:50,background:"rgba(0,0,0,.88)",
+          display:"flex",flexDirection:"column"}} onClick={()=>setShowRoster(false)}>
+          <div style={{background:"#06070f",paddingTop:"calc(env(safe-area-inset-top) + 16px)",
+            paddingBottom:12,paddingLeft:16,paddingRight:16,
+            borderBottom:"1px solid #1f2937",display:"flex",alignItems:"center",justifyContent:"space-between"}}
+            onClick={e=>e.stopPropagation()}>
+            <div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:"#fff"}}>
+                👥 Participants
+              </div>
+              <div style={{fontSize:11,color:"#4b5563"}}>
+                {sessionName}{sessionCode&&<span style={{color:"#84cc16",fontWeight:700,letterSpacing:2,marginLeft:8}}>{sessionCode}</span>} · {players.length} joueurs
+              </div>
+            </div>
+            <button onClick={()=>setShowRoster(false)}
+              style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>×</button>
+          </div>
+          <div style={{overflowY:"auto",flex:1,padding:16}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",flexDirection:"column",gap:4}}>
+              {[...players].sort((a,b)=>a.number-b.number).map(p=>(
+                <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,
+                  padding:"8px 12px",borderRadius:10,background:"#0d0f1a",border:"1px solid #1f2937"}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
+                    color:"#84cc16",width:32,flexShrink:0}}>#{p.number}</div>
+                  <span style={{flex:1,color:"#fff",fontWeight:600,fontSize:14}}>{p.name}</span>
+                  <span style={{fontSize:11,color:"#4b5563"}}>{p.gender==="F"?"F":"H"}</span>
+                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"#6b7280"}}>{p.globalPoints} pts</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{padding:16}}>
         {tab==="rules"&&<RulesCard zone={zone}/>}
