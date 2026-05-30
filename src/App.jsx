@@ -766,6 +766,31 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onUp
           </div>
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#84cc16"}}>{players.length}</div>
         </div>
+        {/* Code + QR de la session active */}
+        {(()=>{
+          const activeCode=getCode(activeRosterId);
+          const activeRoster=rosters.find(r=>r.id===activeRosterId);
+          if(!activeCode&&!activeRoster) return null;
+          return(
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+              background:"#0d1508",borderRadius:12,padding:"10px 14px",marginBottom:12,
+              border:"1px solid #84cc1640"}}>
+              <div>
+                <div style={{fontSize:10,color:"#4b5563",letterSpacing:2,textTransform:"uppercase",marginBottom:2}}>Code de la partie</div>
+                {activeCode
+                  ?<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:36,
+                      color:"#84cc16",letterSpacing:8,lineHeight:1}}>{activeCode}</div>
+                  :<div style={{fontSize:12,color:"#4b5563"}}>Aucun code — générer dans les listes</div>}
+              </div>
+              {activeCode&&activeRoster&&(
+                <button onClick={()=>generateQR(activeRoster)}
+                  style={{...S.btn("#84cc16"),padding:"8px 14px",fontSize:13,fontWeight:700}}>
+                  📲 QR
+                </button>
+              )}
+            </div>
+          );
+        })()}
         {/* Joueurs de la session active seulement */}
         {players.length>0&&(
           <div style={{display:"flex",flexDirection:"column",gap:3,marginBottom:12,maxHeight:200,overflowY:"auto"}}>
