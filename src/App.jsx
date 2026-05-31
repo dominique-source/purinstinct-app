@@ -4473,6 +4473,11 @@ export default function PurInstinctApp(){
   };
 
   // --- Routing ---
+  if(!fbReady) return(
+    <div style={{minHeight:"100vh",background:"#06070f",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#84cc16",letterSpacing:4}}>PURINSTINCT</div>
+    </div>
+  );
   if(view.type==="login") return (liveMode||view.live)
     ?<LiveLoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         rosterCodes={rosterCodes}
