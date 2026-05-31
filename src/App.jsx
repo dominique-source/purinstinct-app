@@ -4428,23 +4428,26 @@ export default function PurInstinctApp(){
     const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
 
     const selected=[];const requeued=[];
-    const isPlaying=(id)=>ZK.some(zz=>{const g=activeGames[zz];if(!g)return false;const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(id);});
+    const isPlaying=(id)=>ZK.some(zz=>{const g=activeGames[zz];if(!g)return false;const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(id)||all.includes(Number(id));});
+    // Nettoyer la file des IDs invalides (joueurs supprimés)
+    const cleanQ=currentQ.filter(id=>!!(pMap[id]||pMap[Number(id)]));
 
     let need;
     if(z.gameStyle==="sprint") need=param||z.minP;
-    else if(z.gameStyle==="individual") need=param||z.minP; // iqCount
+    else if(z.gameStyle==="individual") need=param||z.minP;
     else if(z.teamSize) need=z.teamSize*2;
     else need=Math.min(currentQ.length,z.maxP);
     need=Math.max(need,z.minP);
 
-    for(const id of currentQ){
+    for(const id of cleanQ){
       if(selected.length>=need) break;
+      if(!exists(id)) continue; // ignorer les joueurs supprimés
       if(isPlaying(id)) requeued.push(id);
       else selected.push(id);
     }
     if(selected.length<z.minP) return;
 
-    const remaining=currentQ.filter(id=>!selected.includes(id)&&!requeued.includes(id));
+    const remaining=cleanQ.filter(id=>!selected.includes(id)&&!requeued.includes(id));
     const newQ=[...remaining,...requeued];
 
     let gameData;
