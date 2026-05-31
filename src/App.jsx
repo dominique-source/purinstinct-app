@@ -3014,8 +3014,8 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
   const minToShow=z.teamSize?2:z.minP;
   const canGen=!activeGame&&qPlayers.length>=minToShow;
   const hasIdeal=qPlayers.length>=idealCount;
-  // Remettre à false dès que la file atteint le nombre idéal ou redevient courte
-  useEffect(()=>{if(hasIdeal||qPlayers.length<minToShow) setConfirmShortGame(false);},[qPlayers.length]);
+  // Remettre à false à chaque changement du nombre de joueurs en file
+  useEffect(()=>{setConfirmShortGame(false);},[qPlayers.length]);
   const validSprintSizes=[4,10,15,20,25,30,40,50].filter(s=>s<=qPlayers.length);
   const sprintLine=[...qPlayers].sort((a,b)=>(a.zoneScores.speed||50)-(b.zoneScores.speed||50));
 
