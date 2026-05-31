@@ -4250,6 +4250,7 @@ export default function PurInstinctApp(){
       setPendingSessions(data.pendingSessions?Object.values(data.pendingSessions):[]);
       if(typeof data.liveMode==="boolean") setLiveMode(data.liveMode);
       if(data.activeRosterId) setActiveRosterId(data.activeRosterId);
+      if(data.extraRosters) setRosters([...INITIAL_ROSTERS,...Object.values(data.extraRosters)]);
       setFbReady(true);
     });
     return()=>off(stateRef);
@@ -4296,11 +4297,17 @@ export default function PurInstinctApp(){
     syncGames(makeEmptyGames());
     syncArena({active:false,ended:false,startTime:null,disabledZones:[]});
   };
-  const updateRoster=(idx,updated)=>setRosters(r=>{const a=[...r];a[idx]=updated;return a;});
-  const deleteRoster=(idx)=>setRosters(r=>r.filter((_,i)=>i!==idx));
+  const syncExtraRosters=(newRosters)=>{
+    const initialIds=new Set(INITIAL_ROSTERS.map(r=>r.id));
+    const extra=newRosters.filter(r=>!initialIds.has(r.id));
+    const obj={};extra.forEach(r=>{obj[r.id]=r;});
+    fbSet("extraRosters",Object.keys(obj).length>0?obj:null);
+  };
+  const updateRoster=(idx,updated)=>setRosters(r=>{const a=[...r];a[idx]=updated;syncExtraRosters(a);return a;});
+  const deleteRoster=(idx)=>setRosters(r=>{const a=r.filter((_,i)=>i!==idx);syncExtraRosters(a);return a;});
   const createRoster=()=>{
     const newR={id:"r"+Date.now(),name:"Nouvelle liste",entries:[]};
-    setRosters(r=>[...r,newR]);
+    setRosters(r=>{const a=[...r,newR];syncExtraRosters(a);return a;});
   };
   const addPlayerToSession=(name,gender,callback,groupId="main")=>{
     const newId=players.length>0?Math.max(...players.map(p=>p.id))+1:1;
@@ -4570,17 +4577,23 @@ export default function PurInstinctApp(){
           :pendingSessions;
         const pendingObj={};updatedPending.forEach(s=>{pendingObj[s.id]=s;});
         // Créer une entrée roster pour ce groupe solo s'il n'en a pas déjà
+        let extraRostersUpdate=undefined;
         if(pendingSession&&!rosters.find(r=>r.id===groupId)){
           const newRoster={id:groupId,name:(pendingSession.name||groupId)+" (solo)",
             entries:groupP.map(p=>({name:p.name,gender:p.gender||"M"}))};
           setRosters(prev=>[...prev,newRoster]);
+          const initialIds=new Set(INITIAL_ROSTERS.map(r=>r.id));
+          const extra=[...rosters,...[newRoster]].filter(r=>!initialIds.has(r.id));
+          const obj={};extra.forEach(r=>{obj[r.id]=r;});
+          extraRostersUpdate=obj;
         }
         // Écriture atomique unique dans Firebase pour éviter les race conditions
         setQueues(newQ);
         setPendingSessions(updatedPending);
         update(fbRef("state"),{
           queues:queuesToFb(newQ),
-          pendingSessions:pendingObj
+          pendingSessions:pendingObj,
+          ...(extraRostersUpdate!==undefined?{extraRosters:extraRostersUpdate}:{})
         });
       }}
       onLogout={()=>{setWinnersPublished(false);fbSet("winnersPublished",false);setView({type:"adminHome"});}}
