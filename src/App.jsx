@@ -888,7 +888,12 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onUp
                         border:"1px solid "+(code?"#374151":"none"),color:code?"#6b7280":"#000"}}>
                       📲 {code?"QR / Code":"Générer code"}
                     </button>
-                    {onAddGroupToQueue&&<button onClick={()=>onAddGroupToQueue(s.id,s)}
+                    {onAddGroupToQueue&&<button onClick={(e)=>{
+                        onAddGroupToQueue(s.id,s);
+                        e.currentTarget.textContent="✓ En file!";
+                        e.currentTarget.style.background="#22c55e";
+                        e.currentTarget.disabled=true;
+                      }}
                       style={{...S.btn("#84cc16"),flex:1,padding:"8px",fontSize:12,color:"#000",fontWeight:700}}>
                       ➕ Mettre en file
                     </button>}
@@ -4282,26 +4287,30 @@ export default function PurInstinctApp(){
       }}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onAddGroupToQueue={(groupId,pendingSession)=>{
-        // Trouver par groupId OU par les playerIds connus du pending session
-        let groupP=players.filter(p=>p.groupId===groupId);
-        // Fallback: si aucun trouvé, chercher par playerId du pending session
-        if(groupP.length===0&&pendingSession?.playerId){
-          const p=players.find(px=>px.id===pendingSession.playerId);
-          if(p) groupP=[p];
-        }
+        // Trouver tous les joueurs du groupe (par groupId ET par playerId direct)
+        const byGroup=players.filter(p=>p.groupId===groupId);
+        const byPlayerId=pendingSession?.playerId?players.filter(p=>Number(p.id)===Number(pendingSession.playerId)):[];
+        const allIds=new Set([...byGroup.map(p=>p.id),...byPlayerId.map(p=>p.id)]);
+        const groupP=players.filter(p=>allIds.has(p.id));
         if(groupP.length===0) return;
         // 1. Migrer vers la session active
-        const ids=new Set(groupP.map(p=>p.id));
-        const migratedPlayers=players.map(p=>ids.has(p.id)?{...p,groupId:activeRosterId}:p);
+        const migratedPlayers=players.map(p=>allIds.has(p.id)?{...p,groupId:activeRosterId}:p);
         syncPlayers(migratedPlayers);
         // 2. Ajouter à toutes les files
         const newQ={};
         ZK.forEach(zk=>{
           const existing=[...(queues[zk]||[])];
-          groupP.forEach(p=>{if(!existing.includes(p.id))existing.push(p.id);});
+          groupP.forEach(p=>{if(!existing.includes(p.id)&&!existing.includes(String(p.id)))existing.push(p.id);});
           newQ[zk]=existing;
         });
         syncQueues(newQ);
+        // 3. Retirer des sessions en attente
+        if(pendingSession){
+          const updated=pendingSessions.filter(x=>x.id!==pendingSession.id);
+          setPendingSessions(updated);
+          const obj={};updated.forEach(s=>{obj[s.id]=s;});
+          fbSet("pendingSessions",obj);
+        }
       }}
       onLogout={()=>setView({type:"login"})}
       onActivateRoster={activateRoster} onUpdateRoster={updateRoster} onDeleteRoster={deleteRoster}
