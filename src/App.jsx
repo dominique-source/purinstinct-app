@@ -3374,6 +3374,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
   const player=players.find(p=>p.id===playerId);
   const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
   const [tab,setTab]=useState("stats");
+  const [showHub,setShowHub]=useState(true);
   const [sessionQR,setSessionQR]=useState(null);
   const [showQR,setShowQR]=useState(false);
   const [skinIdx,setSkinIdx]=useState(2);
@@ -3418,6 +3419,116 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
   const elig=activeZones.every(zk=>(player.zonesPlayed||[]).includes(zk));
   const canJoin=inQueues.length<2&&!playingAt;
 
+  // ── HUB PAGE ──
+  if(showHub) return(
+    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
+      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      <style>{FONTS}</style>
+      {/* Header joueur */}
+      <div style={{textAlign:"center",marginBottom:28}}>
+        <Bib n={player.number} size="lg"/>
+        <div style={{fontWeight:700,color:"#fff",fontSize:18,marginTop:8}}>{player.name}</div>
+        <div style={{...S.row(),gap:8,justifyContent:"center",marginTop:4}}>
+          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#84cc16"}}>{player.globalPoints} pts</span>
+          <span style={{fontSize:12,color:"#4b5563"}}>Rang #{rank}</span>
+        </div>
+        {arenaState&&<div style={{marginTop:6}}>
+          <span className={arenaStatus==="active"?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
+            color:arenaStatus==="active"?"#84cc16":arenaStatus==="paused"?"#f97316":"#374151"}}>
+            {arenaTimer} {arenaStatus==="active"?"EN COURS":arenaStatus==="paused"?"EN PAUSE":""}
+          </span>
+        </div>}
+      </div>
+      {/* Grille 2x3 */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,width:"100%",maxWidth:360}}>
+        {[
+          {icon:"📊",label:"Mes stats",sub:"Score · Zones · Historique",color:"#84cc16",
+            action:()=>{setShowHub(false);setTab("stats");}},
+          {icon:"📖",label:"Règlements",sub:"Comment jouer",color:"#3b82f6",
+            action:()=>{setShowHub(false);setTab("rules");}},
+          {icon:"🔗",label:"Inviter un ami",sub:"Code + QR de la partie",color:"#a855f7",
+            action:async()=>{
+              const code=rosterCodes&&sessionRosterId?rosterCodes[sessionRosterId]:null;
+              if(code){
+                if(!sessionQR){
+                  const url=window.location.origin+"?code="+code;
+                  const dataUrl=await QRCode.toDataURL(url,{width:240,margin:2,color:{dark:"#ffffff",light:"#06070f"}});
+                  setSessionQR(dataUrl);
+                }
+                setShowQR(true);
+              }
+            }},
+          {icon:"⚡",label:"Se mettre en file",sub:"Choisir une station active",color:"#f97316",
+            action:()=>{setShowHub(false);setTab("queue");}},
+          {icon:"🏆",label:"Classement",sub:"Voir tous les joueurs",color:"#eab308",
+            action:()=>{setShowHub(false);setTab("leaderboard");}},
+          {icon:"🚪",label:"Déconnexion",sub:"Retour à l'accueil",color:"#6b7280",
+            action:onLogout},
+        ].map(({icon,label,sub,color,action})=>(
+          <button key={label} onClick={action}
+            style={{padding:"20px 12px",borderRadius:18,border:"1px solid "+color+"30",
+              background:"#0d0f1a",cursor:"pointer",textAlign:"center",
+              display:"flex",flexDirection:"column",alignItems:"center",gap:6}}
+            onMouseEnter={e=>{e.currentTarget.style.background=color+"15";e.currentTarget.style.borderColor=color+"80";}}
+            onMouseLeave={e=>{e.currentTarget.style.background="#0d0f1a";e.currentTarget.style.borderColor=color+"30";}}>
+            <div style={{fontSize:30}}>{icon}</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,color:"#fff",lineHeight:1.2}}>{label}</div>
+            <div style={{fontSize:10,color:"#4b5563"}}>{sub}</div>
+          </button>
+        ))}
+      </div>
+      {/* QR invite overlay */}
+      {showQR&&sessionQR&&(
+        <div onClick={()=>setShowQR(false)} style={{position:"fixed",inset:0,zIndex:100,background:"rgba(0,0,0,.88)",
+          display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <div style={{background:"#06070f",borderRadius:20,padding:24,border:"2px solid #a855f7",textAlign:"center"}}
+            onClick={e=>e.stopPropagation()}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:"#fff",marginBottom:4}}>Inviter un ami</div>
+            <div style={{fontSize:13,color:"#4b5563",marginBottom:16}}>
+              Code : <span style={{color:"#84cc16",fontWeight:700,letterSpacing:4}}>{rosterCodes&&sessionRosterId?rosterCodes[sessionRosterId]:""}</span>
+            </div>
+            <img src={sessionQR} alt="QR" style={{width:200,height:200,borderRadius:12,display:"block",margin:"0 auto"}}/>
+            <button onClick={()=>setShowQR(false)} style={{marginTop:16,...S.btn(),padding:"8px 24px",fontSize:13}}>Fermer</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ── Vue "Se mettre en file" ──
+  if(tab==="queue") return(
+    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
+      <style>{FONTS}</style>
+      <div style={{paddingTop:"calc(env(safe-area-inset-top) + 16px)",padding:"calc(env(safe-area-inset-top) + 16px) 16px 16px"}}>
+        <button onClick={()=>setShowHub(true)} style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:16,padding:0}}>← Retour</button>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:"#fff",marginBottom:16}}>⚡ Choisir une station</div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {ZK.filter(zk=>!(disabledZones||[]).includes(zk)).map(zk=>{
+            const z=ZONES[zk];const zl=zn(zk);
+            const inQ=inQueues.includes(zk);
+            const inG=activeGames[zk]&&(()=>{const g=activeGames[zk];const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(playerId);})();
+            const played=(player.zonesPlayed||[]).includes(zk);
+            return(
+              <div key={zk} style={{borderRadius:14,padding:"14px 16px",
+                background:inQ||inG?z.bg:"#0d0f1a",border:"1px solid "+(inQ||inG?z.color:z.border),
+                display:"flex",alignItems:"center",gap:12}}>
+                <span style={{fontSize:24}}>{z.icon}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,color:"#fff",fontSize:14}}>{zl.name}</div>
+                  {inQ&&<div style={{fontSize:11,color:z.color,fontWeight:600}}>En file d'attente...</div>}
+                  {inG&&<div style={{fontSize:11,color:"#fbbf24",fontWeight:600}}>⚡ En jeu !</div>}
+                  {played&&!inQ&&!inG&&<div style={{fontSize:10,color:"#4b5563"}}>✓ Déjà jouée</div>}
+                </div>
+                {inQ?<button onClick={()=>onLeave(playerId,zk)} style={{fontSize:11,padding:"4px 10px",borderRadius:8,background:"none",border:"1px solid #374151",cursor:"pointer",color:"#6b7280"}}>Quitter</button>
+                  :!inG&&canJoin&&<button onClick={()=>{onJoin(playerId,zk);setShowHub(true);}} style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"none",cursor:"pointer",background:z.color,color:"#000",fontWeight:700}}>+ File</button>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
   return(
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
@@ -3446,7 +3557,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:40,color:"#84cc16",lineHeight:1}}>{player.globalPoints}</div>
               <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>RANG #{rank}</div>
             </div>
-            <button onClick={onLogout} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>×</button>
+            <button onClick={()=>setShowHub(true)} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>⌂</button>
           </div>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:6}}>
