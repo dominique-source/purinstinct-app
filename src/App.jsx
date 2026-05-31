@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import html2canvas from "html2canvas";
 import confetti from "canvas-confetti";
 import QRCode from "qrcode";
-import { db, fbRef, set, onValue, off, toFb, fromFb, queuesToFb, queuesFromFb } from "./firebase.js";
+import { db, fbRef, set, onValue, off, update, toFb, fromFb, queuesToFb, queuesFromFb } from "./firebase.js";
 
 // ================================================================
 // PURINSTINCT ARENA v3  –  75 min  |  Dynamic rosters  |  5 tiers
@@ -14,6 +14,8 @@ const FONTS = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #06070f; }
 @keyframes pulseLime { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+@keyframes pulseOrange { 0%,100% { box-shadow:0 0 0 3px rgba(249,115,22,0.5); } 50% { box-shadow:0 0 0 3px rgba(249,115,22,0.08); } }
+.pulse-accepted { animation: pulseOrange 1.2s ease-in-out infinite; }
 @keyframes slideUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 @keyframes popIn { from { opacity:0; transform:scale(.82); } to { opacity:1; transform:scale(1); } }
 .anim-up { animation: slideUp .26s ease-out; }
@@ -706,6 +708,7 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
   const [qrMap,setQrMap]=useState({});       // {rosterId: dataURL}
   const [activeQR,setActiveQR]=useState(null); // rosterId en vue QR
   const [expandedRosters,setExpandedRosters]=useState({}); // {rosterId: bool}
+  const [acceptedIds,setAcceptedIds]=useState(new Set());
 
   const getCode=(id)=>(rosterCodes&&rosterCodes[id])||null;
 
@@ -809,12 +812,6 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
             ))}
           </div>
         )}
-        {players.length>0&&onAddGroupToQueue&&(
-          <button onClick={()=>onAddGroupToQueue(activeRosterId,null)}
-            style={{...S.btn("#84cc16"),width:"100%",padding:"10px",fontSize:13,fontWeight:700,marginBottom:10}}>
-            ⚡ Mettre tous en file ({players.length} joueurs)
-          </button>
-        )}
         <div style={{...S.label(),marginBottom:8}}>{T.fr.addNow}</div>
         <div style={{display:"flex",gap:8}}>
           <input value={addName} onChange={e=>setAddName(e.target.value)}
@@ -862,21 +859,25 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
       })()}
 
       {/* Sessions solo en attente */}
-      {pendingSessions&&pendingSessions.length>0&&(
+      {(()=>{
+        const rosterIds=new Set(rosters.map(r=>r.id));
+        const pending=(pendingSessions||[]).filter(s=>!rosterIds.has(s.id));
+        if(pending.length===0) return null;
+        return(
         <div style={{marginBottom:16}}>
-          <div style={{...S.label(),marginBottom:10,color:"#f97316"}}>⏳ Sessions en attente de code ({pendingSessions.length})</div>
+          <div style={{...S.label(),marginBottom:10,color:"#f97316"}}>⏳ Sessions en attente de code ({pending.length})</div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {pendingSessions.map(s=>{
+            {pending.map(s=>{
               const code=getCode(s.id);
               return(
-                <div key={s.id} style={{...S.card(),border:"2px solid "+(code?"#84cc1640":"#f9731640")}}>
+                <div key={s.id} style={{...S.card(),border:"2px solid #f9731640"}}>
                   <div style={{...S.row(),gap:10,marginBottom:10}}>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{color:"#fff",fontWeight:700,fontSize:14}}>{s.name}</div>
                       <div style={{...S.row(),gap:8,marginTop:3}}>
                         <span style={{fontSize:11,color:"#4b5563"}}>{s.gender==="F"?"Femme":"Homme"}</span>
                         <span style={{fontSize:11,color:"#f97316"}}>Arrivé à {s.createdAt}</span>
-                        {code&&<span style={{fontSize:11,color:"#84cc16",fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif"}}>Code : {code}</span>}
+                        {code&&<span style={{fontSize:16,color:"#84cc16",fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:3}}>🔑 {code}</span>}
                       </div>
                     </div>
                     <button onClick={()=>onDismissPending&&onDismissPending(s.id)}
@@ -894,19 +895,15 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
                     );
                   })()}
                   <div style={{display:"flex",gap:6,marginBottom:6}}>
-                    <button onClick={()=>generateQR(s,true)}
-                      style={{...S.btn(code?"#111827":"#84cc16"),flex:1,padding:"8px",fontSize:12,
-                        border:"1px solid "+(code?"#374151":"none"),color:code?"#6b7280":"#000"}}>
-                      📲 {code?"QR / Code":"Générer code"}
-                    </button>
                     {onAddGroupToQueue&&<button onClick={(e)=>{
                         onAddGroupToQueue(s.id,s);
-                        e.currentTarget.textContent="✓ En file!";
+                        setAcceptedIds(prev=>new Set([...prev,s.id]));
+                        e.currentTarget.textContent="✓ Accepté!";
                         e.currentTarget.style.background="#22c55e";
                         e.currentTarget.disabled=true;
                       }}
                       style={{...S.btn("#84cc16"),flex:1,padding:"8px",fontSize:12,color:"#000",fontWeight:700}}>
-                      ➕ Mettre en file
+                      ✓ Accepter
                     </button>}
                   </div>
                 </div>
@@ -914,7 +911,8 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
             })}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Saved rosters */}
       <div style={{...S.label(),marginBottom:10}}>{T.fr.savedLists}</div>
@@ -928,8 +926,9 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
           const templateOnly=r.entries.filter(e=>!liveNames.has(e.name.toLowerCase()));
           const totalCount=liveCount+templateOnly.length;
           const isActive=r.id===activeRosterId;
+          const isAccepted=acceptedIds.has(r.id);
           return(
-            <div key={r.id} style={{...S.card(),border:"1px solid "+(isActive?"#84cc16":code?"#84cc1630":"#1f2937")}}>
+            <div key={r.id} className={isAccepted?"pulse-accepted":""} style={{...S.card(),border:"1px solid "+(isActive?"#84cc16":code?"#84cc1630":"#1f2937")}}>
               <div style={{...S.row(),gap:8,marginBottom:8,flexWrap:"wrap"}}>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{...S.row(),gap:6}}>
@@ -939,7 +938,7 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
                   <div style={{...S.row(),gap:8,marginTop:3}}>
                     <span style={{fontSize:11,color:"#4b5563"}}>{r.entries.length} dans template</span>
                     {liveCount>0&&<span style={{fontSize:11,color:"#84cc16",fontWeight:700}}>👥 {liveCount} inscrits</span>}
-                    {code&&<span style={{fontSize:11,color:"#84cc16",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:2}}>🔑 {code}</span>}
+                    {code&&<span style={{fontSize:16,color:"#84cc16",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:3}}>🔑 {code}</span>}
                   </div>
                 </div>
               </div>
@@ -1550,6 +1549,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
       }
     }
     setSessionCodeError(true);
+    setSessionCode("");
   };
 
   // PIN Admin / Station
@@ -3574,9 +3574,6 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
             <button onClick={()=>setShowHub(true)} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>⌂</button>
           </div>
         </div>
-        {inQueues.length>0&&<div style={{...S.row(),gap:4,marginBottom:6}}>
-          {inQueues.map(z=><span key={z} style={{...S.tag(ZONES[z].color),fontSize:10}}>{ZONES[z].icon} file</span>)}
-        </div>}
         <div style={{display:"flex",flexDirection:"column",gap:6}}>
           {/* Onglets principaux */}
           <div style={{display:"flex",gap:4}}>
@@ -4231,7 +4228,7 @@ export default function PurInstinctApp(){
         set(fbRef("state/rosterCodes"),loadedCodes);
       }
       setRosterCodes(loadedCodes);
-      if(data.pendingSessions) setPendingSessions(Object.values(data.pendingSessions));
+      setPendingSessions(data.pendingSessions?Object.values(data.pendingSessions):[]);
       if(typeof data.liveMode==="boolean") setLiveMode(data.liveMode);
       if(data.activeRosterId) setActiveRosterId(data.activeRosterId);
       setFbReady(true);
@@ -4470,7 +4467,7 @@ export default function PurInstinctApp(){
         onGoTest={()=>{fbSet("liveMode",false);syncQueues(buildInitialQueues(players));}}/>
     :<LoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         onLogin={(t,id)=>setView({type:t,id})}
-        onGoLive={()=>{fbSet("liveMode",true);syncQueues(makeEmptyQueues());}}/>;
+        onGoLive={()=>{fbSet("liveMode",true);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());}}/>;
 
   if(view.type==="adminHome") return(
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
@@ -4513,7 +4510,7 @@ export default function PurInstinctApp(){
   );
 
   if(view.type==="admin") return(
-    <AdminView players={players.filter(p=>(p.groupId||"main")===activeRosterId)} allPlayers={players} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId} initialTab={view.tab}
+    <AdminView players={players.filter(p=>(p.groupId||"main")===activeRosterId||ZK.some(zk=>queues[zk]&&queues[zk].includes(p.id)))} allPlayers={players} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId} initialTab={view.tab}
       onStart={(mins)=>syncArena({...arenaState,active:true,ended:false,paused:false,startTime:Date.now(),sessionMins:mins||75})}
       onEnd={()=>syncArena({active:false,ended:false,paused:false,startTime:null,pausedRemaining:null,disabledZones:arenaState.disabledZones||[],sessionMins:arenaState.sessionMins||75})}
       onPause={()=>{
@@ -4530,32 +4527,37 @@ export default function PurInstinctApp(){
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onAddGroupToQueue={(groupId,pendingSession)=>{
         // Trouver tous les joueurs du groupe (par groupId ET par playerId direct)
-        // players = liste complète depuis l'état App
-        const byGroup=players.filter(p=>p.groupId===groupId);
-        const byPlayerId=pendingSession?.playerId?players.filter(p=>Number(p.id)===Number(pendingSession.playerId)):[];
+        const allPlayersRef=players;
+        const byGroup=allPlayersRef.filter(p=>p.groupId===groupId);
+        const byPlayerId=pendingSession?.playerId?allPlayersRef.filter(p=>Number(p.id)===Number(pendingSession.playerId)):[];
         const allIds=new Set([...byGroup.map(p=>p.id),...byPlayerId.map(p=>p.id)]);
-        const groupP=players.filter(p=>allIds.has(p.id));
+        const groupP=allPlayersRef.filter(p=>allIds.has(p.id));
         if(groupP.length===0) return;
-        // 1. Migrer vers la session active si nécessaire
-        if(groupId!==activeRosterId){
-          const migratedPlayers=allP.map(p=>allIds.has(p.id)?{...p,groupId:activeRosterId}:p);
-          syncPlayers(migratedPlayers);
-        }
-        // 2. Ajouter à toutes les files
+        // Préparer les files mises à jour (sans migrer le groupe du joueur)
         const newQ={};
         ZK.forEach(zk=>{
           const existing=[...(queues[zk]||[])];
           groupP.forEach(p=>{if(!existing.includes(p.id)&&!existing.includes(String(p.id)))existing.push(p.id);});
           newQ[zk]=existing;
         });
-        syncQueues(newQ);
-        // 3. Retirer des sessions en attente
-        if(pendingSession){
-          const updated=pendingSessions.filter(x=>x.id!==pendingSession.id);
-          setPendingSessions(updated);
-          const obj={};updated.forEach(s=>{obj[s.id]=s;});
-          fbSet("pendingSessions",obj);
+        // Préparer les sessions en attente mises à jour
+        const updatedPending=pendingSession
+          ?pendingSessions.filter(x=>x.id!==pendingSession.id)
+          :pendingSessions;
+        const pendingObj={};updatedPending.forEach(s=>{pendingObj[s.id]=s;});
+        // Créer une entrée roster pour ce groupe solo s'il n'en a pas déjà
+        if(pendingSession&&!rosters.find(r=>r.id===groupId)){
+          const newRoster={id:groupId,name:(pendingSession.name||groupId)+" (solo)",
+            entries:groupP.map(p=>({name:p.name,gender:p.gender||"M"}))};
+          setRosters(prev=>[...prev,newRoster]);
         }
+        // Écriture atomique unique dans Firebase pour éviter les race conditions
+        setQueues(newQ);
+        setPendingSessions(updatedPending);
+        update(fbRef("state"),{
+          queues:queuesToFb(newQ),
+          pendingSessions:pendingObj
+        });
       }}
       onLogout={()=>setView({type:"adminHome"})}
       onActivateRoster={activateRoster}
@@ -4588,7 +4590,7 @@ export default function PurInstinctApp(){
   );
 
   if(view.type==="station") return(
-    <StationView zone={view.id} players={players.filter(p=>(p.groupId||"main")===activeRosterId)}
+    <StationView zone={view.id} players={players.filter(p=>(p.groupId||"main")===activeRosterId||ZK.some(zk=>queues[zk]&&queues[zk].includes(p.id)))}
       queue={queues[view.id]||[]}
       activeGame={activeGames[view.id]}
       disabled={(arenaState.disabledZones||[]).includes(view.id)}
