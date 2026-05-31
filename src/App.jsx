@@ -701,7 +701,7 @@ function RosterEditor({roster,onSave,onCancel}){
 // ----------------------------------------------------------------
 const BASE_URL=window.location.origin;
 
-function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSetActiveRoster,onUpdateRoster,onAddPlayer,onCreateRoster,onDeleteRoster,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onAddGroupToQueue}){
+function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSetActiveRoster,onUpdateRoster,onAddPlayer,onCreateRoster,onDeleteRoster,onRemovePlayer,onOpenDossier,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onAddGroupToQueue}){
   const [editIdx,setEditIdx]=useState(null);
   const [addName,setAddName]=useState("");
   const [addGender,setAddGender]=useState("M");
@@ -808,6 +808,14 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
                   color:"#84cc16",width:22,flexShrink:0}}>#{p.number}</div>
                 <span style={{color:"#fff",fontSize:12,flex:1}}>{p.name}</span>
                 <span style={{fontSize:10,color:"#4b5563"}}>{p.gender==="F"?"F":"H"}</span>
+                {onOpenDossier&&<button onClick={()=>onOpenDossier(p.id)}
+                  style={{fontSize:10,padding:"2px 6px",borderRadius:6,border:"1px solid #374151",
+                    background:"#1f2937",color:"#9ca3af",cursor:"pointer"}}>Profil</button>}
+                {onRemovePlayer&&<button onClick={()=>{if(window.confirm("Supprimer "+p.name+" ?"))onRemovePlayer(p.id);}}
+                  style={{fontSize:10,padding:"2px 6px",borderRadius:6,border:"1px solid #ef444440",
+                    background:"#ef444415",color:"#ef4444",cursor:"pointer"}}
+                  onMouseEnter={e=>e.currentTarget.style.background="#ef444430"}
+                  onMouseLeave={e=>e.currentTarget.style.background="#ef444415"}>Supprimer</button>}
               </div>
             ))}
           </div>
@@ -963,6 +971,14 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
                             color:"#84cc16",width:24,flexShrink:0}}>#{p.number}</span>
                           <span style={{fontSize:12,color:"#fff",flex:1}}>{p.name}</span>
                           <span style={{fontSize:10,color:"#4b5563"}}>{p.gender==="F"?"F":"H"}</span>
+                          {onOpenDossier&&<button onClick={()=>onOpenDossier(p.id)}
+                            style={{fontSize:10,padding:"2px 6px",borderRadius:6,border:"1px solid #374151",
+                              background:"#1f2937",color:"#9ca3af",cursor:"pointer"}}>Profil</button>}
+                          {onRemovePlayer&&<button onClick={()=>{if(window.confirm("Supprimer "+p.name+" ?"))onRemovePlayer(p.id);}}
+                            style={{fontSize:10,padding:"2px 6px",borderRadius:6,border:"1px solid #ef444440",
+                              background:"#ef444415",color:"#ef4444",cursor:"pointer"}}
+                            onMouseEnter={e=>e.currentTarget.style.background="#ef444430"}
+                            onMouseLeave={e=>e.currentTarget.style.background="#ef444415"}>Supprimer</button>}
                         </div>
                       ))}
                       {templateOnly.map((e,i)=>(
@@ -1862,7 +1878,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,activeRosterId,initialTab,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
+function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,activeRosterId,initialTab,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,onRemovePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
   const [tab,setTab]=useState(initialTab||"leaderboard");
   const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
   const [timer,setTimer]=useState("75:00");
@@ -2220,10 +2236,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                     border:"1px solid "+(playingAt?"#fbbf2430":inQueues.length>0?"#84cc1630":"#1f2937")}}>
 
                     {/* Top row: identity + status + points + dossier link — full row is clickable */}
-                    <div onClick={()=>openDossier(p.id)} title="Ouvrir le dossier"
-                      style={{...S.row(),padding:"9px 12px",gap:10,cursor:"pointer"}}
-                      onMouseEnter={e=>e.currentTarget.style.background="#ffffff08"}
-                      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <div style={{...S.row(),padding:"9px 12px",gap:10}}>
                       <div style={{width:8,height:8,borderRadius:"50%",background:statusDot,flexShrink:0,marginTop:1}}/>
                       <Bib n={p.number} size="sm"/>
                       <div style={{flex:1,minWidth:0}}>
@@ -2231,7 +2244,12 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                         <div style={{fontSize:11,marginTop:1,fontWeight:600,color:statusColor}}>{statusText}</div>
                       </div>
                       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#84cc16",flexShrink:0}}>{p.globalPoints} pts</div>
-                      <span style={{color:"#4b5563",fontSize:18,lineHeight:1}}>→</span>
+                      <button onClick={(e)=>{e.stopPropagation();openDossier(p.id);}}
+                        style={{...S.btn("#1f2937"),padding:"4px 8px",fontSize:11,flexShrink:0}}>Profil</button>
+                      <button onClick={(e)=>{e.stopPropagation();if(window.confirm("Supprimer "+p.name+" de la session ?"))onRemovePlayer&&onRemovePlayer(p.id);}}
+                        style={{...S.btn("#ef444420"),padding:"4px 8px",fontSize:11,color:"#ef4444",border:"1px solid #ef444440",flexShrink:0}}
+                        onMouseEnter={e=>e.currentTarget.style.background="#ef444435"}
+                        onMouseLeave={e=>e.currentTarget.style.background="#ef444420"}>Supprimer</button>
                     </div>
 
                     {/* Action row - only if not playing */}
@@ -2289,7 +2307,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
             activeRosterId={activeRosterId}
             onActivate={onActivateRoster} onSetActiveRoster={onSetActiveRoster} onUpdateRoster={onUpdateRoster}
             onDeleteRoster={onDeleteRoster}
-            onAddPlayer={onAddPlayer} onCreateRoster={onCreateRoster}
+            onAddPlayer={onAddPlayer} onCreateRoster={onCreateRoster} onRemovePlayer={onRemovePlayer} onOpenDossier={openDossier}
             rosterCodes={rosterCodes} onUpdateCodes={onUpdateCodes}
             pendingSessions={pendingSessions}
             onDismissPending={onDismissPending}
@@ -4321,6 +4339,11 @@ export default function PurInstinctApp(){
   const updatePlayer=(updated)=>{
     syncPlayers(players.map(px=>px.id===updated.id?updated:px));
   };
+  const removePlayer=(id)=>{
+    syncPlayers(players.filter(p=>p.id!==id));
+    const newQ={};ZK.forEach(zk=>{newQ[zk]=(queues[zk]||[]).filter(x=>x!==id&&x!==String(id));});
+    syncQueues(newQ);
+  };
   const removeFromQueue=(id,zone)=>syncQueues({...queues,[zone]:queues[zone].filter(x=>x!==id)});
   const reorderQueue=(zone,newQ)=>syncQueues({...queues,[zone]:newQ});
 
@@ -4566,7 +4589,7 @@ export default function PurInstinctApp(){
       onUpdateRoster={updateRoster} onDeleteRoster={deleteRoster}
       activeRosterId={activeRosterId}
       onAddPlayer={addPlayerToSession} onCreateRoster={createRoster}
-      onUpdatePlayer={updatePlayer}
+      onUpdatePlayer={updatePlayer} onRemovePlayer={removePlayer}
       rosterCodes={rosterCodes} onUpdateCodes={(codes)=>{setRosterCodes(codes);fbSet("rosterCodes",codes);}}
       pendingSessions={pendingSessions}
       onDismissPending={(id)=>{
