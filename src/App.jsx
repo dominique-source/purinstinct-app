@@ -932,7 +932,7 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
           const liveCount=livePlayers.length;
           // Membres complets = joueurs live + entrées template non encore activées
           const liveNames=new Set(livePlayers.map(p=>p.name.toLowerCase()));
-          const templateOnly=r.entries.filter(e=>!liveNames.has(e.name.toLowerCase()));
+          const templateOnly=(r.entries||[]).filter(e=>!liveNames.has(e.name.toLowerCase()));
           const totalCount=liveCount+templateOnly.length;
           const isActive=r.id===activeRosterId;
           const isAccepted=acceptedIds.has(r.id);
