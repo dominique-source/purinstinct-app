@@ -4282,12 +4282,19 @@ export default function PurInstinctApp(){
       }}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onAddGroupToQueue={(groupId)=>{
+        // 1. Migrer les joueurs vers la session active
         const groupP=players.filter(p=>p.groupId===groupId);
-        let newQ={...queues};
-        groupP.forEach(p=>{
-          ZK.forEach(zk=>{
-            if(!newQ[zk].includes(p.id)) newQ={...newQ,[zk]:[...newQ[zk],p.id]};
-          });
+        if(groupP.length===0) return;
+        const migratedPlayers=players.map(p=>
+          p.groupId===groupId?{...p,groupId:activeRosterId}:p
+        );
+        syncPlayers(migratedPlayers);
+        // 2. Les ajouter à toutes les files
+        const newQ={};
+        ZK.forEach(zk=>{
+          const existing=[...(queues[zk]||[])];
+          groupP.forEach(p=>{if(!existing.includes(p.id))existing.push(p.id);});
+          newQ[zk]=existing;
         });
         syncQueues(newQ);
       }}
