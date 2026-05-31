@@ -1322,7 +1322,8 @@ function PlayerDossier({player,onSave,onBack,embedded}){
   return(
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
-      <div style={{position:"sticky",top:0,zIndex:10,padding:"12px 16px",
+      <div style={{position:"sticky",top:0,zIndex:10,
+        paddingTop:"calc(env(safe-area-inset-top) + 12px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",
         background:"#06070f",borderBottom:"1px solid #111827",
         display:"flex",alignItems:"center",gap:12}}>
         {onBack&&<button onClick={onBack} style={{...S.btn(),padding:"6px 12px",fontSize:12}}>{T.fr.back}</button>}
