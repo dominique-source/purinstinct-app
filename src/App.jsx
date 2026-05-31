@@ -4132,17 +4132,17 @@ export default function PurInstinctApp(){
   // --- Roster management ---
   const activateRoster=(idx)=>{
     const r=rosters[idx];
-    // Garder les joueurs existants du groupe si ils ont déjà des données live
+    // Joueurs déjà inscrits dans ce groupe (via code)
     const existingGroupPlayers=players.filter(p=>p.groupId===r.id);
-    const hasLiveData=existingGroupPlayers.some(p=>p.globalPoints>0||(p.history||[]).length>0);
-    let groupPlayers;
-    if(hasLiveData||existingGroupPlayers.length>0){
-      // Garder les joueurs existants tels quels
-      groupPlayers=existingGroupPlayers;
-    } else {
-      // Créer depuis le template seulement si aucun joueur live
-      groupPlayers=createPlayersFromRoster(r).map(p=>({...p,groupId:r.id}));
-    }
+    const existingNames=new Set(existingGroupPlayers.map(p=>p.name.toLowerCase()));
+    // Joueurs du template qui ne sont pas encore inscrits
+    const templatePlayers=createPlayersFromRoster(r).map(p=>({...p,groupId:r.id}));
+    const templateNotYetJoined=templatePlayers.filter(p=>!existingNames.has(p.name.toLowerCase()));
+    // Fusionner : inscrits live + membres template manquants
+    // Les inscrits gardent leurs données, les nouveaux arrivent frais
+    const maxId=players.length>0?Math.max(...players.map(p=>p.id)):0;
+    const templateWithIds=templateNotYetJoined.map((p,i)=>({...p,id:maxId+i+1,number:maxId+i+1}));
+    const groupPlayers=[...existingGroupPlayers,...templateWithIds];
     const others=players.filter(p=>p.groupId!==r.id);
     const merged=[...others,...groupPlayers];
     setActiveRosterId(r.id);
