@@ -3715,7 +3715,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
             </div>
 
             {/* LAST ACTIVITY */}
-            {player.lastResult&&(
+            {player.lastResult&&ZONES[player.lastResult.zone]&&(
               <div className="anim-pop" style={{borderRadius:14,padding:12,marginBottom:14,
                 display:"flex",alignItems:"center",gap:12,
                 background:player.lastResult.isWin?"#0d1508":"#1a0606",
@@ -3727,7 +3727,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                     {ZONES[player.lastResult.zone].icon} {zn(player.lastResult.zone).name}
                     {player.lastResult.bonus?" 🔥":""}
                   </div>
-                  <div style={{fontSize:12,marginTop:1,color:player.lastResult.isWin?"#84cc16":"#dc2626",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15}}>
+                  <div style={{fontSize:12,marginTop:1,color:player.lastResult.isWin?"#84cc16":"#dc2626",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>
                     {player.lastResult.isWin?T.fr.victory:T.fr.defeat}{" "}
                     <span style={{fontSize:18}}>{player.lastResult.delta>0?"+"+player.lastResult.delta:player.lastResult.delta} pts</span>
                     {player.lastResult.newStreak>=2&&<span style={{fontSize:11,color:"#f97316",marginLeft:6}}>Serie {player.lastResult.newStreak} 🔥</span>}
@@ -4416,9 +4416,16 @@ export default function PurInstinctApp(){
     }
     const newGames={...activeGames,[zone]:null};
     const refilled=refillQueues(updated,queues,newGames);
-    syncPlayers(updated);
-    syncGames(newGames);
-    syncQueues(refilled);
+    // Mise à jour locale immédiate
+    setPlayers(updated);
+    setActiveGames(newGames);
+    setQueues(refilled);
+    // Écriture atomique unique pour éviter les race conditions du listener Firebase
+    update(fbRef("state"),{
+      players:toFb(updated),
+      activeGames:newGames,
+      queues:queuesToFb(refilled)
+    });
   };
 
   // --- Remove player from active game ---
