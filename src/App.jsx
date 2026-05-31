@@ -4557,44 +4557,44 @@ export default function PurInstinctApp(){
       }}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onAddGroupToQueue={(groupId,pendingSession)=>{
-        // Trouver tous les joueurs du groupe (par groupId ET par playerId direct)
-        const allPlayersRef=players;
-        const byGroup=allPlayersRef.filter(p=>p.groupId===groupId);
-        const byPlayerId=pendingSession?.playerId?allPlayersRef.filter(p=>Number(p.id)===Number(pendingSession.playerId)):[];
+        // 1. Retirer de la liste en attente et créer le roster — toujours, même sans joueurs trouvés
+        const updatedPending=pendingSession
+          ?pendingSessions.filter(x=>x.id!==pendingSession.id)
+          :pendingSessions;
+        const pendingObj={};updatedPending.forEach(s=>{pendingObj[s.id]=s;});
+        let extraRostersUpdate=undefined;
+        if(pendingSession&&!rosters.find(r=>r.id===groupId)){
+          const newRoster={id:groupId,name:(pendingSession.name||groupId)+" (solo)",entries:[]};
+          setRosters(prev=>{
+            const next=[...prev,newRoster];
+            const initialIds=new Set(INITIAL_ROSTERS.map(r=>r.id));
+            const extra=next.filter(r=>!initialIds.has(r.id));
+            const obj={};extra.forEach(r=>{obj[r.id]=r;});
+            extraRostersUpdate=obj;
+            return next;
+          });
+        }
+        setPendingSessions(updatedPending);
+        // 2. Ajouter aux files si des joueurs sont trouvés
+        const byGroup=players.filter(p=>p.groupId===groupId);
+        const byPlayerId=pendingSession?.playerId?players.filter(p=>Number(p.id)===Number(pendingSession.playerId)):[];
         const allIds=new Set([...byGroup.map(p=>p.id),...byPlayerId.map(p=>p.id)]);
-        const groupP=allPlayersRef.filter(p=>allIds.has(p.id));
-        if(groupP.length===0) return;
-        // Préparer les files mises à jour (sans migrer le groupe du joueur)
+        const groupP=players.filter(p=>allIds.has(p.id));
         const newQ={};
         ZK.forEach(zk=>{
           const existing=[...(queues[zk]||[])];
           groupP.forEach(p=>{if(!existing.includes(p.id)&&!existing.includes(String(p.id)))existing.push(p.id);});
           newQ[zk]=existing;
         });
-        // Préparer les sessions en attente mises à jour
-        const updatedPending=pendingSession
-          ?pendingSessions.filter(x=>x.id!==pendingSession.id)
-          :pendingSessions;
-        const pendingObj={};updatedPending.forEach(s=>{pendingObj[s.id]=s;});
-        // Créer une entrée roster pour ce groupe solo s'il n'en a pas déjà
-        let extraRostersUpdate=undefined;
-        if(pendingSession&&!rosters.find(r=>r.id===groupId)){
-          const newRoster={id:groupId,name:(pendingSession.name||groupId)+" (solo)",
-            entries:groupP.map(p=>({name:p.name,gender:p.gender||"M"}))};
-          setRosters(prev=>[...prev,newRoster]);
-          const initialIds=new Set(INITIAL_ROSTERS.map(r=>r.id));
-          const extra=[...rosters,...[newRoster]].filter(r=>!initialIds.has(r.id));
-          const obj={};extra.forEach(r=>{obj[r.id]=r;});
-          extraRostersUpdate=obj;
-        }
-        // Écriture atomique unique dans Firebase pour éviter les race conditions
-        setQueues(newQ);
-        setPendingSessions(updatedPending);
-        update(fbRef("state"),{
-          queues:queuesToFb(newQ),
-          pendingSessions:pendingObj,
-          ...(extraRostersUpdate!==undefined?{extraRosters:extraRostersUpdate}:{})
-        });
+        if(groupP.length>0) setQueues(newQ);
+        // 3. Écriture Firebase atomique
+        setTimeout(()=>{
+          update(fbRef("state"),{
+            pendingSessions:pendingObj,
+            queues:groupP.length>0?queuesToFb(newQ):undefined,
+            ...(extraRostersUpdate!==undefined?{extraRosters:extraRostersUpdate}:{})
+          });
+        },0);
       }}
       onLogout={()=>{setWinnersPublished(false);fbSet("winnersPublished",false);setView({type:"adminHome"});}}
       onActivateRoster={activateRoster}
