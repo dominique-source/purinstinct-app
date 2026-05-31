@@ -1522,6 +1522,13 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
   const [soloSubmitted,setSoloSubmitted]=useState(false);
   const [activeGroupId,setActiveGroupId]=useState("main");
 
+  // Résoudre le groupId associé au code URL dès que rosterCodes est disponible
+  useEffect(()=>{
+    if(!urlCode||!rosterCodes) return;
+    const entry=Object.entries(rosterCodes).find(([,v])=>v===urlCode);
+    if(entry) setActiveGroupId(entry[0]);
+  },[rosterCodes]);
+
   // Chercher dans TOUS les joueurs du code ET du groupe actif
   // (le code peut pointer vers un groupId différent des joueurs déjà inscrits)
   const groupPlayers=players.filter(p=>(p.groupId||"main")===activeGroupId);
