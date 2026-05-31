@@ -3263,12 +3263,12 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                             ⚠️ Manque {idealCount-qPlayers.length} joueur{idealCount-qPlayers.length>1?"s":""} — jouer quand même ?
                           </div>
                           <div style={{display:"flex",gap:8}}>
-                            <button onClick={()=>setConfirmShortGame(true)}
+                            <button onClick={()=>onGenerate(null)}
                               style={{flex:1,padding:"10px",borderRadius:10,border:"none",cursor:"pointer",
                                 background:z.color,color:"#000",fontWeight:700,fontSize:14}}>
                               ✓ Oui
                             </button>
-                            <button onClick={()=>{}}
+                            <button onClick={()=>setConfirmShortGame(true)}
                               style={{flex:1,padding:"10px",borderRadius:10,cursor:"pointer",
                                 background:"#1f2937",color:"#9ca3af",border:"1px solid #374151",fontSize:14}}>
                               ✕ Non
@@ -3276,14 +3276,11 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                           </div>
                         </div>
                       )}
-                      {(hasIdeal||zone==="speed"||confirmShortGame)&&(
-                      <button onClick={()=>{
-                        setConfirmShortGame(false);
-                        onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):null);
-                      }}
-                        style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:z.color,color:"#000"}}>
-                        {zone==="speed"?T.fr.launchRace+" ("+(sprintSize==="tous"?qPlayers.length:sprintSize)+")":T.fr.generateTeams}
-                      </button>
+                      {(hasIdeal||zone==="speed")&&(
+                        <button onClick={()=>onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):null)}
+                          style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:z.color,color:"#000"}}>
+                          {zone==="speed"?T.fr.launchRace+" ("+(sprintSize==="tous"?qPlayers.length:sprintSize)+")":T.fr.generateTeams}
+                        </button>
                       )}
                     </div>
                   ):(
