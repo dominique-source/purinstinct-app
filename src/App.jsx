@@ -3419,6 +3419,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
   const [showCongrats,setShowCongrats]=useState(false);
   const [leaderSearch,setLeaderSearch]=useState("");
   const [leaderHighlight,setLeaderHighlight]=useState(null);
+  const [expandedQueues,setExpandedQueues]=useState({});
   const playerCardRef=useRef(null);
   const confettiFiredRef=useRef(false);
   const leaderHighlightRef=useRef(null);
@@ -3556,19 +3557,46 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
             const inQ=inQueues.includes(zk);
             const inG=activeGames[zk]&&(()=>{const g=activeGames[zk];const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(playerId);})();
             const played=(player.zonesPlayed||[]).includes(zk);
+            const zoneQueue=(queues[zk]||[]).map(id=>players.find(p=>p.id===id)).filter(Boolean);
+            const myPos=zoneQueue.findIndex(p=>p.id===playerId);
             return(
-              <div key={zk} style={{borderRadius:14,padding:"14px 16px",
-                background:inQ||inG?z.bg:"#0d0f1a",border:"1px solid "+(inQ||inG?z.color:z.border),
-                display:"flex",alignItems:"center",gap:12}}>
-                <span style={{fontSize:24}}>{z.icon}</span>
-                <div style={{flex:1}}>
-                  <div style={{fontWeight:700,color:"#fff",fontSize:14}}>{zl.name}</div>
-                  {inQ&&<div style={{fontSize:11,color:z.color,fontWeight:600}}>En file d'attente...</div>}
-                  {inG&&<div style={{fontSize:11,color:"#fbbf24",fontWeight:600}}>⚡ En jeu !</div>}
-                  {played&&!inQ&&!inG&&<div style={{fontSize:10,color:"#4b5563"}}>✓ Déjà jouée</div>}
+              <div key={zk} style={{borderRadius:14,background:inQ||inG?z.bg:"#0d0f1a",border:"1px solid "+(inQ||inG?z.color:z.border)}}>
+                <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:24}}>{z.icon}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,color:"#fff",fontSize:14}}>{zl.name}</div>
+                    {inQ&&<div style={{fontSize:11,color:z.color,fontWeight:600}}>#{myPos+1} en file</div>}
+                    {inG&&<div style={{fontSize:11,color:"#fbbf24",fontWeight:600}}>⚡ En jeu !</div>}
+                    {played&&!inQ&&!inG&&<div style={{fontSize:10,color:"#4b5563"}}>✓ Déjà jouée</div>}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}>
+                    {zoneQueue.length>0&&<span style={{fontSize:11,color:z.color,fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif"}}>{zoneQueue.length} en file</span>}
+                    {inQ?<button onClick={()=>onLeave(playerId,zk)} style={{fontSize:11,padding:"4px 10px",borderRadius:8,background:"none",border:"1px solid #374151",cursor:"pointer",color:"#6b7280"}}>Quitter</button>
+                      :!inG&&canJoin&&<button onClick={()=>{onJoin(playerId,zk);setShowHub(true);}} style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"none",cursor:"pointer",background:z.color,color:"#000",fontWeight:700}}>+ File</button>}
+                  </div>
                 </div>
-                {inQ?<button onClick={()=>onLeave(playerId,zk)} style={{fontSize:11,padding:"4px 10px",borderRadius:8,background:"none",border:"1px solid #374151",cursor:"pointer",color:"#6b7280"}}>Quitter</button>
-                  :!inG&&canJoin&&<button onClick={()=>{onJoin(playerId,zk);setShowHub(true);}} style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"none",cursor:"pointer",background:z.color,color:"#000",fontWeight:700}}>+ File</button>}
+                {zoneQueue.length>0&&(
+                  <>
+                    <div style={{borderTop:"1px solid "+z.color+"20",padding:"6px 16px"}}>
+                      <button onClick={()=>setExpandedQueues(prev=>({...prev,[zk]:!prev[zk]}))}
+                        style={{background:"none",border:"none",cursor:"pointer",color:z.color,
+                          fontSize:11,fontWeight:600,padding:0,display:"flex",alignItems:"center",gap:4}}>
+                        {expandedQueues[zk]?"▲ Masquer":"▼ Voir la file d'attente"} ({zoneQueue.length})
+                      </button>
+                    </div>
+                    {expandedQueues[zk]&&(
+                      <div style={{padding:"6px 16px 10px",display:"flex",flexWrap:"wrap",gap:4}}>
+                        {zoneQueue.map((p,i)=>(
+                          <span key={p.id} style={{fontSize:11,padding:"2px 8px",borderRadius:10,fontWeight:p.id===playerId?700:400,
+                            background:p.id===playerId?z.color+"30":"#ffffff10",
+                            color:p.id===playerId?z.color:"#9ca3af"}}>
+                            {i+1}. {p.name.split(" ")[0]}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             );
           })}
