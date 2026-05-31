@@ -4530,15 +4530,11 @@ export default function PurInstinctApp(){
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onAddGroupToQueue={(groupId,pendingSession)=>{
         // Trouver tous les joueurs du groupe (par groupId ET par playerId direct)
-        const allP=players; // full list from parent
-        const byGroup=allP.filter(p=>p.groupId===groupId);
-        const byPlayerId=pendingSession?.playerId?allP.filter(p=>Number(p.id)===Number(pendingSession.playerId)):[];
+        // players = liste complète depuis l'état App
+        const byGroup=players.filter(p=>p.groupId===groupId);
+        const byPlayerId=pendingSession?.playerId?players.filter(p=>Number(p.id)===Number(pendingSession.playerId)):[];
         const allIds=new Set([...byGroup.map(p=>p.id),...byPlayerId.map(p=>p.id)]);
-        // Si groupId = activeRosterId, les joueurs de l'admin (déjà filtrés) sont inclus directement
-        if(groupId===activeRosterId){
-          players.forEach(p=>allIds.add(p.id));
-        }
-        const groupP=allP.filter(p=>allIds.has(p.id));
+        const groupP=players.filter(p=>allIds.has(p.id));
         if(groupP.length===0) return;
         // 1. Migrer vers la session active si nécessaire
         if(groupId!==activeRosterId){
