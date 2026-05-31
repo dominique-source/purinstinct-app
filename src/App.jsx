@@ -1552,7 +1552,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
     const expected=role==="admin"?ADMIN_PIN:STATION_PIN;
     if(entered===expected){
       setPinError(false);
-      if(role==="admin") onLogin("admin",null);
+      if(role==="admin") onLogin("adminHome",null);
       else setScreen("stationPick");
     } else {
       setPinError(true); setPin("");
@@ -1855,8 +1855,8 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
-  const [tab,setTab]=useState("leaderboard");
+function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,activeRosterId,initialTab,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
+  const [tab,setTab]=useState(initialTab||"leaderboard");
   const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
   const [timer,setTimer]=useState("75:00");
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
@@ -4334,8 +4334,44 @@ export default function PurInstinctApp(){
         onLogin={(t,id)=>setView({type:t,id})}
         onGoLive={()=>{fbSet("liveMode",true);syncQueues(makeEmptyQueues());}}/>;
 
+  if(view.type==="adminHome") return(
+    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
+      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=DM+Sans:wght@400;600;700&display=swap');`}</style>
+      <div style={{textAlign:"center",marginBottom:32}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#fff",letterSpacing:2}}>🛡️ ADMIN</div>
+        <div style={{fontSize:12,color:"#4b5563",marginTop:4}}>Centre de contrôle</div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,width:"100%",maxWidth:360}}>
+        {[
+          {icon:"⚡",label:"Session en cours",sub:"Classement · Timer · Gestion",color:"#84cc16",action:()=>setView({type:"admin"})},
+          {icon:"📍",label:"Responsable de plateau",sub:"Gérer les stations",color:"#f97316",action:()=>setView({type:"stationPick"})},
+          {icon:"📋",label:"Sessions",sub:"Listes · Codes · QR",color:"#3b82f6",action:()=>setView({type:"admin",tab:"session"})},
+          {icon:"🚪",label:"Déconnexion",sub:"Retour à l'accueil",color:"#6b7280",action:()=>setView({type:"login"})},
+        ].map(({icon,label,sub,color,action})=>(
+          <button key={label} onClick={action}
+            style={{padding:"24px 16px",borderRadius:20,border:"1px solid "+color+"30",
+              background:"#0d0f1a",cursor:"pointer",textAlign:"center",
+              display:"flex",flexDirection:"column",alignItems:"center",gap:8,
+              transition:"all .15s"}}
+            onMouseEnter={e=>{e.currentTarget.style.background=color+"15";e.currentTarget.style.borderColor=color+"80";}}
+            onMouseLeave={e=>{e.currentTarget.style.background="#0d0f1a";e.currentTarget.style.borderColor=color+"30";}}>
+            <div style={{fontSize:36}}>{icon}</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#fff",lineHeight:1.2}}>{label}</div>
+            <div style={{fontSize:11,color:"#4b5563"}}>{sub}</div>
+          </button>
+        ))}
+      </div>
+      {arenaState.active&&(
+        <div style={{marginTop:20,fontSize:12,color:"#84cc16",fontWeight:600}}>
+          ● Session active en cours
+        </div>
+      )}
+    </div>
+  );
+
   if(view.type==="admin") return(
-    <AdminView players={players.filter(p=>(p.groupId||"main")===activeRosterId)} allPlayers={players} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId}
+    <AdminView players={players.filter(p=>(p.groupId||"main")===activeRosterId)} allPlayers={players} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId} initialTab={view.tab}
       onStart={(mins)=>syncArena({...arenaState,active:true,ended:false,paused:false,startTime:Date.now(),sessionMins:mins||75})}
       onEnd={()=>syncArena({active:false,ended:false,paused:false,startTime:null,pausedRemaining:null,disabledZones:arenaState.disabledZones||[],sessionMins:arenaState.sessionMins||75})}
       onPause={()=>{
@@ -4376,7 +4412,7 @@ export default function PurInstinctApp(){
           fbSet("pendingSessions",obj);
         }
       }}
-      onLogout={()=>setView({type:"login"})}
+      onLogout={()=>setView({type:"adminHome"})}
       onActivateRoster={activateRoster}
       onSetActiveRoster={(id)=>{setActiveRosterId(id);fbSet("activeRosterId",id);}}
       onUpdateRoster={updateRoster} onDeleteRoster={deleteRoster}
@@ -4421,7 +4457,7 @@ export default function PurInstinctApp(){
       onReplaceInGame={replaceInGame}
       onReorderQ={reorderQueue}
       onBack={()=>setView({type:"stationPick"})}
-      onGoAdmin={()=>setView({type:"admin"})}
+      onGoAdmin={()=>setView({type:"adminHome"})}
       onLogout={()=>setView({type:"login"})}/>
   );
 
