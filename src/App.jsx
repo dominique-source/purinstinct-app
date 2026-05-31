@@ -809,6 +809,12 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
             ))}
           </div>
         )}
+        {players.length>0&&onAddGroupToQueue&&(
+          <button onClick={()=>onAddGroupToQueue(activeRosterId,null)}
+            style={{...S.btn("#84cc16"),width:"100%",padding:"10px",fontSize:13,fontWeight:700,marginBottom:10}}>
+            ⚡ Mettre tous en file ({players.length} joueurs)
+          </button>
+        )}
         <div style={{...S.label(),marginBottom:8}}>{T.fr.addNow}</div>
         <div style={{display:"flex",gap:8}}>
           <input value={addName} onChange={e=>setAddName(e.target.value)}
@@ -4292,6 +4298,16 @@ export default function PurInstinctApp(){
       age:"",email:"",instagram:"",tiktok:"",snapchat:"",
       photoConsent:false,videoConsent:false,profilePhoto:null,highlights:[]};
     syncPlayers([...players,newPlayer]);
+    // Ajouter automatiquement aux files si la session est live
+    if(groupId&&liveMode){
+      const newQ={};
+      ZK.forEach(zk=>{
+        const existing=[...(queues[zk]||[])];
+        if(!existing.includes(newId)) existing.push(newId);
+        newQ[zk]=existing;
+      });
+      syncQueues(newQ);
+    }
     if(callback) callback(newId);
   };
 
@@ -4516,14 +4532,21 @@ export default function PurInstinctApp(){
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onAddGroupToQueue={(groupId,pendingSession)=>{
         // Trouver tous les joueurs du groupe (par groupId ET par playerId direct)
-        const byGroup=players.filter(p=>p.groupId===groupId);
-        const byPlayerId=pendingSession?.playerId?players.filter(p=>Number(p.id)===Number(pendingSession.playerId)):[];
+        const allP=players; // full list from parent
+        const byGroup=allP.filter(p=>p.groupId===groupId);
+        const byPlayerId=pendingSession?.playerId?allP.filter(p=>Number(p.id)===Number(pendingSession.playerId)):[];
         const allIds=new Set([...byGroup.map(p=>p.id),...byPlayerId.map(p=>p.id)]);
-        const groupP=players.filter(p=>allIds.has(p.id));
+        // Si groupId = activeRosterId, les joueurs de l'admin (déjà filtrés) sont inclus directement
+        if(groupId===activeRosterId){
+          players.forEach(p=>allIds.add(p.id));
+        }
+        const groupP=allP.filter(p=>allIds.has(p.id));
         if(groupP.length===0) return;
-        // 1. Migrer vers la session active
-        const migratedPlayers=players.map(p=>allIds.has(p.id)?{...p,groupId:activeRosterId}:p);
-        syncPlayers(migratedPlayers);
+        // 1. Migrer vers la session active si nécessaire
+        if(groupId!==activeRosterId){
+          const migratedPlayers=allP.map(p=>allIds.has(p.id)?{...p,groupId:activeRosterId}:p);
+          syncPlayers(migratedPlayers);
+        }
         // 2. Ajouter à toutes les files
         const newQ={};
         ZK.forEach(zk=>{
