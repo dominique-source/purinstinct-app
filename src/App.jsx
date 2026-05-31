@@ -4304,11 +4304,15 @@ export default function PurInstinctApp(){
     const obj={};extra.forEach(r=>{obj[r.id]=r;});
     fbSet("extraRosters",Object.keys(obj).length>0?obj:null);
   };
-  const updateRoster=(idx,updated)=>setRosters(r=>{const a=[...r];a[idx]=updated;syncExtraRosters(a);return a;});
-  const deleteRoster=(idx)=>setRosters(r=>{const a=r.filter((_,i)=>i!==idx);syncExtraRosters(a);return a;});
+  const updateRoster=(idx,updated)=>{
+    const a=[...rosters];a[idx]=updated;setRosters(a);syncExtraRosters(a);
+  };
+  const deleteRoster=(idx)=>{
+    const a=rosters.filter((_,i)=>i!==idx);setRosters(a);syncExtraRosters(a);
+  };
   const createRoster=()=>{
     const newR={id:"r"+Date.now(),name:"Nouvelle liste",entries:[]};
-    setRosters(r=>{const a=[...r,newR];syncExtraRosters(a);return a;});
+    const a=[...rosters,newR];setRosters(a);syncExtraRosters(a);
   };
   const addPlayerToSession=(name,gender,callback,groupId="main")=>{
     const newId=players.length>0?Math.max(...players.map(p=>p.id))+1:1;
