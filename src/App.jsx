@@ -699,7 +699,8 @@ function RosterEditor({roster,onSave,onCancel}){
 // ----------------------------------------------------------------
 // SESSION PANEL  (admin tab)
 // ----------------------------------------------------------------
-const BASE_URL=window.location.origin;
+const PROD_URL="https://purinstinct-app.vercel.app";
+const BASE_URL=window.location.hostname==="localhost"?PROD_URL:window.location.origin;
 
 function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSetActiveRoster,onUpdateRoster,onAddPlayer,onCreateRoster,onDeleteRoster,onRemovePlayer,onOpenDossier,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onAddGroupToQueue}){
   const [editIdx,setEditIdx]=useState(null);
@@ -3477,7 +3478,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
               const code=rosterCodes&&sessionRosterId?rosterCodes[sessionRosterId]:null;
               if(code){
                 if(!sessionQR){
-                  const url=window.location.origin+"?code="+code;
+                  const url=BASE_URL+"?code="+code;
                   const dataUrl=await QRCode.toDataURL(url,{width:240,margin:2,color:{dark:"#ffffff",light:"#06070f"}});
                   setSessionQR(dataUrl);
                 }
@@ -3874,7 +3875,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                     color:"#84cc16",letterSpacing:12,lineHeight:1,marginBottom:12}}>{code}</div>
                   <button onClick={async()=>{
                     if(!sessionQR){
-                      const url=window.location.origin+"?code="+code;
+                      const url=BASE_URL+"?code="+code;
                       const dataUrl=await QRCode.toDataURL(url,{width:240,margin:2,color:{dark:"#ffffff",light:"#06070f"}});
                       setSessionQR(dataUrl);
                     }
