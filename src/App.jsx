@@ -1328,8 +1328,8 @@ function PlayerDossier({player,onSave,onBack,embedded}){
         display:"flex",alignItems:"center",gap:12}}>
         {onBack&&<button onClick={onBack} style={{...S.btn(),padding:"6px 12px",fontSize:12}}>{T.fr.back}</button>}
         <div style={{flex:1}}>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#fff"}}>
-            {T.fr.dossierTitle} #{player.number}
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#84cc16"}}>
+            #{player.number}
           </div>
           <div style={{fontSize:11,color:"#4b5563"}}>{form.name}</div>
         </div>
