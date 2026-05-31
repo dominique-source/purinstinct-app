@@ -3442,11 +3442,11 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
       {/* Grille 2x3 */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,width:"100%",maxWidth:360}}>
         {[
-          {icon:"📊",label:"Mes stats",sub:"Score · Zones · Historique",color:"#84cc16",
+          {icon:null,label:"Mes stats",sub:"Score · Zones · Historique",color:"#84cc16",isStats:true,
             action:()=>{setShowHub(false);setTab("stats");}},
           {icon:"📖",label:"Règlements",sub:"Comment jouer",color:"#3b82f6",
             action:()=>{setShowHub(false);setTab("rules");}},
-          {icon:"🔗",label:"Inviter un ami",sub:"Code + QR de la partie",color:"#a855f7",
+          {icon:null,label:"Inviter un ami",sub:"Code + QR de la partie",color:"#a855f7",isInvite:true,
             action:async()=>{
               const code=rosterCodes&&sessionRosterId?rosterCodes[sessionRosterId]:null;
               if(code){
@@ -3458,20 +3458,33 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                 setShowQR(true);
               }
             }},
-          {icon:"⚡",label:"Se mettre en file",sub:"Choisir une station active",color:"#f97316",
+          {icon:"⚡",label:"Se mettre en file",sub:"Choisir une station",color:"#f97316",
             action:()=>{setShowHub(false);setTab("queue");}},
           {icon:"🏆",label:"Classement",sub:"Voir tous les joueurs",color:"#eab308",
             action:()=>{setShowHub(false);setTab("leaderboard");}},
-          {icon:"🚪",label:"Déconnexion",sub:"Retour à l'accueil",color:"#6b7280",
+          {icon:null,label:"Déconnexion",sub:"Changer de session",color:"#ef4444",isLogout:true,
             action:onLogout},
-        ].map(({icon,label,sub,color,action})=>(
+        ].map(({icon,label,sub,color,action,isStats,isInvite,isLogout})=>(
           <button key={label} onClick={action}
             style={{padding:"20px 12px",borderRadius:18,border:"1px solid "+color+"30",
               background:"#0d0f1a",cursor:"pointer",textAlign:"center",
               display:"flex",flexDirection:"column",alignItems:"center",gap:6}}
             onMouseEnter={e=>{e.currentTarget.style.background=color+"15";e.currentTarget.style.borderColor=color+"80";}}
             onMouseLeave={e=>{e.currentTarget.style.background="#0d0f1a";e.currentTarget.style.borderColor=color+"30";}}>
-            <div style={{fontSize:30}}>{icon}</div>
+            {isStats&&(
+              <div style={{width:36,height:36,borderRadius:"50%",background:"#84cc16",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:2,padding:4}}>
+                {[70,100,55].map((h,i)=><div key={i} style={{width:6,height:h*0.22,background:"#000",borderRadius:2}}/>)}
+              </div>
+            )}
+            {isInvite&&(
+              <div style={{width:36,height:36,borderRadius:"50%",background:"#a855f7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:900,color:"#fff"}}>+</div>
+            )}
+            {isLogout&&(
+              <div style={{width:36,height:36,borderRadius:"50%",border:"3px solid #ef4444",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+                <div style={{position:"absolute",width:"70%",height:3,background:"#ef4444",borderRadius:2,transform:"rotate(45deg)"}}/>
+              </div>
+            )}
+            {!isStats&&!isInvite&&!isLogout&&<div style={{fontSize:30}}>{icon}</div>}
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,color:"#fff",lineHeight:1.2}}>{label}</div>
             <div style={{fontSize:10,color:"#4b5563"}}>{sub}</div>
           </button>
@@ -3500,7 +3513,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
       <div style={{paddingTop:"calc(env(safe-area-inset-top) + 16px)",padding:"calc(env(safe-area-inset-top) + 16px) 16px 16px"}}>
-        <button onClick={()=>setShowHub(true)} style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:16,padding:0}}>← Retour</button>
+        <button onClick={()=>setShowHub(true)} style={{...S.btn(),padding:"8px 18px",fontSize:13,fontWeight:700,marginBottom:16,display:"inline-flex",alignItems:"center",gap:6}}>← Accueil</button>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:"#fff",marginBottom:16}}>⚡ Choisir une station</div>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {ZK.filter(zk=>!(disabledZones||[]).includes(zk)).map(zk=>{
@@ -4412,7 +4425,7 @@ export default function PurInstinctApp(){
   };
 
   // --- Routing ---
-  if(view.type==="login") return liveMode
+  if(view.type==="login") return (liveMode||view.live)
     ?<LiveLoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         rosterCodes={rosterCodes}
         onAddPlayer={addPlayerToSession}
@@ -4458,8 +4471,8 @@ export default function PurInstinctApp(){
           {icon:"⚡",label:"Session en cours",sub:"Classement · Timer · Gestion",color:"#84cc16",action:()=>setView({type:"admin"})},
           {icon:"📍",label:"Responsable de plateau",sub:"Gérer les stations",color:"#f97316",action:()=>setView({type:"stationPick"})},
           {icon:"📋",label:"Sessions",sub:"Listes · Codes · QR",color:"#3b82f6",action:()=>setView({type:"admin",tab:"session"})},
-          {icon:"🚪",label:"Déconnexion",sub:"Retour à l'accueil",color:"#6b7280",action:()=>setView({type:"login"})},
-        ].map(({icon,label,sub,color,action})=>(
+          {icon:null,label:"Déconnexion",sub:"Changer de session",color:"#ef4444",isLogout:true,action:()=>setView({type:"login",live:true})},
+        ].map(({icon,label,sub,color,action,isLogout})=>(
           <button key={label} onClick={action}
             style={{padding:"24px 16px",borderRadius:20,border:"1px solid "+color+"30",
               background:"#0d0f1a",cursor:"pointer",textAlign:"center",
@@ -4467,7 +4480,11 @@ export default function PurInstinctApp(){
               transition:"all .15s"}}
             onMouseEnter={e=>{e.currentTarget.style.background=color+"15";e.currentTarget.style.borderColor=color+"80";}}
             onMouseLeave={e=>{e.currentTarget.style.background="#0d0f1a";e.currentTarget.style.borderColor=color+"30";}}>
-            <div style={{fontSize:36}}>{icon}</div>
+            {isLogout
+              ?<div style={{width:40,height:40,borderRadius:"50%",border:"3px solid #ef4444",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+                  <div style={{position:"absolute",width:"70%",height:3,background:"#ef4444",borderRadius:2,transform:"rotate(45deg)"}}/>
+                </div>
+              :<div style={{fontSize:36}}>{icon}</div>}
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#fff",lineHeight:1.2}}>{label}</div>
             <div style={{fontSize:11,color:"#4b5563"}}>{sub}</div>
           </button>
@@ -4569,7 +4586,7 @@ export default function PurInstinctApp(){
       onReorderQ={reorderQueue}
       onBack={()=>setView({type:"stationPick"})}
       onGoAdmin={()=>setView({type:"adminHome"})}
-      onLogout={()=>setView({type:"login"})}/>
+      onLogout={()=>setView({type:"login",live:true})}/>
   );
 
   if(view.type==="stationPick") return(
@@ -4606,10 +4623,13 @@ export default function PurInstinctApp(){
             border:"1px solid #84cc1640",color:"#84cc16",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
           🛡️ Basculer en mode Admin
         </button>
-        <button onClick={()=>setView({type:"login"})}
-          style={{width:"100%",padding:"12px",borderRadius:12,background:"none",
-            border:"1px solid #374151",color:"#6b7280",cursor:"pointer",fontSize:13,fontWeight:600}}>
-          🚪 Déconnecter la session
+        <button onClick={()=>setView({type:"login",live:true})}
+          style={{width:"100%",padding:"12px",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",gap:10,
+            border:"1px solid #ef444440",color:"#ef4444",cursor:"pointer",fontSize:13,fontWeight:600,background:"none"}}>
+          <div style={{width:20,height:20,borderRadius:"50%",border:"2px solid #ef4444",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",flexShrink:0}}>
+            <div style={{position:"absolute",width:"70%",height:2,background:"#ef4444",borderRadius:1,transform:"rotate(45deg)"}}/>
+          </div>
+          Déconnecter la session
         </button>
       </div>
     </div>
@@ -4628,7 +4648,7 @@ export default function PurInstinctApp(){
           sessionRosterId={p.groupId||"main"}
           winnersPublished={winnersPublished}
           onJoin={addToQueue} onLeave={removeFromQueue}
-          onLogout={()=>setView({type:"login"})}
+          onLogout={()=>setView({type:"login",live:true})}
           onUpdatePlayer={updatePlayer}/>
       );
     }
