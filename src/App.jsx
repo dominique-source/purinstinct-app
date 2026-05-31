@@ -1751,9 +1751,9 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
             style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:16,padding:0}}>
             ← Retour
           </button>}
-          {sessionCode&&<div style={{textAlign:"center",marginBottom:14}}>
-            <span style={{fontSize:11,color:"#4b5563"}}>Session </span>
-            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,color:"#84cc16"}}>{sessionCode}</span>
+          {sessionCode&&<div style={{textAlign:"center",marginBottom:20}}>
+            <div style={{fontSize:11,color:"#4b5563",letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Code de session</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:52,color:"#84cc16",letterSpacing:6,lineHeight:1}}>{sessionCode}</div>
           </div>}
           <div style={{...S.card(),border:"1px solid #84cc1640",marginBottom:16}}>
             <div style={{fontSize:13,color:"#84cc16",fontWeight:700,marginBottom:12,textAlign:"center"}}>👤 Qui êtes-vous ?</div>
