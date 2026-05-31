@@ -3011,9 +3011,11 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
   const qPlayers=queue.map(id=>pMap[id]).filter(Boolean);
   const idealCount=z.teamSize?z.teamSize*2:z.minP;
-  const minToShow=z.teamSize?2:z.minP; // afficher le bouton dès 2 joueurs pour les zones d'équipe
+  const minToShow=z.teamSize?2:z.minP;
   const canGen=!activeGame&&qPlayers.length>=minToShow;
   const hasIdeal=qPlayers.length>=idealCount;
+  // Remettre à false dès que la file atteint le nombre idéal ou redevient courte
+  useEffect(()=>{if(hasIdeal||qPlayers.length<minToShow) setConfirmShortGame(false);},[qPlayers.length]);
   const validSprintSizes=[4,10,15,20,25,30,40,50].filter(s=>s<=qPlayers.length);
   const sprintLine=[...qPlayers].sort((a,b)=>(a.zoneScores.speed||50)-(b.zoneScores.speed||50));
 
