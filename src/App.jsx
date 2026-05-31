@@ -4326,16 +4326,6 @@ export default function PurInstinctApp(){
       age:"",email:"",instagram:"",tiktok:"",snapchat:"",
       photoConsent:false,videoConsent:false,profilePhoto:null,highlights:[]};
     syncPlayers([...players,newPlayer]);
-    // Ajouter automatiquement aux files si la session est live
-    if(groupId&&liveMode){
-      const newQ={};
-      ZK.forEach(zk=>{
-        const existing=[...(queues[zk]||[])];
-        if(!existing.includes(newId)) existing.push(newId);
-        newQ[zk]=existing;
-      });
-      syncQueues(newQ);
-    }
     if(callback) callback(newId);
   };
 
