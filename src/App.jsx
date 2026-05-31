@@ -915,7 +915,12 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
       <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
         {rosters.map((r,i)=>{
           const code=getCode(r.id);
-          const liveCount=(allPlayers||[]).filter(p=>p.groupId===r.id).length;
+          const livePlayers=(allPlayers||[]).filter(p=>p.groupId===r.id);
+          const liveCount=livePlayers.length;
+          // Membres complets = joueurs live + entrées template non encore activées
+          const liveNames=new Set(livePlayers.map(p=>p.name.toLowerCase()));
+          const templateOnly=r.entries.filter(e=>!liveNames.has(e.name.toLowerCase()));
+          const totalCount=liveCount+templateOnly.length;
           const isActive=r.id===activeRosterId;
           return(
             <div key={r.id} style={{...S.card(),border:"1px solid "+(isActive?"#84cc16":code?"#84cc1630":"#1f2937")}}>
@@ -932,24 +937,35 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
                   </div>
                 </div>
               </div>
-              {liveCount>0&&(
+              {totalCount>0&&(
                 <div style={{marginBottom:8}}>
                   <button onClick={()=>setExpandedRosters(prev=>({...prev,[r.id]:!prev[r.id]}))}
                     style={{width:"100%",padding:"6px 10px",borderRadius:10,border:"1px solid #84cc1640",
                       background:"#0d1508",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                    <span style={{fontSize:12,color:"#84cc16",fontWeight:700}}>👥 {liveCount} inscrit{liveCount>1?"s":""}</span>
+                    <span style={{fontSize:12,color:"#84cc16",fontWeight:700}}>
+                      👥 {totalCount} membre{totalCount>1?"s":""}
+                      {liveCount>0&&<span style={{fontSize:10,color:"#22c55e",marginLeft:6}}>({liveCount} inscrit{liveCount>1?"s":""})</span>}
+                    </span>
                     <span style={{fontSize:11,color:"#4b5563"}}>{expandedRosters[r.id]?"▲ Masquer":"▼ Voir la liste"}</span>
                   </button>
                   {expandedRosters[r.id]&&(
                     <div style={{marginTop:4,background:"#111827",borderRadius:10,padding:"8px 10px",
                       display:"flex",flexDirection:"column",gap:3,maxHeight:200,overflowY:"auto"}}>
-                      {(allPlayers||[]).filter(p=>p.groupId===r.id).sort((a,b)=>a.number-b.number).map(p=>(
+                      {livePlayers.sort((a,b)=>a.number-b.number).map(p=>(
                         <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 0",
                           borderBottom:"1px solid #1f2937"}}>
                           <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
                             color:"#84cc16",width:24,flexShrink:0}}>#{p.number}</span>
                           <span style={{fontSize:12,color:"#fff",flex:1}}>{p.name}</span>
                           <span style={{fontSize:10,color:"#4b5563"}}>{p.gender==="F"?"F":"H"}</span>
+                        </div>
+                      ))}
+                      {templateOnly.map((e,i)=>(
+                        <div key={"t"+i} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 0",
+                          borderBottom:"1px solid #1f2937",opacity:0.5}}>
+                          <span style={{width:24,flexShrink:0,fontSize:11,color:"#4b5563"}}>—</span>
+                          <span style={{fontSize:12,color:"#9ca3af",flex:1}}>{e.name}</span>
+                          <span style={{fontSize:10,color:"#4b5563"}}>{e.gender==="F"?"F":"H"}</span>
                         </div>
                       ))}
                     </div>
