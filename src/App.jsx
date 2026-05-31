@@ -3323,6 +3323,27 @@ function PlayerRulesView(){
         <div style={{fontSize:12,color:"#4b5563"}}>{t.rulesSubtitle}</div>
       </div>
 
+      {/* Types de points */}
+      <div style={{borderRadius:14,padding:14,marginBottom:12,background:"#0d0f1a",border:"1px solid #1f2937"}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"#fff",letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>
+          Types de points
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <div style={{borderRadius:10,padding:"10px 12px",background:"#84cc1610",border:"1px solid #84cc1630"}}>
+            <div style={{fontWeight:700,color:"#84cc16",fontSize:13,marginBottom:3}}>🏆 Points globaux</div>
+            <div style={{fontSize:12,color:"#9ca3af",lineHeight:1.5}}>Pour gagner la partie finale.<br/>
+              <span style={{color:"#6b7280"}}>Début à <strong style={{color:"#fff"}}>0</strong> · Pas de maximum</span>
+            </div>
+          </div>
+          <div style={{borderRadius:10,padding:"10px 12px",background:"#6366f110",border:"1px solid #6366f130"}}>
+            <div style={{fontWeight:700,color:"#818cf8",fontSize:13,marginBottom:3}}>⚡ Points de zone</div>
+            <div style={{fontSize:12,color:"#9ca3af",lineHeight:1.5}}>Détermine les gagnants de chaque zone et les handicaps.<br/>
+              <span style={{color:"#6b7280"}}>Début à <strong style={{color:"#fff"}}>50</strong> · Min <strong style={{color:"#fff"}}>0</strong> · Max <strong style={{color:"#fff"}}>100</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Global points banner */}
       <div style={{borderRadius:14,padding:14,marginBottom:16,background:"#111a05",border:"1px solid #84cc1630"}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"#84cc16",letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>
