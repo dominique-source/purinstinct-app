@@ -2995,7 +2995,7 @@ function useArenaTimer(arenaState){
 // ----------------------------------------------------------------
 // STATION VIEW
 // ----------------------------------------------------------------
-function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,onAddQ,onRemoveQ,onGenerate,onResult,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout}){
+function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout}){
   const z=ZONES[zone];
   const zl=zn(zone);
   const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
@@ -3183,7 +3183,13 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
           <div className="anim-up">
             {/* ACTIVE GAME */}
             {activeGame?(
-              z.gameStyle==="sprint"?(
+              <div>
+                {onCancelGame&&<button onClick={()=>{if(window.confirm("Retourner tous les joueurs dans la file d'attente ?"))onCancelGame(zone);}}
+                  style={{...S.btn(),width:"100%",padding:"8px",fontSize:12,marginBottom:10,
+                    border:"1px solid #374151",color:"#9ca3af",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                  ↩ Retour à la file d'attente
+                </button>}
+                {z.gameStyle==="sprint"?(
                 <SprintGameView game={activeGame} players={players} zone={zone}
                   onWinner={handleWinner}
                   onRemove={(id)=>onRemoveFromGame(zone,id)}
@@ -3198,7 +3204,8 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                   onWinner={handleWinner}
                   onRemove={(id)=>onRemoveFromGame(zone,id)}
                   onReplace={()=>onReplaceInGame(zone)}/>
-              )
+              )}
+              </div>
             ):(
               <div>
                 {/* Sprint size selector */}
@@ -4460,6 +4467,25 @@ export default function PurInstinctApp(){
     syncGames({...activeGames,[zone]:gameData});
   };
 
+  // --- Cancel game: remettre les joueurs en tête de file dans le même ordre ---
+  const cancelGame=(zone)=>{
+    const game=activeGames[zone];
+    if(!game) return;
+    const inGame=game.type==="team"
+      ?[...(game.teamA||[]),...(game.teamB||[])]
+      :(game.participants||[]);
+    // Remettre en tête de file dans le même ordre
+    const existing=(queues[zone]||[]).filter(id=>!inGame.includes(id));
+    const newQ=[...inGame,...existing];
+    const newGames={...activeGames,[zone]:null};
+    setQueues({...queues,[zone]:newQ});
+    setActiveGames(newGames);
+    update(fbRef("state"),{
+      queues:queuesToFb({...queues,[zone]:newQ}),
+      activeGames:newGames
+    });
+  };
+
   // --- Submit result ---
   const submitResult=(zone,winner,secondId=null)=>{
     const game=activeGames[zone];
@@ -4705,6 +4731,7 @@ export default function PurInstinctApp(){
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onGenerate={(p)=>generateTeams(view.id,p)}
       onResult={(w,second)=>submitResult(view.id,w,second)}
+      onCancelGame={cancelGame}
       onRemoveFromGame={removeFromGame}
       onReplaceInGame={replaceInGame}
       onReorderQ={reorderQueue}
