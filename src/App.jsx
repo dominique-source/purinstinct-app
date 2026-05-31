@@ -888,7 +888,7 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onUp
                         border:"1px solid "+(code?"#374151":"none"),color:code?"#6b7280":"#000"}}>
                       📲 {code?"QR / Code":"Générer code"}
                     </button>
-                    {onAddGroupToQueue&&<button onClick={()=>onAddGroupToQueue(s.id)}
+                    {onAddGroupToQueue&&<button onClick={()=>onAddGroupToQueue(s.id,s)}
                       style={{...S.btn("#84cc16"),flex:1,padding:"8px",fontSize:12,color:"#000",fontWeight:700}}>
                       ➕ Mettre en file
                     </button>}
@@ -4281,15 +4281,20 @@ export default function PurInstinctApp(){
         syncArena({...arenaState,disabledZones:dz.includes(zk)?dz.filter(z=>z!==zk):[...dz,zk]});
       }}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
-      onAddGroupToQueue={(groupId)=>{
-        // 1. Migrer les joueurs vers la session active
-        const groupP=players.filter(p=>p.groupId===groupId);
+      onAddGroupToQueue={(groupId,pendingSession)=>{
+        // Trouver par groupId OU par les playerIds connus du pending session
+        let groupP=players.filter(p=>p.groupId===groupId);
+        // Fallback: si aucun trouvé, chercher par playerId du pending session
+        if(groupP.length===0&&pendingSession?.playerId){
+          const p=players.find(px=>px.id===pendingSession.playerId);
+          if(p) groupP=[p];
+        }
         if(groupP.length===0) return;
-        const migratedPlayers=players.map(p=>
-          p.groupId===groupId?{...p,groupId:activeRosterId}:p
-        );
+        // 1. Migrer vers la session active
+        const ids=new Set(groupP.map(p=>p.id));
+        const migratedPlayers=players.map(p=>ids.has(p.id)?{...p,groupId:activeRosterId}:p);
         syncPlayers(migratedPlayers);
-        // 2. Les ajouter à toutes les files
+        // 2. Ajouter à toutes les files
         const newQ={};
         ZK.forEach(zk=>{
           const existing=[...(queues[zk]||[])];
