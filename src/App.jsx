@@ -3550,7 +3550,14 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
       <style>{FONTS}</style>
       <div style={{paddingTop:"calc(env(safe-area-inset-top) + 16px)",padding:"calc(env(safe-area-inset-top) + 16px) 16px 16px"}}>
         <button onClick={()=>setShowHub(true)} style={{...S.btn(),padding:"8px 18px",fontSize:13,fontWeight:700,marginBottom:16,display:"inline-flex",alignItems:"center",gap:6}}>← Accueil</button>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:"#fff",marginBottom:16}}>⚡ Choisir une station</div>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:"#fff",marginBottom:12}}>⚡ Choisir une station</div>
+        {inQueues.length>=2&&(
+          <div style={{background:"#f9731620",border:"1px solid #f9731650",borderRadius:10,padding:"8px 12px",
+            marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:16}}>⚠️</span>
+            <span style={{fontSize:12,color:"#f97316",fontWeight:600}}>Maximum 2 files d'attente par joueur</span>
+          </div>
+        )}
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {ZK.filter(zk=>!(disabledZones||[]).includes(zk)).map(zk=>{
             const z=ZONES[zk];const zl=zn(zk);
@@ -3572,7 +3579,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
                     {zoneQueue.length>0&&<span style={{fontSize:11,color:z.color,fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif"}}>{zoneQueue.length} en file</span>}
                     {inQ?<button onClick={()=>onLeave(playerId,zk)} style={{fontSize:11,padding:"4px 10px",borderRadius:8,background:"none",border:"1px solid #374151",cursor:"pointer",color:"#6b7280"}}>Quitter</button>
-                      :!inG&&canJoin&&<button onClick={()=>{onJoin(playerId,zk);setShowHub(true);}} style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"none",cursor:"pointer",background:z.color,color:"#000",fontWeight:700}}>+ File</button>}
+                      :!inG&&canJoin&&<button onClick={()=>onJoin(playerId,zk)} style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"none",cursor:"pointer",background:z.color,color:"#000",fontWeight:700}}>+ File</button>}
                   </div>
                 </div>
                 {zoneQueue.length>0&&(
