@@ -3005,12 +3005,14 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
   const [sprintSize,setSprintSize]=useState(4); // nombre ou "tous"
   const [iqCount,setIqCount]=useState(2);
   const [flash,setFlash]=useState(null);
+  const [confirmShortGame,setConfirmShortGame]=useState(false);
   const [highlightId,setHighlightId]=useState(null);
 
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
   const qPlayers=queue.map(id=>pMap[id]).filter(Boolean);
   const idealCount=z.teamSize?z.teamSize*2:z.minP;
-  const canGen=!activeGame&&qPlayers.length>=z.minP;
+  const minToShow=z.teamSize?2:z.minP; // afficher le bouton dès 2 joueurs pour les zones d'équipe
+  const canGen=!activeGame&&qPlayers.length>=minToShow;
   const hasIdeal=qPlayers.length>=idealCount;
   const validSprintSizes=[4,10,15,20,25,30,40,50].filter(s=>s<=qPlayers.length);
   const sprintLine=[...qPlayers].sort((a,b)=>(a.zoneScores.speed||50)-(b.zoneScores.speed||50));
@@ -3254,27 +3256,41 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                         {zone==="speed"?(()=>{const eff=sprintSize==="tous"?qPlayers.length:sprintSize; return qPlayers.length+" joueurs en file — course de "+eff;})()
                           :qPlayers.length+" joueurs en file"}
                       </div>
-                      {!hasIdeal&&zone!=="speed"&&(
-                        <div style={{background:"#f9731620",border:"1px solid #f9731650",borderRadius:10,
-                          padding:"8px 12px",marginBottom:12,fontSize:12,color:"#f97316"}}>
-                          ⚠️ Il manque {idealCount-qPlayers.length} joueur{idealCount-qPlayers.length>1?"s":""} pour une partie complète ({idealCount} requis)
+                      {!hasIdeal&&zone!=="speed"&&!confirmShortGame&&(
+                        <div style={{background:"#f9731615",border:"1px solid #f9731650",borderRadius:12,
+                          padding:"12px 14px",marginBottom:12}}>
+                          <div style={{fontSize:13,color:"#f97316",fontWeight:700,marginBottom:10}}>
+                            ⚠️ Manque {idealCount-qPlayers.length} joueur{idealCount-qPlayers.length>1?"s":""} — jouer quand même ?
+                          </div>
+                          <div style={{display:"flex",gap:8}}>
+                            <button onClick={()=>setConfirmShortGame(true)}
+                              style={{flex:1,padding:"10px",borderRadius:10,border:"none",cursor:"pointer",
+                                background:z.color,color:"#000",fontWeight:700,fontSize:14}}>
+                              ✓ Oui
+                            </button>
+                            <button onClick={()=>{}}
+                              style={{flex:1,padding:"10px",borderRadius:10,cursor:"pointer",
+                                background:"#1f2937",color:"#9ca3af",border:"1px solid #374151",fontSize:14}}>
+                              ✕ Non
+                            </button>
+                          </div>
                         </div>
                       )}
+                      {(hasIdeal||zone==="speed"||confirmShortGame)&&(
                       <button onClick={()=>{
-                        if(!hasIdeal&&zone!=="speed"){
-                          if(!window.confirm(`Seulement ${qPlayers.length}/${idealCount} joueurs disponibles. Générer quand même ?`)) return;
-                        }
+                        setConfirmShortGame(false);
                         onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):null);
                       }}
                         style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:z.color,color:"#000"}}>
                         {zone==="speed"?T.fr.launchRace+" ("+(sprintSize==="tous"?qPlayers.length:sprintSize)+")":T.fr.generateTeams}
                       </button>
+                      )}
                     </div>
                   ):(
                     <div>
-                      <div style={{color:"#4b5563",fontSize:13,marginBottom:8}}>{T.fr.noGameInProgress}</div>
+                      <div style={{color:"#4b5563",fontSize:13,marginBottom:8}}>File d'attente vide</div>
                       <div style={{color:z.color,fontSize:12,marginBottom:8}}>
-                        {qPlayers.length}/{z.minP} minimum
+                        {qPlayers.length}/{minToShow} joueurs minimum pour afficher les options
                       </div>
                       <div style={{height:6,borderRadius:4,maxWidth:160,margin:"0 auto",background:"#1f2937"}}>
                         <div style={{height:"100%",borderRadius:4,background:z.color,
