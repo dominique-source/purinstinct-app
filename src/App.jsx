@@ -1431,7 +1431,7 @@ function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
 const ADMIN_PIN="1111";
 const STATION_PIN="2222";
 
-function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCodes,activeRosterId,onAddPlayer,onRequestSolo}){
+function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCodes,onAddPlayer,onRequestSolo}){
   // Détecter le code de session dans l'URL
   const urlCode=new URLSearchParams(window.location.search).get("session");
 
@@ -1447,10 +1447,13 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
   const [soloSubmitted,setSoloSubmitted]=useState(false);
   const [activeGroupId,setActiveGroupId]=useState("main");
 
-  // Filtrer par groupe actif — utiliser la session active si disponible
-  const groupPlayers=players.filter(p=>(p.groupId||"main")===(activeRosterId||activeGroupId));
+  // Chercher dans TOUS les joueurs du code ET du groupe actif
+  // (le code peut pointer vers un groupId différent des joueurs déjà inscrits)
+  const groupPlayers=players.filter(p=>(p.groupId||"main")===activeGroupId);
+  // Recherche dans tous les joueurs si le groupe est vide (fallback)
+  const searchPool=groupPlayers.length>0?groupPlayers:players;
   const filtered=search.trim().length>0
-    ?groupPlayers.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())||String(p.number).includes(search))
+    ?searchPool.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())||String(p.number).includes(search))
     :[];
 
   const handleCreateSolo=()=>{
@@ -1460,22 +1463,18 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
     });
   };
 
-  // Utiliser la session ACTIVE (activeRosterId) pour les nouveaux joueurs
-  // Le code valide juste l'accès, mais le joueur rejoint toujours la session active
-  const joinGroupId=activeRosterId||activeGroupId;
-
   const handleAddToGroup=()=>{
     if(!newName.trim()) return;
     onAddPlayer&&onAddPlayer(newName.trim(),newGender,(newId)=>{
       onLogin("player",newId);
-    },joinGroupId);
+    },activeGroupId);
   };
 
   const handleAddToGroupWithName=(name)=>{
     if(!name.trim()) return;
     onAddPlayer&&onAddPlayer(name.trim(),newGender,(newId)=>{
       onLogin("player",newId);
-    },joinGroupId);
+    },activeGroupId);
   };
 
   // Valider le code de session
@@ -4244,7 +4243,6 @@ export default function PurInstinctApp(){
   if(view.type==="login") return liveMode
     ?<LiveLoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         rosterCodes={rosterCodes}
-        activeRosterId={activeRosterId}
         onAddPlayer={addPlayerToSession}
         onRequestSolo={(name,gender,callback)=>{
           const soloGroupId="solo_"+Date.now();
