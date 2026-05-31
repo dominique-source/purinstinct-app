@@ -3472,8 +3472,8 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
             onMouseEnter={e=>{e.currentTarget.style.background=color+"15";e.currentTarget.style.borderColor=color+"80";}}
             onMouseLeave={e=>{e.currentTarget.style.background="#0d0f1a";e.currentTarget.style.borderColor=color+"30";}}>
             {isStats&&(
-              <div style={{width:36,height:36,borderRadius:"50%",background:"#84cc16",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:2,padding:4}}>
-                {[70,100,55].map((h,i)=><div key={i} style={{width:6,height:h*0.22,background:"#000",borderRadius:2}}/>)}
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:32,color:"#84cc16",lineHeight:1}}>
+                {player.globalPoints}
               </div>
             )}
             {isInvite&&(
