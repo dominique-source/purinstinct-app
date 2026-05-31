@@ -699,7 +699,7 @@ function RosterEditor({roster,onSave,onCancel}){
 // ----------------------------------------------------------------
 const BASE_URL=window.location.origin;
 
-function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onUpdateRoster,onAddPlayer,onCreateRoster,onDeleteRoster,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onAddGroupToQueue}){
+function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSetActiveRoster,onUpdateRoster,onAddPlayer,onCreateRoster,onDeleteRoster,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onAddGroupToQueue}){
   const [editIdx,setEditIdx]=useState(null);
   const [addName,setAddName]=useState("");
   const [addGender,setAddGender]=useState("M");
@@ -725,10 +725,9 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onUp
       });
       setQrMap(prev=>({...prev,[r.id]:dataUrl}));
       setActiveQR(r.id);
-      // Activer automatiquement ce roster si ce n'est pas un pending
-      if(!isPending&&r.id!==activeRosterId){
-        const idx=rosters.findIndex(x=>x.id===r.id);
-        if(idx>=0&&onActivate) onActivate(idx);
+      // Pointer l'admin vers ce roster sans réinitialiser les joueurs
+      if(!isPending&&r.id!==activeRosterId&&onSetActiveRoster){
+        onSetActiveRoster(r.id);
       }
       // Si session pending → la promouvoir dans les sessions régulières
       if(isPending&&onPromotePending){
@@ -1809,7 +1808,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
+function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
   const [tab,setTab]=useState("leaderboard");
   const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
   const [timer,setTimer]=useState("75:00");
@@ -2234,7 +2233,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId
             players={players.filter(p=>(p.groupId||"main")===activeRosterId)}
             allPlayers={players}
             activeRosterId={activeRosterId}
-            onActivate={onActivateRoster} onUpdateRoster={onUpdateRoster}
+            onActivate={onActivateRoster} onSetActiveRoster={onSetActiveRoster} onUpdateRoster={onUpdateRoster}
             onDeleteRoster={onDeleteRoster}
             onAddPlayer={onAddPlayer} onCreateRoster={onCreateRoster}
             rosterCodes={rosterCodes} onUpdateCodes={onUpdateCodes}
@@ -4086,13 +4085,23 @@ export default function PurInstinctApp(){
   // --- Roster management ---
   const activateRoster=(idx)=>{
     const r=rosters[idx];
-    const newPlayers=createPlayersFromRoster(r).map(p=>({...p,groupId:r.id}));
+    // Garder les joueurs existants du groupe si ils ont déjà des données live
+    const existingGroupPlayers=players.filter(p=>p.groupId===r.id);
+    const hasLiveData=existingGroupPlayers.some(p=>p.globalPoints>0||(p.history||[]).length>0);
+    let groupPlayers;
+    if(hasLiveData||existingGroupPlayers.length>0){
+      // Garder les joueurs existants tels quels
+      groupPlayers=existingGroupPlayers;
+    } else {
+      // Créer depuis le template seulement si aucun joueur live
+      groupPlayers=createPlayersFromRoster(r).map(p=>({...p,groupId:r.id}));
+    }
     const others=players.filter(p=>p.groupId!==r.id);
-    const merged=[...others,...newPlayers];
+    const merged=[...others,...groupPlayers];
     setActiveRosterId(r.id);
     fbSet("activeRosterId",r.id);
     syncPlayers(merged);
-    syncQueues(buildInitialQueues(newPlayers));
+    syncQueues(buildInitialQueues(groupPlayers));
     syncGames(makeEmptyGames());
     syncArena({active:false,ended:false,startTime:null,disabledZones:[]});
   };
@@ -4327,7 +4336,9 @@ export default function PurInstinctApp(){
         }
       }}
       onLogout={()=>setView({type:"login"})}
-      onActivateRoster={activateRoster} onUpdateRoster={updateRoster} onDeleteRoster={deleteRoster}
+      onActivateRoster={activateRoster}
+      onSetActiveRoster={(id)=>{setActiveRosterId(id);fbSet("activeRosterId",id);}}
+      onUpdateRoster={updateRoster} onDeleteRoster={deleteRoster}
       activeRosterId={activeRosterId}
       onAddPlayer={addPlayerToSession} onCreateRoster={createRoster}
       onUpdatePlayer={updatePlayer}
