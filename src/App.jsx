@@ -945,7 +945,7 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
                     {isActive&&<span style={{fontSize:10,color:"#84cc16",fontWeight:700,padding:"1px 6px",borderRadius:6,background:"#84cc1620"}}>ACTIVE</span>}
                   </div>
                   <div style={{...S.row(),gap:8,marginTop:3}}>
-                    <span style={{fontSize:11,color:"#4b5563"}}>{r.entries.length} dans template</span>
+                    <span style={{fontSize:11,color:"#4b5563"}}>{(r.entries||[]).length} dans template</span>
                     {liveCount>0&&<span style={{fontSize:11,color:"#84cc16",fontWeight:700}}>👥 {liveCount} inscrits</span>}
                     {code&&<span style={{fontSize:16,color:"#84cc16",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:3}}>🔑 {code}</span>}
                   </div>
@@ -4251,7 +4251,8 @@ export default function PurInstinctApp(){
       setPendingSessions(data.pendingSessions?Object.values(data.pendingSessions):[]);
       if(typeof data.liveMode==="boolean") setLiveMode(data.liveMode);
       if(data.activeRosterId) setActiveRosterId(data.activeRosterId);
-      if(data.extraRosters) setRosters([...INITIAL_ROSTERS,...Object.values(data.extraRosters)]);
+      if(data.extraRosters) setRosters([...INITIAL_ROSTERS,...Object.values(data.extraRosters).map(r=>({...r,entries:r.entries||[]}))]);
+
       setFbReady(true);
     });
     return()=>off(stateRef);
