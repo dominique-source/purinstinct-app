@@ -1506,8 +1506,9 @@ const ADMIN_PIN="1111";
 const STATION_PIN="2222";
 
 function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCodes,onAddPlayer,onRequestSolo}){
-  // Détecter le code de session dans l'URL
-  const urlCode=new URLSearchParams(window.location.search).get("session");
+  // Détecter le code de session dans l'URL (?session= ou ?code=)
+  const _params=new URLSearchParams(window.location.search);
+  const urlCode=_params.get("session")||_params.get("code")||null;
 
   // screen: "sessionCode" | "player" | "newPlayer" | "admin" | "station" | "stationPick"
   const [screen,setScreen]=useState(urlCode?"player":"sessionCode");
