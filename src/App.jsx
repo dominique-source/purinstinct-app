@@ -3428,7 +3428,8 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
   // ── HUB PAGE ──
   if(showHub) return(
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
-      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+      paddingTop:"calc(env(safe-area-inset-top) + 24px)",paddingBottom:24,paddingLeft:24,paddingRight:24}}>
       <style>{FONTS}</style>
       {/* Header joueur */}
       <div style={{textAlign:"center",marginBottom:28}}>
@@ -3552,33 +3553,30 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
       <div style={{position:"sticky",top:0,zIndex:10,paddingTop:"calc(env(safe-area-inset-top) + 16px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",background:"#06070f",borderBottom:"1px solid #111827"}}>
-        <div style={{...S.row(),justifyContent:"space-between",marginBottom:12}}>
-          <div style={{...S.row()}}>
+        <div style={{...S.row(),justifyContent:"space-between",marginBottom:8}}>
+          <div style={{...S.row(),gap:10}}>
             <Bib n={player.number} size="lg"/>
             <div>
-              <div style={{fontWeight:700,color:"#fff",fontSize:15}}>{player.name}</div>
-              <div style={{...S.row(),gap:6,marginTop:3}}>
-                <span style={{fontSize:12,color:"#6b7280"}}>{player.gender==="M"?"Homme":"Femme"}</span>
-                {inQueues.map(z=><span key={z} style={{...S.tag(ZONES[z].color)}}>{ZONES[z].icon} file</span>)}
-                {playingAt&&<span className="pulse-lime" style={{...S.tag("#fbbf24"),fontSize:10}}>⚡ {zn(playingAt).sn}</span>}
-              </div>
+              <div style={{fontWeight:700,color:"#fff",fontSize:15,lineHeight:1}}>{player.name}</div>
+              <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>{player.gender==="M"?"Homme":"Femme"}</div>
+              {playingAt&&<span className="pulse-lime" style={{...S.tag("#fbbf24"),fontSize:10,marginTop:3,display:"inline-block"}}>⚡ En jeu : {zn(playingAt).sn}</span>}
             </div>
           </div>
-          <div style={{...S.row(),gap:12}}>
-            {arenaState&&<div style={{textAlign:"center",minWidth:52}}>
-              <div className={arenaStatus==="active"?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
-                color:arenaStatus==="active"?"#84cc16":arenaStatus==="paused"?"#f97316":arenaStatus==="ended"?"#dc2626":"#374151",lineHeight:1}}>{arenaTimer}</div>
-              <div style={{fontSize:9,color:"#4b5563"}}>
-                {arenaStatus==="active"?"EN COURS":arenaStatus==="paused"?"EN PAUSE":arenaStatus==="ended"?"TERMINÉ":"EN ATTENTE"}
-              </div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {arenaState&&arenaStatus!=="waiting"&&<div style={{textAlign:"center"}}>
+              <div className={arenaStatus==="active"?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+                color:arenaStatus==="active"?"#84cc16":arenaStatus==="paused"?"#f97316":"#dc2626",lineHeight:1}}>{arenaTimer}</div>
             </div>}
             <div style={{textAlign:"right"}}>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:40,color:"#84cc16",lineHeight:1}}>{player.globalPoints}</div>
-              <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>RANG #{rank}</div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:36,color:"#84cc16",lineHeight:1}}>{player.globalPoints}</div>
+              <div style={{fontSize:10,color:"#6b7280"}}>#{rank}</div>
             </div>
             <button onClick={()=>setShowHub(true)} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>⌂</button>
           </div>
         </div>
+        {inQueues.length>0&&<div style={{...S.row(),gap:4,marginBottom:6}}>
+          {inQueues.map(z=><span key={z} style={{...S.tag(ZONES[z].color),fontSize:10}}>{ZONES[z].icon} file</span>)}
+        </div>}
         <div style={{display:"flex",flexDirection:"column",gap:6}}>
           {/* Onglets principaux */}
           <div style={{display:"flex",gap:4}}>
