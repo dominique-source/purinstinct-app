@@ -3263,7 +3263,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                             ⚠️ Manque {idealCount-qPlayers.length} joueur{idealCount-qPlayers.length>1?"s":""} — jouer quand même ?
                           </div>
                           <div style={{display:"flex",gap:8}}>
-                            <button onClick={()=>onGenerate(null)}
+                            <button onClick={()=>onGenerate(null,true)}
                               style={{flex:1,padding:"10px",borderRadius:10,border:"none",cursor:"pointer",
                                 background:z.color,color:"#000",fontWeight:700,fontSize:14}}>
                               ✓ Oui
@@ -4448,7 +4448,7 @@ export default function PurInstinctApp(){
   const reorderQueue=(zone,newQ)=>syncQueues({...queues,[zone]:newQ});
 
   // --- Team generation ---
-  const generateTeams=(zone,param)=>{
+  const generateTeams=(zone,param,force=false)=>{
     const z=ZONES[zone];
     const currentQ=[...queues[zone]];
     const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
@@ -4468,7 +4468,8 @@ export default function PurInstinctApp(){
       if(isPlaying(id)) requeued.push(id);
       else selected.push(id);
     }
-    if(selected.length<z.minP) return;
+    if(selected.length<2) return; // besoin d'au moins 2 joueurs
+    if(!force&&selected.length<z.minP) return;
 
     const remaining=currentQ.filter(id=>!selected.includes(id)&&!requeued.includes(id));
     const newQ=[...remaining,...requeued];
@@ -4788,7 +4789,7 @@ export default function PurInstinctApp(){
       sessionName={(rosters.find(r=>r.id===activeRosterId)||{name:"Session Standard"}).name}
       sessionCode={(rosterCodes||{})[activeRosterId]||null}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
-      onGenerate={(p)=>generateTeams(view.id,p)}
+      onGenerate={(p,force)=>generateTeams(view.id,p,force)}
       onResult={(w,second)=>submitResult(view.id,w,second)}
       onCancelGame={cancelGame}
       onRemoveFromGame={removeFromGame}
