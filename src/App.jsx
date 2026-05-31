@@ -1839,7 +1839,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
+function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,activeRosterId,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
   const [tab,setTab]=useState("leaderboard");
   const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
   const [timer,setTimer]=useState("75:00");
@@ -2262,7 +2262,7 @@ function AdminView({players,queues,activeGames,arenaState,rosters,activeRosterId
           <SessionPanel
             rosters={rosters}
             players={players.filter(p=>(p.groupId||"main")===activeRosterId)}
-            allPlayers={players}
+            allPlayers={allPlayers||players}
             activeRosterId={activeRosterId}
             onActivate={onActivateRoster} onSetActiveRoster={onSetActiveRoster} onUpdateRoster={onUpdateRoster}
             onDeleteRoster={onDeleteRoster}
@@ -4319,7 +4319,7 @@ export default function PurInstinctApp(){
         onGoLive={()=>{fbSet("liveMode",true);syncQueues(makeEmptyQueues());}}/>;
 
   if(view.type==="admin") return(
-    <AdminView players={players.filter(p=>(p.groupId||"main")===activeRosterId)} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId}
+    <AdminView players={players.filter(p=>(p.groupId||"main")===activeRosterId)} allPlayers={players} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId}
       onStart={(mins)=>syncArena({...arenaState,active:true,ended:false,paused:false,startTime:Date.now(),sessionMins:mins||75})}
       onEnd={()=>syncArena({active:false,ended:false,paused:false,startTime:null,pausedRemaining:null,disabledZones:arenaState.disabledZones||[],sessionMins:arenaState.sessionMins||75})}
       onPause={()=>{
