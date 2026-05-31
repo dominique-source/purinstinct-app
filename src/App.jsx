@@ -914,20 +914,39 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
       <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
         {rosters.map((r,i)=>{
           const code=getCode(r.id);
+          const liveCount=(allPlayers||[]).filter(p=>p.groupId===r.id).length;
+          const isActive=r.id===activeRosterId;
           return(
-            <div key={r.id} style={{...S.card(),border:"1px solid "+(code?"#84cc1630":"#1f2937")}}>
+            <div key={r.id} style={{...S.card(),border:"1px solid "+(isActive?"#84cc16":code?"#84cc1630":"#1f2937")}}>
               <div style={{...S.row(),gap:8,marginBottom:8,flexWrap:"wrap"}}>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{color:"#fff",fontWeight:600,fontSize:14}}>{r.name}</div>
+                  <div style={{...S.row(),gap:6}}>
+                    <div style={{color:"#fff",fontWeight:600,fontSize:14}}>{r.name}</div>
+                    {isActive&&<span style={{fontSize:10,color:"#84cc16",fontWeight:700,padding:"1px 6px",borderRadius:6,background:"#84cc1620"}}>ACTIVE</span>}
+                  </div>
                   <div style={{...S.row(),gap:8,marginTop:3}}>
-                    <span style={{fontSize:11,color:"#4b5563"}}>{r.entries.length} joueurs</span>
-                    {code&&<span style={{fontSize:11,color:"#84cc16",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>Code : {code}</span>}
+                    <span style={{fontSize:11,color:"#4b5563"}}>{r.entries.length} dans template</span>
+                    {liveCount>0&&<span style={{fontSize:11,color:"#84cc16",fontWeight:700}}>👥 {liveCount} inscrits</span>}
+                    {code&&<span style={{fontSize:11,color:"#84cc16",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:2}}>🔑 {code}</span>}
                   </div>
                 </div>
               </div>
+              {liveCount>0&&!isActive&&(
+                <div style={{background:"#0d1508",borderRadius:10,padding:"6px 10px",marginBottom:8,border:"1px solid #84cc1640"}}>
+                  <div style={{fontSize:11,color:"#84cc16",fontWeight:700,marginBottom:4}}>👥 {liveCount} joueur{liveCount>1?"s":""} inscrits :</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                    {(allPlayers||[]).filter(p=>p.groupId===r.id).sort((a,b)=>b.id-a.id).slice(0,10).map(p=>(
+                      <span key={p.id} style={{fontSize:10,color:"#d1d5db",background:"#111827",padding:"1px 6px",borderRadius:4}}>
+                        {p.name.split(" ")[0]}
+                      </span>
+                    ))}
+                    {liveCount>10&&<span style={{fontSize:10,color:"#4b5563"}}>+{liveCount-10}</span>}
+                  </div>
+                </div>
+              )}
               <div style={{display:"flex",gap:6,marginBottom:8}}>
                 <button onClick={()=>setEditIdx(i)} style={{...S.btn(),flex:1,padding:"7px",fontSize:11}}>✏️ Modifier</button>
-                <button onClick={()=>onActivate(i)} style={{...S.btn("#84cc16"),flex:1,padding:"7px",fontSize:11}}>▶ Activer</button>
+                <button onClick={()=>onActivate(i)} style={{...S.btn(isActive?"#374151":"#84cc16"),flex:1,padding:"7px",fontSize:11,opacity:isActive?0.5:1}}>{isActive?"✓ Active":"▶ Activer"}</button>
                 <button onClick={()=>onDeleteRoster&&onDeleteRoster(i)}
                   style={{...S.btn("#ef444420"),flex:1,padding:"7px",fontSize:11,color:"#ef4444",border:"1px solid #ef444440"}}
                   onMouseEnter={e=>{e.currentTarget.style.background="#ef444430";}}
@@ -4113,12 +4132,6 @@ export default function PurInstinctApp(){
   };
   const addPlayerToSession=(name,gender,callback,groupId="main")=>{
     const newId=players.length>0?Math.max(...players.map(p=>p.id))+1:1;
-    // Si le joueur rejoint un groupe différent de la session active,
-    // mettre à jour activeRosterId pour que l'admin voit ce groupe
-    if(groupId&&groupId!=="main"&&groupId!==activeRosterId){
-      setActiveRosterId(groupId);
-      fbSet("activeRosterId",groupId);
-    }
     const newPlayer={id:newId,number:newId,name,gender:gender||"M",globalPoints:0,
       zoneScores:{purinstinct:50,speed:50,handAgility:50,footAgility:50,generalAgility:50,iq:50},
       zoneStreaks:{purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0},
