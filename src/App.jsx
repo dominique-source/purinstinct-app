@@ -4674,7 +4674,12 @@ export default function PurInstinctApp(){
   );
 
   if(view.type==="admin") return(
-    <AdminView players={players.filter(p=>(p.groupId||"main")===activeRosterId||ZK.some(zk=>queues[zk]&&queues[zk].includes(p.id)))} allPlayers={players} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId} initialTab={view.tab}
+    <AdminView players={players.filter(p=>{
+      if((p.groupId||"main")===activeRosterId) return true;
+      if(ZK.some(zk=>queues[zk]&&queues[zk].includes(p.id))) return true;
+      if(ZK.some(zk=>{const g=activeGames[zk];if(!g)return false;const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(p.id);})) return true;
+      return false;
+    })} allPlayers={players} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId} initialTab={view.tab}
       onStart={(mins)=>syncArena({...arenaState,active:true,ended:false,paused:false,startTime:Date.now(),sessionMins:mins||75})}
       onEnd={()=>syncArena({active:false,ended:false,paused:false,startTime:null,pausedRemaining:null,disabledZones:arenaState.disabledZones||[],sessionMins:arenaState.sessionMins||75})}
       onPause={()=>{
@@ -4756,7 +4761,13 @@ export default function PurInstinctApp(){
   );
 
   if(view.type==="station") return(
-    <StationView zone={view.id} players={players.filter(p=>(p.groupId||"main")===activeRosterId||ZK.some(zk=>queues[zk]&&queues[zk].includes(p.id)))}
+    <StationView zone={view.id} players={players.filter(p=>{
+      if((p.groupId||"main")===activeRosterId) return true;
+      if(ZK.some(zk=>queues[zk]&&queues[zk].includes(p.id))) return true;
+      // Inclure aussi les joueurs actuellement en jeu
+      if(ZK.some(zk=>{const g=activeGames[zk];if(!g)return false;const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(p.id);})) return true;
+      return false;
+    })}
       queue={queues[view.id]||[]}
       activeGame={activeGames[view.id]}
       disabled={(arenaState.disabledZones||[]).includes(view.id)}
