@@ -4464,7 +4464,7 @@ export default function PurInstinctApp(){
           },soloGroupId);
         }}
         onLogin={(t,id)=>setView({type:t,id})}
-        onGoTest={()=>{fbSet("liveMode",false);syncQueues(buildInitialQueues(players));}}/>
+        onGoTest={()=>{fbSet("liveMode",false);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(buildInitialQueues(players));}}/>
     :<LoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         onLogin={(t,id)=>setView({type:t,id})}
         onGoLive={()=>{fbSet("liveMode",true);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());}}/>;
