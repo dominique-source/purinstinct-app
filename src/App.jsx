@@ -4558,25 +4558,20 @@ export default function PurInstinctApp(){
       }}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onAddGroupToQueue={(groupId,pendingSession)=>{
-        // 1. Retirer de la liste en attente et créer le roster — toujours, même sans joueurs trouvés
+        // 1. Préparer le nouveau roster
+        const initialIds=new Set(INITIAL_ROSTERS.map(r=>r.id));
+        const newRoster=(pendingSession&&!rosters.find(r=>r.id===groupId))
+          ?{id:groupId,name:(pendingSession.name||groupId)+" (solo)",entries:[]}
+          :null;
+        const nextRosters=newRoster?[...rosters,newRoster]:rosters;
+        const extraObj={};
+        nextRosters.filter(r=>!initialIds.has(r.id)).forEach(r=>{extraObj[r.id]=r;});
+        // 2. Préparer les sessions en attente
         const updatedPending=pendingSession
           ?pendingSessions.filter(x=>x.id!==pendingSession.id)
           :pendingSessions;
         const pendingObj={};updatedPending.forEach(s=>{pendingObj[s.id]=s;});
-        let extraRostersUpdate=undefined;
-        if(pendingSession&&!rosters.find(r=>r.id===groupId)){
-          const newRoster={id:groupId,name:(pendingSession.name||groupId)+" (solo)",entries:[]};
-          setRosters(prev=>{
-            const next=[...prev,newRoster];
-            const initialIds=new Set(INITIAL_ROSTERS.map(r=>r.id));
-            const extra=next.filter(r=>!initialIds.has(r.id));
-            const obj={};extra.forEach(r=>{obj[r.id]=r;});
-            extraRostersUpdate=obj;
-            return next;
-          });
-        }
-        setPendingSessions(updatedPending);
-        // 2. Ajouter aux files si des joueurs sont trouvés
+        // 3. Ajouter aux files si des joueurs sont trouvés
         const byGroup=players.filter(p=>p.groupId===groupId);
         const byPlayerId=pendingSession?.playerId?players.filter(p=>Number(p.id)===Number(pendingSession.playerId)):[];
         const allIds=new Set([...byGroup.map(p=>p.id),...byPlayerId.map(p=>p.id)]);
@@ -4587,15 +4582,16 @@ export default function PurInstinctApp(){
           groupP.forEach(p=>{if(!existing.includes(p.id)&&!existing.includes(String(p.id)))existing.push(p.id);});
           newQ[zk]=existing;
         });
+        // 4. Mise à jour locale immédiate
+        if(newRoster) setRosters(nextRosters);
+        setPendingSessions(updatedPending);
         if(groupP.length>0) setQueues(newQ);
-        // 3. Écriture Firebase atomique
-        setTimeout(()=>{
-          update(fbRef("state"),{
-            pendingSessions:pendingObj,
-            queues:groupP.length>0?queuesToFb(newQ):undefined,
-            ...(extraRostersUpdate!==undefined?{extraRosters:extraRostersUpdate}:{})
-          });
-        },0);
+        // 5. Écriture Firebase atomique synchrone
+        update(fbRef("state"),{
+          pendingSessions:pendingObj,
+          extraRosters:Object.keys(extraObj).length>0?extraObj:null,
+          ...(groupP.length>0?{queues:queuesToFb(newQ)}:{})
+        });
       }}
       onLogout={()=>{setWinnersPublished(false);fbSet("winnersPublished",false);setView({type:"adminHome"});}}
       onActivateRoster={activateRoster}
