@@ -4428,9 +4428,7 @@ export default function PurInstinctApp(){
     const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
 
     const selected=[];const requeued=[];
-    const isPlaying=(id)=>ZK.some(zz=>{const g=activeGames[zz];if(!g)return false;const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(id)||all.includes(Number(id));});
-    // Nettoyer la file des IDs invalides (joueurs supprimés)
-    const cleanQ=currentQ.filter(id=>!!(pMap[id]||pMap[Number(id)]));
+    const isPlaying=(id)=>ZK.some(zz=>{const g=activeGames[zz];if(!g)return false;const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(id);});
 
     let need;
     if(z.gameStyle==="sprint") need=param||z.minP;
@@ -4439,9 +4437,8 @@ export default function PurInstinctApp(){
     else need=Math.min(currentQ.length,z.maxP);
     need=Math.max(need,z.minP);
 
-    for(const id of cleanQ){
+    for(const id of currentQ){
       if(selected.length>=need) break;
-      if(!exists(id)) continue; // ignorer les joueurs supprimés
       if(isPlaying(id)) requeued.push(id);
       else selected.push(id);
     }
