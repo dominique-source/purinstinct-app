@@ -725,6 +725,11 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onUp
       });
       setQrMap(prev=>({...prev,[r.id]:dataUrl}));
       setActiveQR(r.id);
+      // Activer automatiquement ce roster si ce n'est pas un pending
+      if(!isPending&&r.id!==activeRosterId){
+        const idx=rosters.findIndex(x=>x.id===r.id);
+        if(idx>=0&&onActivate) onActivate(idx);
+      }
       // Si session pending → la promouvoir dans les sessions régulières
       if(isPending&&onPromotePending){
         onPromotePending(r,code);
@@ -4099,6 +4104,12 @@ export default function PurInstinctApp(){
   };
   const addPlayerToSession=(name,gender,callback,groupId="main")=>{
     const newId=players.length>0?Math.max(...players.map(p=>p.id))+1:1;
+    // Si le joueur rejoint un groupe différent de la session active,
+    // mettre à jour activeRosterId pour que l'admin voit ce groupe
+    if(groupId&&groupId!=="main"&&groupId!==activeRosterId){
+      setActiveRosterId(groupId);
+      fbSet("activeRosterId",groupId);
+    }
     const newPlayer={id:newId,number:newId,name,gender:gender||"M",globalPoints:0,
       zoneScores:{purinstinct:50,speed:50,handAgility:50,footAgility:50,generalAgility:50,iq:50},
       zoneStreaks:{purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0},
