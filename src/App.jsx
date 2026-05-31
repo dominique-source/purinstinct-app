@@ -4559,7 +4559,7 @@ export default function PurInstinctApp(){
           pendingSessions:pendingObj
         });
       }}
-      onLogout={()=>setView({type:"adminHome"})}
+      onLogout={()=>{setWinnersPublished(false);fbSet("winnersPublished",false);setView({type:"adminHome"});}}
       onActivateRoster={activateRoster}
       onSetActiveRoster={(id)=>{setActiveRosterId(id);fbSet("activeRosterId",id);}}
       onUpdateRoster={updateRoster} onDeleteRoster={deleteRoster}
