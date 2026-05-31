@@ -4444,7 +4444,7 @@ export default function PurInstinctApp(){
     }
     if(selected.length<z.minP) return;
 
-    const remaining=cleanQ.filter(id=>!selected.includes(id)&&!requeued.includes(id));
+    const remaining=currentQ.filter(id=>!selected.includes(id)&&!requeued.includes(id));
     const newQ=[...remaining,...requeued];
 
     let gameData;
