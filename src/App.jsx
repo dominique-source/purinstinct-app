@@ -3009,7 +3009,9 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
 
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
   const qPlayers=queue.map(id=>pMap[id]).filter(Boolean);
+  const idealCount=z.teamSize?z.teamSize*2:z.minP;
   const canGen=!activeGame&&qPlayers.length>=z.minP;
+  const hasIdeal=qPlayers.length>=idealCount;
   const validSprintSizes=[4,10,15,20,25,30,40,50].filter(s=>s<=qPlayers.length);
   const sprintLine=[...qPlayers].sort((a,b)=>(a.zoneScores.speed||50)-(b.zoneScores.speed||50));
 
@@ -3252,7 +3254,18 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                         {zone==="speed"?(()=>{const eff=sprintSize==="tous"?qPlayers.length:sprintSize; return qPlayers.length+" joueurs en file — course de "+eff;})()
                           :qPlayers.length+" joueurs en file"}
                       </div>
-                      <button onClick={()=>onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):null)}
+                      {!hasIdeal&&zone!=="speed"&&(
+                        <div style={{background:"#f9731620",border:"1px solid #f9731650",borderRadius:10,
+                          padding:"8px 12px",marginBottom:12,fontSize:12,color:"#f97316"}}>
+                          ⚠️ Il manque {idealCount-qPlayers.length} joueur{idealCount-qPlayers.length>1?"s":""} pour une partie complète ({idealCount} requis)
+                        </div>
+                      )}
+                      <button onClick={()=>{
+                        if(!hasIdeal&&zone!=="speed"){
+                          if(!window.confirm(`Seulement ${qPlayers.length}/${idealCount} joueurs disponibles. Générer quand même ?`)) return;
+                        }
+                        onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):null);
+                      }}
                         style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:z.color,color:"#000"}}>
                         {zone==="speed"?T.fr.launchRace+" ("+(sprintSize==="tous"?qPlayers.length:sprintSize)+")":T.fr.generateTeams}
                       </button>
@@ -4455,12 +4468,34 @@ export default function PurInstinctApp(){
       const s=shuffle(selected.slice(0,need));
       gameData={type:"individual",participants:s};
     } else if(z.teamSize){
-      const s=shuffle(selected.slice(0,z.teamSize*2));
-      gameData={type:"team",teamA:s.slice(0,z.teamSize),teamB:s.slice(z.teamSize)};
+      // Forcer exactement teamSize*2 joueurs, distribués en snake draft équilibré
+      const exact=z.teamSize*2;
+      const pool=selected.slice(0,exact);
+      // Si on n'a pas le bon nombre exact, on prend le multiple pair le plus proche
+      const even=pool.length%2===0?pool.length:pool.length-1;
+      const half=even/2;
+      const getScore=(id)=>zone==="purinstinct"
+        ?(pMap[id]?.globalPoints||0)
+        :(pMap[id]?.zoneScores?.[zone]||50);
+      const sorted=[...pool.slice(0,even)].sort((a,b)=>getScore(b)-getScore(a));
+      const teamA=[],teamB=[];
+      sorted.forEach((id,i)=>{
+        const round=Math.floor(i/2);
+        if(round%2===0)(i%2===0?teamA:teamB).push(id);
+        else(i%2===0?teamB:teamA).push(id);
+      });
+      gameData={type:"team",teamA,teamB};
     } else {
-      const s=shuffle(selected);
-      const half=Math.ceil(s.length/2);
-      gameData={type:"team",teamA:s.slice(0,half),teamB:s.slice(half)};
+      const getScore=(id)=>(pMap[id]?.zoneScores?.[zone]||50);
+      const even=selected.length%2===0?selected.length:selected.length-1;
+      const sorted=[...selected.slice(0,even)].sort((a,b)=>getScore(b)-getScore(a));
+      const teamA=[],teamB=[];
+      sorted.forEach((id,i)=>{
+        const round=Math.floor(i/2);
+        if(round%2===0)(i%2===0?teamA:teamB).push(id);
+        else(i%2===0?teamB:teamA).push(id);
+      });
+      gameData={type:"team",teamA,teamB};
     }
 
     syncQueues({...queues,[zone]:newQ});
