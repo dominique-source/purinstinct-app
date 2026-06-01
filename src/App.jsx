@@ -4777,9 +4777,9 @@ export default function PurInstinctApp(){
   const addComment=(playerId,playerName,playerNumber,text)=>{
     const id="c"+Date.now();
     const comment={id,playerId,playerName,playerNumber,text,ts:Date.now()};
-    fbSet("comments/"+id,comment);
+    update(fbRef("state"),{["comments/"+id]:comment});
   };
-  const clearComments=()=>{fbSet("comments",null);setComments([]);};
+  const clearComments=()=>{update(fbRef("state"),{comments:null});setComments([]);};
   const removePlayer=(id)=>{
     syncPlayers(players.filter(p=>p.id!==id));
     const newQ={};ZK.forEach(zk=>{newQ[zk]=(queues[zk]||[]).filter(x=>x!==id&&x!==String(id));});
