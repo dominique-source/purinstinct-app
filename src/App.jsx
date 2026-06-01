@@ -4651,7 +4651,7 @@ export default function PurInstinctApp(){
       }
       // Mettre à jour l'état local depuis Firebase
       if(data.players) setPlayers(fromFb(data.players));
-      // comments handled by dedicated listener below
+      if(data.comments) setComments(Object.values(data.comments).sort((a,b)=>b.ts-a.ts)); else setComments([]);
       if(data.queues) setQueues(queuesFromFb(data.queues));
       if(data.activeGames) setActiveGames(data.activeGames);
       if(data.arenaState) setArenaState(data.arenaState);
@@ -4673,15 +4673,7 @@ export default function PurInstinctApp(){
       setFbReady(true);
     });
 
-    // Listener dédié pour les commentaires
-    const commentsRef=fbRef("state/comments");
-    onValue(commentsRef,(snap)=>{
-      const data=snap.val();
-      if(data) setComments(Object.values(data).sort((a,b)=>b.ts-a.ts));
-      else setComments([]);
-    });
-
-    return()=>{off(stateRef);off(commentsRef);};
+    return()=>off(stateRef);
   },[]);
 
   // ── Helpers écriture Firebase ───────────────────────────────────
@@ -4785,10 +4777,13 @@ export default function PurInstinctApp(){
   };
   const addComment=(playerId,playerName,playerNumber,text)=>{
     const id="c"+Date.now();
-    const comment={id,playerId,playerName,playerNumber,text,ts:Date.now()};
-    update(fbRef("state"),{["comments/"+id]:comment});
+    const newComment={id,playerId,playerName,playerNumber,text,ts:Date.now()};
+    const obj={};
+    comments.forEach(c=>{obj[c.id]=c;});
+    obj[id]=newComment;
+    fbSet("comments",obj);
   };
-  const clearComments=()=>{update(fbRef("state"),{comments:null});setComments([]);};
+  const clearComments=()=>{fbSet("comments",null);setComments([]);};
   const removePlayer=(id)=>{
     syncPlayers(players.filter(p=>p.id!==id));
     const newQ={};ZK.forEach(zk=>{newQ[zk]=(queues[zk]||[]).filter(x=>x!==id&&x!==String(id));});
