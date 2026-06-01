@@ -1475,7 +1475,7 @@ function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
       </div>
 
       <div style={{display:"flex",gap:4,padding:4,borderRadius:12,background:"#0d0f1a",marginBottom:24}}>
-        {[["roles",T.fr.rolesTab],["players",T.fr.playersTab]].map(([t,l])=>(
+        {[["roles",T.fr.rolesTab],["players",T.fr.playersTab],["station","📍 Responsable"]].map(([t,l])=>(
           <button key={t} onClick={()=>setTab(t)} style={{
             padding:"8px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",
             background:tab===t?"#84cc16":"transparent",color:tab===t?"#000":"#6b7280"}}>
@@ -1519,7 +1519,7 @@ function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
             );
           })}
         </div>
-      ):(
+      ):tab==="players"?(
         <div className="anim-up" style={{width:"100%",maxWidth:420}}>
           <div style={{textAlign:"center",marginBottom:20}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"#4b5563",letterSpacing:3,textTransform:"uppercase",marginBottom:6}}>{T.fr.selectNumber}</div>
@@ -1552,7 +1552,25 @@ function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
             <span style={{fontSize:11,color:"#f97316"}}>{Object.values(queues||{}).flat().filter((v,i,a)=>a.indexOf(v)===i).length} {"en file"}</span>
           </div>
         </div>
-      )}
+      ):tab==="station"?(
+        <div className="anim-up" style={{width:"100%",maxWidth:360,display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
+          <div style={{textAlign:"center",marginBottom:8}}>
+            <div style={{fontSize:48,marginBottom:12}}>📍</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#fff",marginBottom:6}}>Responsable de plateau</div>
+            <div style={{fontSize:13,color:"#6b7280",lineHeight:1.5}}>Gérez les stations et les files d'attente depuis votre appareil.</div>
+          </div>
+          <button onClick={()=>onLogin("stationPick",null)}
+            style={{width:"100%",padding:"20px",borderRadius:18,border:"2px solid #f97316",
+              background:"linear-gradient(135deg,#1a0d00,#0d0f1a)",
+              color:"#f97316",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
+              fontWeight:900,fontSize:20,letterSpacing:1,
+              boxShadow:"0 0 24px #f9731630",display:"flex",alignItems:"center",justifyContent:"center",gap:12}}
+            onMouseEnter={e=>{e.currentTarget.style.background="#f97316";e.currentTarget.style.color="#000";}}
+            onMouseLeave={e=>{e.currentTarget.style.background="linear-gradient(135deg,#1a0d00,#0d0f1a)";e.currentTarget.style.color="#f97316";}}>
+            📍 Accéder au tableau de bord
+          </button>
+        </div>
+      ):(null)}
 
       {/* Bouton Mode Live */}
       <div style={{marginTop:32,paddingTop:24,borderTop:"1px solid #1f2937",width:"100%",maxWidth:420,textAlign:"center"}}>
@@ -1594,6 +1612,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
   const [newName,setNewName]=useState("");
   const [newGender,setNewGender]=useState("M");
   const [soloSubmitted,setSoloSubmitted]=useState(false);
+  const [soloUnavailable,setSoloUnavailable]=useState(false);
   const [activeGroupId,setActiveGroupId]=useState("main");
 
   // Résoudre le groupId associé au code URL dès que rosterCodes est disponible
@@ -1637,7 +1656,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
   const handleSessionCode=(code)=>{
     const c=code||sessionCode;
     if(c==="0000"){
-      setScreen("newPlayer"); setSessionCodeError(false); return;
+      setSoloUnavailable(true); setSessionCodeError(false); setSessionCode(""); return;
     }
     // Trouver le groupId associé au code
     if(rosterCodes){
@@ -1730,13 +1749,13 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
             <div style={{color:"#4b5563",fontSize:12}}>Entrez le code à 4 chiffres de votre session</div>
           </div>
           {sessionCodeError&&<div style={{textAlign:"center",color:"#ef4444",fontSize:12,marginBottom:12}}>
-            Code invalide. Réessayez ou entrez <strong>0000</strong> pour une nouvelle session.
+            Code invalide. Réessayez.
           </div>}
-          <NumPad value={sessionCode} onChange={v=>{setSessionCode(v);setSessionCodeError(false);}}
+          {soloUnavailable&&<div style={{textAlign:"center",color:"#f97316",fontSize:12,marginBottom:12,padding:"8px 12px",borderRadius:10,background:"#1a0d00",border:"1px solid #f9731640"}}>
+            Game solo non disponible aujourd'hui.
+          </div>}
+          <NumPad value={sessionCode} onChange={v=>{setSessionCode(v);setSessionCodeError(false);setSoloUnavailable(false);}}
             onComplete={handleSessionCode}/>
-          <div style={{textAlign:"center",marginTop:16,fontSize:11,color:"#374151"}}>
-            Entrez <span style={{color:"#84cc16",fontWeight:700}}>0000</span> pour démarrer une session solo
-          </div>
           {/* Boutons Admin + Station discrets en bas */}
           <div style={{display:"flex",gap:8,marginTop:24,justifyContent:"center"}}>
             <button onClick={()=>{setScreen("admin");setPin("");setPinError(false);}}
@@ -1746,12 +1765,12 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
               onMouseLeave={e=>e.currentTarget.style.borderColor="#374151"}>
               🛡️ Admin
             </button>
-            <button onClick={()=>{setScreen("station");setPin("");setPinError(false);}}
+            <button onClick={()=>setScreen("stationPick")}
               style={{padding:"8px 16px",borderRadius:10,border:"1px solid #374151",background:"#111827",
                 color:"#6b7280",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",gap:6}}
               onMouseEnter={e=>e.currentTarget.style.borderColor="#f97316"}
               onMouseLeave={e=>e.currentTarget.style.borderColor="#374151"}>
-              📍 Station
+              📍 Responsable de plateau
             </button>
           </div>
         </div>
@@ -3534,7 +3553,7 @@ function PlayerRulesView(){
   );
 }
 
-function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaState,rosterCodes,sessionRosterId,winnersPublished,onJoin,onLeave,onLogout,onUpdatePlayer}){
+function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaState,rosterCodes,sessionRosterId,winnersPublished,onJoin,onLeave,onLogout,onUpdatePlayer,onBecomeStation}){
   const player=players.find(p=>p.id===playerId);
   const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
   const [tab,setTab]=useState("stats");
@@ -3628,6 +3647,8 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
             action:()=>{setShowHub(false);setTab("queue");}},
           {icon:"🏆",label:"Classement",sub:"Voir tous les joueurs",color:"#eab308",
             action:()=>{setShowHub(false);setTab("leaderboard");}},
+          ...(onBecomeStation?[{icon:"📍",label:"Responsable de plateau",sub:"Gérer les stations",color:"#f97316",
+            action:onBecomeStation}]:[]),
           {icon:null,label:"Déconnexion",sub:"Changer de session",color:"#ef4444",isLogout:true,
             action:onLogout},
         ].map(({icon,label,sub,color,action,isStats,isInvite,isLogout})=>(
@@ -4936,6 +4957,7 @@ export default function PurInstinctApp(){
           winnersPublished={winnersPublished}
           onJoin={addToQueue} onLeave={removeFromQueue}
           onLogout={()=>setView({type:"login",live:true})}
+          onBecomeStation={()=>setView({type:"stationPick"})}
           onUpdatePlayer={updatePlayer}/>
       );
     }
