@@ -606,70 +606,21 @@ function RulesCard({zone}){
   const zl=zn(zone);
   const img=ZONE_IMAGES[zone];
   const [storyRule,setStoryRule]=useState(null);
+  const [savingStory,setSavingStory]=useState(false);
+  const storyRef=useRef(null);
 
   const saveStory=async()=>{
+    if(!storyRef.current||savingStory) return;
+    setSavingStory(true);
     try{
-      const W=1080,H=1920;
-      const canvas=document.createElement("canvas");
-      canvas.width=W; canvas.height=H;
-      const ctx=canvas.getContext("2d");
-      // Fond
-      ctx.fillStyle="#06070f"; ctx.fillRect(0,0,W,H);
-      // Halo coloré
-      const grad=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,600);
-      grad.addColorStop(0,z.color+"44"); grad.addColorStop(1,"transparent");
-      ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
-      // Logo PurInstinct
-      ctx.font="bold 64px 'Arial'";
-      ctx.fillStyle="#84cc16"; ctx.textAlign="center";
-      ctx.fillText("PUR",W/2-80,180);
-      ctx.fillStyle="#ffffff";
-      ctx.fillText("INSTINCT",W/2+100,180);
-      // Icône zone (emoji)
-      ctx.font="160px serif";
-      ctx.fillText(z.icon,W/2,500);
-      // Nom zone
-      ctx.font="bold 72px Arial";
-      ctx.fillStyle=z.color; ctx.letterSpacing="8px";
-      ctx.fillText(zl.name.toUpperCase(),W/2,620);
-      // Cadre règle
-      const rx=80,ry=700,rw=W-160,rh=700;
-      ctx.strokeStyle=z.color+"60"; ctx.lineWidth=2;
-      ctx.fillStyle=z.color+"18";
-      ctx.beginPath();
-      ctx.roundRect(rx,ry,rw,rh,32);
-      ctx.fill(); ctx.stroke();
-      // Texte règle (wrap)
-      ctx.font="52px Arial";
-      ctx.fillStyle="#ffffff"; ctx.textAlign="center";
-      const words=storyRule.split(" ");
-      let line="",lines=[],maxW=rw-80;
-      for(const w of words){
-        const test=line?line+" "+w:w;
-        if(ctx.measureText(test).width>maxW&&line){lines.push(line);line=w;}
-        else line=test;
-      }
-      if(line) lines.push(line);
-      const totalH=lines.length*72;
-      const startY=ry+rh/2-totalH/2+52;
-      lines.forEach((l,i)=>ctx.fillText(l,W/2,startY+i*72));
-      // Footer
-      ctx.font="36px Arial";
-      ctx.fillStyle="#374151"; ctx.letterSpacing="4px";
-      ctx.fillText("PURINSTINCT GAMES",W/2,H-80);
-      // Partage
-      const blob=await new Promise(res=>canvas.toBlob(res,"image/png"));
-      if(navigator.share&&navigator.canShare){
-        const file=new File([blob],"purinstinct-regle.png",{type:"image/png"});
-        if(navigator.canShare({files:[file]})){
-          await navigator.share({files:[file],title:"PurInstinct — Règlement"});
-          return;
-        }
-      }
-      const url=URL.createObjectURL(blob);
+      const canvas=await html2canvas(storyRef.current,{
+        backgroundColor:"#06070f",scale:3,useCORS:true,logging:false,removeContainer:true
+      });
+      const url=canvas.toDataURL("image/png");
       const a=document.createElement("a");
       a.href=url; a.download="purinstinct-regle.png"; a.click();
-    }catch(e){alert("Erreur: "+e.message);}
+    }catch(e){console.error(e);}
+    setSavingStory(false);
   };
 
   return(
@@ -709,7 +660,7 @@ function RulesCard({zone}){
         display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
 
         {/* Carte story (format 9:16) */}
-        <div style={{
+        <div ref={storyRef} style={{
           width:320,height:568,borderRadius:24,overflow:"hidden",position:"relative",
           background:"#06070f",display:"flex",flexDirection:"column",alignItems:"center",
           justifyContent:"center",padding:32,flexShrink:0}}>
@@ -738,10 +689,10 @@ function RulesCard({zone}){
 
         {/* Boutons */}
         <div style={{display:"flex",gap:10,marginTop:20}}>
-          <button onClick={saveStory}
+          <button onClick={saveStory} disabled={savingStory}
             style={{padding:"12px 24px",borderRadius:12,border:"none",cursor:"pointer",
-              background:z.color,color:"#000",fontWeight:700,fontSize:14}}>
-            📥 Enregistrer
+              background:z.color,color:"#000",fontWeight:700,fontSize:14,opacity:savingStory?.6:1}}>
+            {savingStory?"⏳ Génération...":"📥 Enregistrer"}
           </button>
           <button onClick={()=>setStoryRule(null)}
             style={{padding:"12px 20px",borderRadius:12,border:"1px solid #374151",cursor:"pointer",
