@@ -3101,7 +3101,7 @@ function useArenaTimer(arenaState){
 // ----------------------------------------------------------------
 // STATION VIEW
 // ----------------------------------------------------------------
-function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout}){
+function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId}){
   const z=ZONES[zone];
   const zl=zn(zone);
   const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
@@ -3184,7 +3184,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
       </div>
       {sessionName&&<div style={{fontSize:11,color:"#374151",fontWeight:600}}>📋 {sessionName}</div>}
       <button onClick={onBack||onLogout} style={{marginTop:16,...S.btn(),padding:"8px 20px",fontSize:13}}>← Retour aux stations</button>
-      {onGoAdmin&&<button onClick={onGoAdmin} style={{marginTop:8,...S.btn("#84cc16"),padding:"8px 20px",fontSize:13,color:"#000"}}>🛡️ Admin</button>}
+      {onGoAdmin&&<button onClick={onGoAdmin} style={{marginTop:8,...S.btn("#84cc16"),padding:"8px 20px",fontSize:13,color:"#000"}}>{fromPlayerId?"👤 Joueur":"🛡️ Admin"}</button>}
       <button onClick={onLogout} style={{marginTop:8,background:"none",border:"none",color:"#4b5563",fontSize:12,cursor:"pointer"}}>🚪 Déconnecter</button>
     </div>
   );
@@ -3243,10 +3243,10 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
               background:"#1f2937",color:"#9ca3af"}}>
               👥 Participants ({players.length})
             </button>
-            {onGoAdmin&&<button onClick={onGoAdmin} title="Basculer en mode admin"
+            {onGoAdmin&&<button onClick={onGoAdmin} title={fromPlayerId?"Retourner comme joueur":"Basculer en mode admin"}
               style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:700,border:"1px solid #84cc1640",cursor:"pointer",
                 background:"#111827",color:"#84cc16"}}>
-              🛡️ Admin
+              {fromPlayerId?"👤 Joueur":"🛡️ Admin"}
             </button>}
           </div>
         </div>
@@ -4905,9 +4905,10 @@ export default function PurInstinctApp(){
       onRemoveFromGame={removeFromGame}
       onReplaceInGame={replaceInGame}
       onReorderQ={reorderQueue}
-      onBack={()=>setView({type:"stationPick"})}
-      onGoAdmin={()=>setView({type:"adminHome"})}
-      onLogout={()=>setView({type:"login",live:true})}/>
+      onBack={()=>setView({type:"stationPick",fromPlayerId:view.fromPlayerId})}
+      onGoAdmin={view.fromPlayerId?()=>setView({type:"player",id:view.fromPlayerId}):()=>setView({type:"adminHome"})}
+      onLogout={()=>setView({type:"login",live:true})}
+      fromPlayerId={view.fromPlayerId}/>
   );
 
   if(view.type==="stationPick") return(
@@ -4927,7 +4928,7 @@ export default function PurInstinctApp(){
             const z=ZONES[zk];const zl=zn(zk);
             const isOff=(arenaState.disabledZones||[]).includes(zk);
             return(
-              <button key={zk} onClick={()=>setView({type:"station",id:zk})}
+              <button key={zk} onClick={()=>setView({type:"station",id:zk,fromPlayerId:view.fromPlayerId})}
                 style={{padding:"14px 16px",borderRadius:14,border:"1px solid "+(isOff?"#ef444440":z.border),
                   background:isOff?"#1a0a0a":z.bg,color:isOff?"#ef4444":z.color,cursor:"pointer",
                   display:"flex",alignItems:"center",gap:12,opacity:isOff?0.7:1}}>
@@ -4939,11 +4940,19 @@ export default function PurInstinctApp(){
             );
           })}
         </div>
-        <button onClick={()=>setView({type:"admin"})}
-          style={{width:"100%",padding:"12px",borderRadius:12,background:"#111827",
-            border:"1px solid #84cc1640",color:"#84cc16",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
-          🛡️ Basculer en mode Admin
-        </button>
+        {view.fromPlayerId?(
+          <button onClick={()=>setView({type:"player",id:view.fromPlayerId})}
+            style={{width:"100%",padding:"12px",borderRadius:12,background:"#111827",
+              border:"1px solid #84cc1640",color:"#84cc16",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
+            👤 Retourner comme joueur
+          </button>
+        ):(
+          <button onClick={()=>setView({type:"admin"})}
+            style={{width:"100%",padding:"12px",borderRadius:12,background:"#111827",
+              border:"1px solid #84cc1640",color:"#84cc16",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
+            🛡️ Basculer en mode Admin
+          </button>
+        )}
         <button onClick={()=>setView({type:"login",live:true})}
           style={{width:"100%",padding:"12px",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",gap:10,
             border:"1px solid #ef444440",color:"#ef4444",cursor:"pointer",fontSize:13,fontWeight:600,background:"none"}}>
@@ -4970,7 +4979,7 @@ export default function PurInstinctApp(){
           winnersPublished={winnersPublished}
           onJoin={addToQueue} onLeave={removeFromQueue}
           onLogout={()=>setView({type:"login",live:true})}
-          onBecomeStation={()=>setView({type:"stationPick"})}
+          onBecomeStation={()=>setView({type:"stationPick",fromPlayerId:view.id})}
           onUpdatePlayer={updatePlayer}/>
       );
     }
