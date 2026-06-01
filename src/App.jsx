@@ -85,9 +85,7 @@ const RAW_50 = [
 ];
 
 const INITIAL_ROSTERS = [
-  { id:"r1", name:"Session Standard (50)", entries: RAW_50.map(([name,gender]) => ({name,gender})) },
-  { id:"r2", name:"Ecole Laurier (30)",    entries: RAW_50.slice(0,30).map(([name,gender]) => ({name,gender})) },
-  { id:"r3", name:"Session Test (20)",     entries: RAW_50.slice(0,20).map(([name,gender]) => ({name,gender})) }
+  { id:"r1", name:"Étudiants en médecine Ulaval", entries: RAW_50.slice(0,22).map(([name,gender]) => ({name,gender})) },
 ];
 
 const ZONE_IMAGES = {
