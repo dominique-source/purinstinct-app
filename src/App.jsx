@@ -1243,6 +1243,12 @@ function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation}){
   });
   const [newUrl,setNewUrl]=useState("");
   const [newCap,setNewCap]=useState("");
+  const [surveyRanking,setSurveyRanking]=useState(()=>player.surveyRanking&&player.surveyRanking.length===ZK.length?[...player.surveyRanking]:[...ZK]);
+  const [surveySubmitted,setSurveySubmitted]=useState(!!player.surveyRanking);
+  const [surveyDragIdx,setSurveyDragIdx]=useState(null);
+  const [surveyOverIdx,setSurveyOverIdx]=useState(null);
+  const surveyTouchRef=useRef({fromIdx:null});
+  const surveyListRef=useRef(null);
   const [saved,setSaved]=useState(false);
   const fileRef=useRef(null);
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
@@ -1259,6 +1265,23 @@ function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation}){
     setNewUrl(""); setNewCap("");
   };
   const removeHl=(i)=>set("highlights",form.highlights.filter((_,j)=>j!==i));
+  const surveyMoveUp=(i)=>{if(i===0)return;const r=[...surveyRanking];[r[i-1],r[i]]=[r[i],r[i-1]];setSurveyRanking(r);setSurveySubmitted(false);};
+  const surveyMoveDown=(i)=>{if(i===surveyRanking.length-1)return;const r=[...surveyRanking];[r[i],r[i+1]]=[r[i+1],r[i]];setSurveyRanking(r);setSurveySubmitted(false);};
+  const surveyDrop=(toIdx)=>{
+    if(surveyDragIdx===null||surveyDragIdx===toIdx){setSurveyDragIdx(null);setSurveyOverIdx(null);return;}
+    const r=[...surveyRanking];const[moved]=r.splice(surveyDragIdx,1);r.splice(toIdx,0,moved);
+    setSurveyRanking(r);setSurveyDragIdx(null);setSurveyOverIdx(null);setSurveySubmitted(false);
+  };
+  const surveyTouchStart=(e,i)=>{e.preventDefault();surveyTouchRef.current.fromIdx=i;setSurveyDragIdx(i);navigator.vibrate&&navigator.vibrate(20);};
+  const surveyTouchMove=(e)=>{
+    if(surveyDragIdx===null)return;e.preventDefault();
+    const touch=e.touches[0];const list=surveyListRef.current;if(!list)return;
+    const items=[...list.querySelectorAll("[data-survey-item]")];
+    for(let i=0;i<items.length;i++){const rect=items[i].getBoundingClientRect();if(touch.clientY>=rect.top&&touch.clientY<=rect.bottom){setSurveyOverIdx(i);return;}}
+  };
+  const surveyTouchEnd=()=>{if(surveyDragIdx!==null)surveyDrop(surveyOverIdx!==null?surveyOverIdx:surveyDragIdx);surveyTouchRef.current.fromIdx=null;};
+  const handleSurveySubmit=()=>{onSave({...player,...form,surveyRanking});setSurveySubmitted(true);};
+
   const handleSave=()=>{
     onSave({...player,...form});
     setSaved(true); setTimeout(()=>setSaved(false),2200);
@@ -1375,6 +1398,50 @@ function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation}){
           </div>
         </div>
       )}
+
+      {/* Sondage */}
+      <div style={{...S.card()}}>
+        <div style={{...S.label(),marginBottom:4}}>📊 Sondage — Zone préférée</div>
+        <div style={{fontSize:11,color:"#4b5563",marginBottom:12}}>Glisse ou utilise les flèches pour classer les zones de ta préférée à ta moins préférée.</div>
+        <div ref={surveyListRef} style={{display:"flex",flexDirection:"column",gap:6,userSelect:"none"}}
+          onTouchMove={surveyTouchMove} onTouchEnd={surveyTouchEnd}>
+          {surveyRanking.map((zk,i)=>{
+            const z=ZONES[zk];const zl=zn(zk);
+            const isDragging=surveyDragIdx===i;const isOver=surveyOverIdx===i;
+            return(
+              <div key={zk} data-survey-item="1"
+                draggable
+                onDragStart={()=>setSurveyDragIdx(i)}
+                onDragOver={e=>{e.preventDefault();setSurveyOverIdx(i);}}
+                onDrop={()=>surveyDrop(i)}
+                onDragEnd={()=>{setSurveyDragIdx(null);setSurveyOverIdx(null);}}
+                style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:12,
+                  background:isDragging?"#1a2e05":isOver?"#0d1a30":"#0d0f1a",
+                  border:"1px solid "+(isOver?z.color+"80":isDragging?"#84cc1660":z.border),
+                  opacity:isDragging?0.5:1,transition:"all .15s",cursor:"grab"}}>
+                <div onTouchStart={(e)=>surveyTouchStart(e,i)}
+                  style={{color:"#4b5563",fontSize:20,cursor:"grab",touchAction:"none",padding:"0 2px",lineHeight:1}}>⠿</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+                  color:i===0?"#f97316":i===1?"#eab308":"#4b5563",width:20,flexShrink:0}}>{i+1}</div>
+                <span style={{fontSize:22}}>{z.icon}</span>
+                <span style={{flex:1,fontSize:13,fontWeight:700,color:"#fff"}}>{zl.name}</span>
+                <button onClick={()=>surveyMoveUp(i)}
+                  style={{background:"none",border:"none",cursor:"pointer",color:i===0?"#1f2937":"#6b7280",fontSize:18,lineHeight:1,padding:"0 3px"}}
+                  disabled={i===0}>↑</button>
+                <button onClick={()=>surveyMoveDown(i)}
+                  style={{background:"none",border:"none",cursor:"pointer",color:i===surveyRanking.length-1?"#1f2937":"#6b7280",fontSize:18,lineHeight:1,padding:"0 3px"}}
+                  disabled={i===surveyRanking.length-1}>↓</button>
+              </div>
+            );
+          })}
+        </div>
+        <button onClick={handleSurveySubmit}
+          style={{width:"100%",marginTop:14,padding:"12px",borderRadius:12,border:"none",cursor:"pointer",
+            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
+            background:surveySubmitted?"#22c55e":"#3b82f6",color:"#fff",transition:"background .3s"}}>
+          {surveySubmitted?"✓ Réponse envoyée":"📤 Envoyer ma réponse"}
+        </button>
+      </div>
 
       <button onClick={handleSave} style={{
         padding:"14px",borderRadius:14,border:"none",cursor:"pointer",width:"100%",
@@ -2071,7 +2138,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
           </div>
         </div>
         <div style={{display:"flex",gap:4}}>
-          {[["leaderboard",T.fr.tabLeader],["stations",T.fr.tabStations],["players",T.fr.tabPlayers],["session",T.fr.tabSession],["winners","🥇 Gagnants"]].map(([t,l])=>(
+          {[["leaderboard",T.fr.tabLeader],["stations",T.fr.tabStations],["players",T.fr.tabPlayers],["session",T.fr.tabSession],["survey","📊 Sondage"],["winners","🥇 Gagnants"]].map(([t,l])=>(
             <button key={t} onClick={()=>{setTab(t);setSelectedStation(null);}} style={{
               padding:"6px 10px",borderRadius:8,fontSize:11,fontWeight:600,border:"none",cursor:"pointer",
               background:tab===t?"#84cc16":"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
@@ -2428,6 +2495,57 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
           />
           </div>
         )}
+
+        {tab==="survey"&&(()=>{
+          const respondents=players.filter(p=>p.surveyRanking&&p.surveyRanking.length===ZK.length);
+          const total=respondents.length;
+          // Calcul score par zone: position 1=6pts, 2=5pts, ..., 6=1pt
+          const scores={};const firstVotes={};
+          ZK.forEach(zk=>{scores[zk]=0;firstVotes[zk]=0;});
+          respondents.forEach(p=>{
+            p.surveyRanking.forEach((zk,i)=>{
+              scores[zk]+=(ZK.length-i);
+              if(i===0) firstVotes[zk]++;
+            });
+          });
+          const ranked=[...ZK].sort((a,b)=>scores[b]-scores[a]);
+          return(
+            <div style={{padding:"0 0 16px"}}>
+              <div style={{marginBottom:16,padding:"12px 16px",borderRadius:12,background:"#0d0f1a",border:"1px solid #1f2937",display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:32,color:"#84cc16"}}>{total}</div>
+                <div style={{fontSize:12,color:"#6b7280"}}>réponse{total!==1?"s":""} sur {players.length} joueur{players.length!==1?"s":""}</div>
+              </div>
+              {total===0?(
+                <div style={{textAlign:"center",padding:32,color:"#374151",fontSize:13}}>Aucune réponse pour l'instant.</div>
+              ):(
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {ranked.map((zk,rank)=>{
+                    const z=ZONES[zk];const zl=zn(zk);
+                    const pct=total>0?Math.round((scores[zk]/(total*ZK.length))*100):0;
+                    const first=firstVotes[zk];
+                    const medals=["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
+                    return(
+                      <div key={zk} style={{borderRadius:14,background:"#0d0f1a",border:"1px solid "+z.border,padding:"12px 16px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                          <span style={{fontSize:20}}>{medals[rank]}</span>
+                          <span style={{fontSize:22}}>{z.icon}</span>
+                          <span style={{flex:1,fontWeight:700,color:"#fff",fontSize:14}}>{zl.name}</span>
+                          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:z.color}}>{pct}%</span>
+                        </div>
+                        <div style={{height:6,borderRadius:3,background:"#1f2937",overflow:"hidden",marginBottom:6}}>
+                          <div style={{height:"100%",width:pct+"%",background:z.color,borderRadius:3,transition:"width .5s"}}/>
+                        </div>
+                        <div style={{fontSize:11,color:"#4b5563"}}>
+                          {first} choix #1 · Score {scores[zk]} pts
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {tab==="winners"&&(()=>{
           const today=new Date().toLocaleDateString("fr-CA",{year:"numeric",month:"long",day:"numeric"});
