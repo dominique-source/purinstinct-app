@@ -1245,6 +1245,9 @@ function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation}){
   const [newCap,setNewCap]=useState("");
   const [surveyRanking,setSurveyRanking]=useState(()=>player.surveyRanking&&player.surveyRanking.length===ZK.length?[...player.surveyRanking]:[...ZK]);
   const [surveySubmitted,setSurveySubmitted]=useState(!!player.surveyRanking);
+  useEffect(()=>{
+    if(!player.surveyRanking){setSurveySubmitted(false);setSurveyRanking([...ZK]);}
+  },[player.surveyRanking]);
   const [surveyDragIdx,setSurveyDragIdx]=useState(null);
   const [surveyOverIdx,setSurveyOverIdx]=useState(null);
   const surveyTouchRef=useRef({fromIdx:null});
