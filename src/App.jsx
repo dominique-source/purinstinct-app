@@ -2044,7 +2044,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,activeRosterId,initialTab,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,onRemovePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onResetAllPoints}){
+function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,activeRosterId,initialTab,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,onRemovePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onResetAllPoints,onResetAllSurveys}){
   const [tab,setTab]=useState(initialTab||"leaderboard");
   const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
   const [timer,setTimer]=useState("75:00");
@@ -2513,7 +2513,11 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
             <div style={{padding:"0 0 16px"}}>
               <div style={{marginBottom:16,padding:"12px 16px",borderRadius:12,background:"#0d0f1a",border:"1px solid #1f2937",display:"flex",alignItems:"center",gap:12}}>
                 <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:32,color:"#84cc16"}}>{total}</div>
-                <div style={{fontSize:12,color:"#6b7280"}}>réponse{total!==1?"s":""} sur {players.length} joueur{players.length!==1?"s":""}</div>
+                <div style={{fontSize:12,color:"#6b7280",flex:1}}>réponse{total!==1?"s":""} sur {players.length} joueur{players.length!==1?"s":""}</div>
+                {total>0&&onResetAllSurveys&&<button onClick={()=>{if(window.confirm("Effacer tous les sondages ?")) onResetAllSurveys();}}
+                  style={{padding:"6px 12px",borderRadius:8,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,flexShrink:0}}>
+                  🗑️ Remettre à 0
+                </button>}
               </div>
               {total===0?(
                 <div style={{textAlign:"center",padding:32,color:"#374151",fontSize:13}}>Aucune réponse pour l'instant.</div>
@@ -4697,6 +4701,9 @@ export default function PurInstinctApp(){
   const resetAllPoints=()=>{
     syncPlayers(players.map(p=>({...p,globalPoints:0,zonesPlayed:[],zoneScores:{}})));
   };
+  const resetAllSurveys=()=>{
+    syncPlayers(players.map(p=>({...p,surveyRanking:null})));
+  };
   const removePlayer=(id)=>{
     syncPlayers(players.filter(p=>p.id!==id));
     const newQ={};ZK.forEach(zk=>{newQ[zk]=(queues[zk]||[]).filter(x=>x!==id&&x!==String(id));});
@@ -5010,6 +5017,7 @@ export default function PurInstinctApp(){
       onAddPlayer={addPlayerToSession} onCreateRoster={createRoster}
       onUpdatePlayer={updatePlayer} onRemovePlayer={removePlayer}
       onResetAllPoints={resetAllPoints}
+      onResetAllSurveys={resetAllSurveys}
       rosterCodes={rosterCodes} onUpdateCodes={(codes)=>{setRosterCodes(codes);fbSet("rosterCodes",codes);}}
       pendingSessions={pendingSessions}
       onDismissPending={(id)=>{
