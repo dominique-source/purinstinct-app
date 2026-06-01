@@ -1233,7 +1233,7 @@ function ProgressChart({player}){
   );
 }
 
-function PlayerDossier({player,onSave,onBack,embedded}){
+function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation}){
   const [form,setForm]=useState({
     name:player.name||"",gender:player.gender||"M",age:player.age||"",
     email:player.email||"",instagram:player.instagram||"",
@@ -1424,9 +1424,16 @@ function PlayerDossier({player,onSave,onBack,embedded}){
           </div>
           <div style={{fontSize:11,color:"#4b5563"}}>{form.name}</div>
         </div>
-        <button onClick={handleSave} style={{...S.btn(saved?"#22c55e":"#84cc16"),padding:"8px 16px"}}>
-          {saved?T.fr.saveOK:T.fr.save}
-        </button>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          {onBecomeStation&&<button onClick={onBecomeStation}
+            style={{padding:"6px 10px",borderRadius:10,border:"1px solid #f9731650",background:"#1a0d00",
+              color:"#f97316",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12}}>
+            📍
+          </button>}
+          <button onClick={handleSave} style={{...S.btn(saved?"#22c55e":"#84cc16"),padding:"8px 16px"}}>
+            {saved?T.fr.saveOK:T.fr.save}
+          </button>
+        </div>
       </div>
       <div style={{overflowY:"auto"}}>{body}</div>
     </div>
@@ -3606,6 +3613,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
     <PlayerDossier player={player}
       onSave={(updated)=>{if(onUpdatePlayer)onUpdatePlayer(updated);}}
       onBack={()=>setTab("stats")}
+      onBecomeStation={onBecomeStation}
     />
   );
 
@@ -3713,7 +3721,14 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
       <div style={{paddingTop:"calc(env(safe-area-inset-top) + 16px)",padding:"calc(env(safe-area-inset-top) + 16px) 16px 16px"}}>
-        <button onClick={()=>setShowHub(true)} style={{...S.btn(),padding:"8px 18px",fontSize:13,fontWeight:700,marginBottom:16,display:"inline-flex",alignItems:"center",gap:6}}>← Accueil</button>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <button onClick={()=>setShowHub(true)} style={{...S.btn(),padding:"8px 18px",fontSize:13,fontWeight:700,display:"inline-flex",alignItems:"center",gap:6}}>← Accueil</button>
+          {onBecomeStation&&<button onClick={onBecomeStation}
+            style={{padding:"6px 12px",borderRadius:10,border:"1px solid #f9731650",background:"#1a0d00",
+              color:"#f97316",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12}}>
+            📍 Responsable
+          </button>}
+        </div>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:"#fff",marginBottom:12}}>⚡ Choisir une station</div>
         {inQueues.length>=2&&(
           <div style={{background:"#f9731620",border:"1px solid #f9731650",borderRadius:10,padding:"8px 12px",
@@ -3799,6 +3814,11 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
               <div style={{fontSize:10,color:"#6b7280"}}>#{rank}</div>
             </div>
             <button onClick={()=>setShowHub(true)} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>⌂</button>
+            {onBecomeStation&&<button onClick={onBecomeStation}
+              style={{padding:"6px 10px",borderRadius:10,border:"1px solid #f9731650",background:"#1a0d00",
+                color:"#f97316",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12}}>
+              📍
+            </button>}
           </div>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:6}}>
