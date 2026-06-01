@@ -1316,29 +1316,6 @@ function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation}){
         </div>
       </div>
 
-      {/* Consent toggles */}
-      <div style={{...S.card()}}>
-        <div style={{...S.label(),marginBottom:10}}>Consentements</div>
-        {[["photoConsent","📷","Consentement photo","Autoriser la publication de photos"],
-          ["videoConsent","🎬","Consentement video","Autoriser la publication de videos et highlights"]
-        ].map(([k,ic,lbl,desc])=>(
-          <div key={k} onClick={()=>set(k,!form[k])} style={{
-            display:"flex",alignItems:"center",justifyContent:"space-between",
-            padding:"10px 0",cursor:"pointer",
-            borderBottom:"1px solid #111827"}}>
-            <div>
-              <div style={{color:"#fff",fontSize:13,fontWeight:600}}>{ic} {lbl}</div>
-              <div style={{color:"#4b5563",fontSize:11,marginTop:2}}>{desc}</div>
-            </div>
-            <div style={{width:46,height:26,borderRadius:13,flexShrink:0,position:"relative",
-              transition:"background .2s",background:form[k]?"#84cc16":"#1f2937"}}>
-              <div style={{position:"absolute",top:3,width:20,height:20,borderRadius:"50%",
-                background:"#fff",transition:"left .2s",left:form[k]?23:3}}/>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* Contact + social */}
       <div style={{...S.card()}}>
         <div style={{...S.label(),marginBottom:10}}>Contact et reseaux sociaux</div>
