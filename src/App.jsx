@@ -1613,6 +1613,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
   const [newGender,setNewGender]=useState("M");
   const [soloSubmitted,setSoloSubmitted]=useState(false);
   const [soloUnavailable,setSoloUnavailable]=useState(false);
+  const [testUnavailable,setTestUnavailable]=useState(false);
   const [activeGroupId,setActiveGroupId]=useState("main");
 
   // Résoudre le groupId associé au code URL dès que rosterCodes est disponible
@@ -1732,11 +1733,23 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
       justifyContent:"center",padding:"32px 16px",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
-      {onGoTest&&<button onClick={onGoTest}
+      {onGoTest&&<button onClick={()=>setTestUnavailable(true)}
         style={{position:"fixed",bottom:16,right:16,fontSize:10,color:"#374151",
           background:"none",border:"1px solid #1f2937",borderRadius:8,padding:"4px 8px",cursor:"pointer"}}>
         Mode test
       </button>}
+      {testUnavailable&&(
+        <div onClick={()=>setTestUnavailable(false)} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,.7)",
+          display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <div style={{background:"#0d0f1a",borderRadius:16,padding:"24px 32px",border:"1px solid #f9731650",textAlign:"center",maxWidth:280}}
+            onClick={e=>e.stopPropagation()}>
+            <div style={{fontSize:32,marginBottom:12}}>🚫</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:"#fff",marginBottom:8}}>Mode test non disponible</div>
+            <div style={{fontSize:13,color:"#6b7280",marginBottom:16}}>Cette option n'est pas accessible aujourd'hui.</div>
+            <button onClick={()=>setTestUnavailable(false)} style={{padding:"8px 24px",borderRadius:10,border:"none",background:"#f97316",color:"#000",fontWeight:700,fontSize:13,cursor:"pointer"}}>OK</button>
+          </div>
+        </div>
+      )}
 
       <Header/>
 
