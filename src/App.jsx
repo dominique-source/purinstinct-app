@@ -2073,7 +2073,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,activeRosterId,initialTab,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,onRemovePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onResetAllPoints,onResetAllSurveys,comments,onClearComments}){
+function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,activeRosterId,initialTab,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,onRemovePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onResetAllPoints,onResetAllHistory,onResetAllSurveys,comments,onClearComments}){
   const [tab,setTab]=useState(initialTab||"leaderboard");
   const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
   const [timer,setTimer]=useState("75:00");
@@ -2496,6 +2496,18 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
 
         {tab==="session"&&(
           <div>
+          {onResetAllHistory&&(
+            <div style={{margin:"0 0 16px 0",padding:"14px 16px",borderRadius:14,background:"#1a0505",border:"1px solid #ef444440",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+              <div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,color:"#ef4444"}}>Remettre l'historique à 0</div>
+                <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>Efface l'historique de parties pour tous les joueurs actifs</div>
+              </div>
+              <button onClick={()=>{if(window.confirm("Effacer l'historique de TOUS les joueurs ?")) onResetAllHistory();}}
+                style={{padding:"8px 16px",borderRadius:10,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,flexShrink:0}}>
+                🗑️ Effacer
+              </button>
+            </div>
+          )}
           {onResetAllPoints&&(
             <div style={{margin:"0 0 16px 0",padding:"14px 16px",borderRadius:14,background:"#1a0505",border:"1px solid #ef444440",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
               <div>
@@ -4770,6 +4782,9 @@ export default function PurInstinctApp(){
   const resetAllPoints=()=>{
     syncPlayers(players.map(p=>({...p,globalPoints:0,zonesPlayed:[],zoneScores:{}})));
   };
+  const resetAllHistory=()=>{
+    syncPlayers(players.map(p=>({...p,history:[]})));
+  };
   const resetAllSurveys=()=>{
     syncPlayers(players.map(p=>({...p,surveyRanking:null})));
   };
@@ -5095,6 +5110,7 @@ export default function PurInstinctApp(){
       onAddPlayer={addPlayerToSession} onCreateRoster={createRoster}
       onUpdatePlayer={updatePlayer} onRemovePlayer={removePlayer}
       onResetAllPoints={resetAllPoints}
+      onResetAllHistory={resetAllHistory}
       onResetAllSurveys={resetAllSurveys}
       comments={comments}
       onClearComments={clearComments}
