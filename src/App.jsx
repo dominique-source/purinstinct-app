@@ -2000,7 +2000,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,activeRosterId,initialTab,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,onRemovePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending}){
+function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,activeRosterId,initialTab,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,onRemovePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onResetAllPoints}){
   const [tab,setTab]=useState(initialTab||"leaderboard");
   const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
   const [timer,setTimer]=useState("75:00");
@@ -2422,6 +2422,19 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
         )}
 
         {tab==="session"&&(
+          <div>
+          {onResetAllPoints&&(
+            <div style={{margin:"0 0 16px 0",padding:"14px 16px",borderRadius:14,background:"#1a0505",border:"1px solid #ef444440",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+              <div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,color:"#ef4444"}}>Remettre les points à 0</div>
+                <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>Remet globalPoints et zonesPlayed à zéro pour tous les joueurs</div>
+              </div>
+              <button onClick={()=>{if(window.confirm("Remettre les points à 0 pour TOUS les joueurs ?")) onResetAllPoints();}}
+                style={{padding:"8px 16px",borderRadius:10,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,flexShrink:0}}>
+                🔄 Remettre à 0
+              </button>
+            </div>
+          )}
           <SessionPanel
             rosters={rosters}
             players={players.filter(p=>(p.groupId||"main")===activeRosterId)}
@@ -2436,6 +2449,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
             onPromotePending={onPromotePending}
             onAddGroupToQueue={onAddGroupToQueue}
           />
+          </div>
         )}
 
         {tab==="winners"&&(()=>{
@@ -4585,6 +4599,9 @@ export default function PurInstinctApp(){
   const updatePlayer=(updated)=>{
     syncPlayers(players.map(px=>px.id===updated.id?updated:px));
   };
+  const resetAllPoints=()=>{
+    syncPlayers(players.map(p=>({...p,globalPoints:0,zonesPlayed:[],zoneScores:{}})));
+  };
   const removePlayer=(id)=>{
     syncPlayers(players.filter(p=>p.id!==id));
     const newQ={};ZK.forEach(zk=>{newQ[zk]=(queues[zk]||[]).filter(x=>x!==id&&x!==String(id));});
@@ -4897,6 +4914,7 @@ export default function PurInstinctApp(){
       activeRosterId={activeRosterId}
       onAddPlayer={addPlayerToSession} onCreateRoster={createRoster}
       onUpdatePlayer={updatePlayer} onRemovePlayer={removePlayer}
+      onResetAllPoints={resetAllPoints}
       rosterCodes={rosterCodes} onUpdateCodes={(codes)=>{setRosterCodes(codes);fbSet("rosterCodes",codes);}}
       pendingSessions={pendingSessions}
       onDismissPending={(id)=>{
