@@ -3988,8 +3988,8 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
               {ZK.map(zk=>{
                 const zc=ZONES[zk];
                 const played=(player.zonesPlayed||[]).includes(zk);
-                const score=player.zoneScores[zk]||50;
-                const streak=player.zoneStreaks[zk]||0;
+                const score=(player.zoneScores||{})[zk]||50;
+                const streak=(player.zoneStreaks||{})[zk]||0;
                 const inQ=inQueues.includes(zk);
                 const inG=activeGames[zk]&&(()=>{const g=activeGames[zk];const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(playerId);})();
                 const isZoneDisabled=(disabledZones||[]).includes(zk);
