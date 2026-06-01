@@ -611,7 +611,17 @@ function RulesCard({zone}){
   const saveStory=async()=>{
     if(!storyRef.current) return;
     try{
-      const canvas=await html2canvas(storyRef.current,{scale:3,useCORS:true,backgroundColor:null});
+      const canvas=await html2canvas(storyRef.current,{scale:3,useCORS:true,backgroundColor:"#06070f"});
+      // Web Share API (iOS Safari) — ouvre le menu de partage natif
+      if(navigator.share&&navigator.canShare){
+        const blob=await new Promise(res=>canvas.toBlob(res,"image/png"));
+        const file=new File([blob],"purinstinct-regle.png",{type:"image/png"});
+        if(navigator.canShare({files:[file]})){
+          await navigator.share({files:[file],title:"PurInstinct — Règlement"});
+          return;
+        }
+      }
+      // Fallback desktop
       const url=canvas.toDataURL("image/png");
       const a=document.createElement("a");
       a.href=url; a.download="purinstinct-regle.png"; a.click();
