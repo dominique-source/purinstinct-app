@@ -4651,7 +4651,7 @@ export default function PurInstinctApp(){
       }
       // Mettre à jour l'état local depuis Firebase
       if(data.players) setPlayers(fromFb(data.players));
-      if(data.comments) setComments(Object.values(data.comments).sort((a,b)=>b.ts-a.ts)); else setComments([]);
+      // comments handled by dedicated listener below
       if(data.queues) setQueues(queuesFromFb(data.queues));
       if(data.activeGames) setActiveGames(data.activeGames);
       if(data.arenaState) setArenaState(data.arenaState);
@@ -4672,7 +4672,16 @@ export default function PurInstinctApp(){
 
       setFbReady(true);
     });
-    return()=>off(stateRef);
+
+    // Listener dédié pour les commentaires
+    const commentsRef=fbRef("state/comments");
+    onValue(commentsRef,(snap)=>{
+      const data=snap.val();
+      if(data) setComments(Object.values(data).sort((a,b)=>b.ts-a.ts));
+      else setComments([]);
+    });
+
+    return()=>{off(stateRef);off(commentsRef);};
   },[]);
 
   // ── Helpers écriture Firebase ───────────────────────────────────
