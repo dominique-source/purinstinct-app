@@ -1233,7 +1233,7 @@ function ProgressChart({player}){
   );
 }
 
-function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation}){
+function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onAddComment}){
   const [form,setForm]=useState({
     name:player.name||"",gender:player.gender||"M",age:player.age||"",
     email:player.email||"",instagram:player.instagram||"",
@@ -1243,6 +1243,8 @@ function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation}){
   });
   const [newUrl,setNewUrl]=useState("");
   const [newCap,setNewCap]=useState("");
+  const [commentText,setCommentText]=useState("");
+  const [commentSent,setCommentSent]=useState(false);
   const [surveyRanking,setSurveyRanking]=useState(()=>player.surveyRanking&&player.surveyRanking.length===ZK.length?[...player.surveyRanking]:[...ZK]);
   const [surveySubmitted,setSurveySubmitted]=useState(!!player.surveyRanking);
   useEffect(()=>{
@@ -1445,6 +1447,32 @@ function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation}){
           {surveySubmitted?"✓ Réponse envoyée":"📤 Envoyer ma réponse"}
         </button>
       </div>
+
+      {/* Commentaires */}
+      {onAddComment&&(
+        <div style={{...S.card()}}>
+          <div style={{...S.label(),marginBottom:4}}>💬 Commentaires</div>
+          <div style={{fontSize:11,color:"#4b5563",marginBottom:10}}>Écris un commentaire ou une suggestion pour l'organisateur.</div>
+          <textarea
+            value={commentText}
+            onChange={e=>{setCommentText(e.target.value);setCommentSent(false);}}
+            placeholder="Ton commentaire ici..."
+            rows={3}
+            style={{width:"100%",padding:"10px 12px",borderRadius:10,border:"1px solid #1f2937",
+              background:"#0d0f1a",color:"#fff",fontSize:13,outline:"none",resize:"vertical",
+              fontFamily:"'DM Sans',sans-serif",boxSizing:"border-box"}}
+          />
+          <button
+            onClick={()=>{if(!commentText.trim())return;onAddComment(commentText.trim());setCommentText("");setCommentSent(true);}}
+            disabled={!commentText.trim()}
+            style={{width:"100%",marginTop:10,padding:"11px",borderRadius:10,border:"none",cursor:"pointer",
+              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
+              background:commentSent?"#22c55e":commentText.trim()?"#3b82f6":"#1f2937",
+              color:commentText.trim()||commentSent?"#fff":"#4b5563",transition:"background .3s"}}>
+            {commentSent?"✓ Commentaire envoyé !":"📤 Envoyer"}
+          </button>
+        </div>
+      )}
 
       <button onClick={handleSave} style={{
         padding:"14px",borderRadius:14,border:"none",cursor:"pointer",width:"100%",
@@ -2047,7 +2075,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ADMIN VIEW
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
-function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,activeRosterId,initialTab,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,onRemovePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onResetAllPoints,onResetAllSurveys}){
+function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,activeRosterId,initialTab,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,onRemovePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onResetAllPoints,onResetAllSurveys,comments,onClearComments}){
   const [tab,setTab]=useState(initialTab||"leaderboard");
   const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
   const [timer,setTimer]=useState("75:00");
@@ -2141,7 +2169,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
           </div>
         </div>
         <div style={{display:"flex",gap:4}}>
-          {[["leaderboard",T.fr.tabLeader],["stations",T.fr.tabStations],["players",T.fr.tabPlayers],["session",T.fr.tabSession],["survey","📊 Sondage"],["winners","🥇 Gagnants"]].map(([t,l])=>(
+          {[["leaderboard",T.fr.tabLeader],["stations",T.fr.tabStations],["players",T.fr.tabPlayers],["session",T.fr.tabSession],["survey","📊 Sondage"],["comments","💬 Commentaires"],["winners","🥇 Gagnants"]].map(([t,l])=>(
             <button key={t} onClick={()=>{setTab(t);setSelectedStation(null);}} style={{
               padding:"6px 10px",borderRadius:8,fontSize:11,fontWeight:600,border:"none",cursor:"pointer",
               background:tab===t?"#84cc16":"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
@@ -2496,6 +2524,42 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
             onPromotePending={onPromotePending}
             onAddGroupToQueue={onAddGroupToQueue}
           />
+          </div>
+        )}
+
+        {tab==="comments"&&(
+          <div style={{padding:"0 0 16px"}}>
+            <div style={{marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:"#fff"}}>
+                {(comments||[]).length} commentaire{(comments||[]).length!==1?"s":""}
+              </div>
+              {(comments||[]).length>0&&onClearComments&&(
+                <button onClick={()=>{if(window.confirm("Supprimer tous les commentaires ?"))onClearComments();}}
+                  style={{padding:"6px 12px",borderRadius:8,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12}}>
+                  🗑️ Tout supprimer
+                </button>
+              )}
+            </div>
+            {(comments||[]).length===0?(
+              <div style={{textAlign:"center",padding:32,color:"#374151",fontSize:13}}>Aucun commentaire pour l'instant.</div>
+            ):(
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {(comments||[]).map(c=>(
+                  <div key={c.id} style={{borderRadius:12,background:"#0d0f1a",border:"1px solid #1f2937",padding:"12px 14px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
+                        color:"#84cc16",background:"#111a05",border:"1px solid #84cc1640",
+                        borderRadius:8,padding:"2px 8px",flexShrink:0}}>#{c.playerNumber}</div>
+                      <div style={{fontWeight:700,color:"#fff",fontSize:13}}>{c.playerName}</div>
+                      <div style={{marginLeft:"auto",fontSize:10,color:"#374151"}}>
+                        {new Date(c.ts).toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit"})}
+                      </div>
+                    </div>
+                    <div style={{fontSize:13,color:"#d1d5db",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{c.text}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -3696,7 +3760,7 @@ function PlayerRulesView(){
   );
 }
 
-function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaState,rosterCodes,sessionRosterId,winnersPublished,onJoin,onLeave,onLogout,onUpdatePlayer,onBecomeStation}){
+function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaState,rosterCodes,sessionRosterId,winnersPublished,onJoin,onLeave,onLogout,onUpdatePlayer,onBecomeStation,onAddComment}){
   const player=players.find(p=>p.id===playerId);
   const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
   const [tab,setTab]=useState("stats");
@@ -3737,6 +3801,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
       onSave={(updated)=>{if(onUpdatePlayer)onUpdatePlayer(updated);}}
       onBack={()=>setTab("stats")}
       onBecomeStation={onBecomeStation}
+      onAddComment={onAddComment}
     />
   );
 
@@ -4541,6 +4606,7 @@ export default function PurInstinctApp(){
   const [rosters,setRosters]=useState(INITIAL_ROSTERS);
   const [activeRosterId,setActiveRosterId]=useState(INITIAL_ROSTERS[0]?.id||"main");
   const [players,setPlayers]=useState([]);
+  const [comments,setComments]=useState([]);
   const [queues,setQueues]=useState(makeEmptyQueues());
   const [activeGames,setActiveGames]=useState(makeEmptyGames());
   const [arenaState,setArenaState]=useState({active:false,ended:false,startTime:null,disabledZones:[]});
@@ -4585,6 +4651,7 @@ export default function PurInstinctApp(){
       }
       // Mettre à jour l'état local depuis Firebase
       if(data.players) setPlayers(fromFb(data.players));
+      if(data.comments) setComments(Object.values(data.comments).sort((a,b)=>b.ts-a.ts)); else setComments([]);
       if(data.queues) setQueues(queuesFromFb(data.queues));
       if(data.activeGames) setActiveGames(data.activeGames);
       if(data.arenaState) setArenaState(data.arenaState);
@@ -4707,6 +4774,12 @@ export default function PurInstinctApp(){
   const resetAllSurveys=()=>{
     syncPlayers(players.map(p=>({...p,surveyRanking:null})));
   };
+  const addComment=(playerId,playerName,playerNumber,text)=>{
+    const id="c"+Date.now();
+    const comment={id,playerId,playerName,playerNumber,text,ts:Date.now()};
+    fbSet("comments/"+id,comment);
+  };
+  const clearComments=()=>{fbSet("comments",null);setComments([]);};
   const removePlayer=(id)=>{
     syncPlayers(players.filter(p=>p.id!==id));
     const newQ={};ZK.forEach(zk=>{newQ[zk]=(queues[zk]||[]).filter(x=>x!==id&&x!==String(id));});
@@ -5021,6 +5094,8 @@ export default function PurInstinctApp(){
       onUpdatePlayer={updatePlayer} onRemovePlayer={removePlayer}
       onResetAllPoints={resetAllPoints}
       onResetAllSurveys={resetAllSurveys}
+      comments={comments}
+      onClearComments={clearComments}
       rosterCodes={rosterCodes} onUpdateCodes={(codes)=>{setRosterCodes(codes);fbSet("rosterCodes",codes);}}
       pendingSessions={pendingSessions}
       onDismissPending={(id)=>{
@@ -5141,7 +5216,8 @@ export default function PurInstinctApp(){
           onJoin={addToQueue} onLeave={removeFromQueue}
           onLogout={()=>setView({type:"login",live:true})}
           onBecomeStation={()=>setView({type:"stationPick",fromPlayerId:view.id})}
-          onUpdatePlayer={updatePlayer}/>
+          onUpdatePlayer={updatePlayer}
+          onAddComment={(text)=>{const p=players.find(px=>px.id===view.id);if(p)addComment(p.id,p.name,p.number,text);}}/>
       );
     }
   }
