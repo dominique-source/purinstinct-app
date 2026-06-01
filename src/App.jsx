@@ -3108,7 +3108,7 @@ function useArenaTimer(arenaState){
 // ----------------------------------------------------------------
 // STATION VIEW
 // ----------------------------------------------------------------
-function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId}){
+function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId,onFillQueue}){
   const z=ZONES[zone];
   const zl=zn(zone);
   const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
@@ -3432,7 +3432,14 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                 <div>
                   <div style={{...S.row(),justifyContent:"space-between",marginBottom:8}}>
                     <div style={{...S.label()}}>{T.fr.queue} ({qPlayers.length})</div>
-                    <div style={{fontSize:11,color:"#374151"}}>Min.{z.minP} · Max.{z.maxP}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      {onFillQueue&&<button onClick={onFillQueue}
+                        style={{padding:"4px 10px",borderRadius:8,border:"1px solid #84cc1640",
+                          background:"#111827",color:"#84cc16",cursor:"pointer",fontSize:11,fontWeight:700}}>
+                        🔀 Remplir tout
+                      </button>}
+                      <div style={{fontSize:11,color:"#374151"}}>Min.{z.minP} · Max.{z.maxP}</div>
+                    </div>
                   </div>
                   <div style={{display:"flex",gap:8,marginBottom:10}}>
                     <input type="number" min="1" max="999" placeholder="# Joueur"
@@ -4557,6 +4564,15 @@ export default function PurInstinctApp(){
 
 
   // --- Queue management ---
+  const fillQueue=(zone)=>{
+    const isPlaying=(id)=>ZK.some(zk=>{const g=activeGames[zk];if(!g)return false;const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(id);});
+    const shuffled=[...players].sort(()=>Math.random()-0.5);
+    const existing=queues[zone]||[];
+    const toAdd=shuffled.filter(p=>!existing.includes(p.id)&&!isPlaying(p.id));
+    const newQ=[...existing,...toAdd.map(p=>p.id)];
+    syncQueues({...queues,[zone]:newQ});
+  };
+
   const addToQueue=(id,zone,force=false)=>{
     if((arenaState.disabledZones||[]).includes(zone)) return;
     const {inQueues,playingAt}=getStatus(id,queues,activeGames);
@@ -4928,7 +4944,8 @@ export default function PurInstinctApp(){
       onBack={()=>setView({type:"stationPick",fromPlayerId:view.fromPlayerId})}
       onGoAdmin={view.fromPlayerId?()=>setView({type:"player",id:view.fromPlayerId}):()=>setView({type:"adminHome"})}
       onLogout={()=>setView({type:"login",live:true})}
-      fromPlayerId={view.fromPlayerId}/>
+      fromPlayerId={view.fromPlayerId}
+      onFillQueue={()=>fillQueue(view.id)}/>
   );
 
   if(view.type==="stationPick") return(
