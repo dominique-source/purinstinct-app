@@ -228,7 +228,7 @@ function shuffle(arr) {
 
 function teamAvg(pMap, ids, zone) {
   if (!ids || !ids.length) return 50;
-  return ids.reduce((s,id) => s + (pMap[id] ? pMap[id].zoneScores[zone] : 50), 0) / ids.length;
+  return ids.reduce((s,id) => s + (pMap[id] ? ((pMap[id].zoneScores||{})[zone]||50) : 50), 0) / ids.length;
 }
 
 function getStatus(id, queues, activeGames) {
@@ -317,7 +317,7 @@ function computeTeamResult(players, teamA, teamB, winner, zone) {
     const myTeam = inA?"A":"B";
     const isWin = myTeam===winner;
     const isFav = favored===myTeam, isUnd = favored!==null&&!isFav;
-    const prev = p.zoneStreaks[zone]||0;
+    const prev = (p.zoneStreaks||{})[zone]||0;
     const newStreak = isWin?prev+1:0;
     const bonus = isWin&&prev>=2;
     let delta;
@@ -330,16 +330,16 @@ function computeTeamResult(players, teamA, teamB, winner, zone) {
       if(isFav) pts+=1; if(isUnd) pts=Math.max(0,pts-1);
       delta=-pts;
     }
-    const curZS=p.zoneScores[zone];
+    const curZS=(p.zoneScores||{})[zone]||50;
     const newZS=isWin?Math.min(100,Math.round(curZS+(bonus?22:13))):Math.max(0,Math.round(curZS-9));
     const newGP=Math.max(0,p.globalPoints+delta);
-    const newZoneScores={...p.zoneScores,[zone]:newZS};
+    const newZoneScores={...(p.zoneScores||{}),[zone]:newZS};
     const newEntry={zone,isWin,delta,bonus,newStreak,ts:Date.now(),gp:newGP,zs:{...newZoneScores}};
     return {
       ...p,
       globalPoints:newGP,
       zoneScores:newZoneScores,
-      zoneStreaks:{...p.zoneStreaks,[zone]:newStreak},
+      zoneStreaks:{...(p.zoneStreaks||{}),[zone]:newStreak},
       zonesPlayed:(p.zonesPlayed||[]).includes(zone)?(p.zonesPlayed||[]):[...(p.zonesPlayed||[]),zone],
       lastResult:{zone,isWin,delta,bonus,newStreak},
       history:[...(p.history||[]),newEntry]
@@ -361,7 +361,7 @@ function computeIndividualResult(players, participants, winnerId, zone, secondId
     const isWin = p.id===winnerId;
     const isSecond = zone==="speed" && secondId && p.id===secondId;
     const isFav = favoredId===p.id, isUnd = favoredId!==null&&!isFav;
-    const prev = p.zoneStreaks[zone]||0;
+    const prev = (p.zoneStreaks||{})[zone]||0;
     const newStreak = isWin?prev+1:0;
     const bonus = isWin&&prev>=2;
     let tierAdj = 0;
@@ -383,16 +383,16 @@ function computeIndividualResult(players, participants, winnerId, zone, secondId
       if(isFav) pts+=1; if(isUnd) pts=Math.max(0,pts-1);
       pts=Math.max(0,pts-tierAdj); delta=-pts;
     }
-    const curZS=p.zoneScores[zone];
+    const curZS=(p.zoneScores||{})[zone]||50;
     const newZS=isWin?Math.min(100,Math.round(curZS+(bonus?22:13))):isSecond?Math.min(100,Math.round(curZS+5)):Math.max(0,Math.round(curZS-9));
     const newGP=Math.max(0,p.globalPoints+delta);
-    const newZoneScores={...p.zoneScores,[zone]:newZS};
+    const newZoneScores={...(p.zoneScores||{}),[zone]:newZS};
     const newEntry={zone,isWin,isSecond:isSecond||false,delta,bonus,newStreak,ts:Date.now(),gp:newGP,zs:{...newZoneScores}};
     return {
       ...p,
       globalPoints:newGP,
       zoneScores:newZoneScores,
-      zoneStreaks:{...p.zoneStreaks,[zone]:newStreak},
+      zoneStreaks:{...(p.zoneStreaks||{}),[zone]:newStreak},
       zonesPlayed:(p.zonesPlayed||[]).includes(zone)?(p.zonesPlayed||[]):[...(p.zonesPlayed||[]),zone],
       lastResult:{zone,isWin,isSecond:isSecond||false,delta,bonus,newStreak},
       history:[...(p.history||[]),newEntry]
@@ -2975,8 +2975,8 @@ function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReorder,high
     <div ref={listRef} style={{display:"flex",flexDirection:"column",gap:5,userSelect:"none"}}
       onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
       {qPlayers.map((p,idx)=>{
-        const zs=p.zoneScores[zone]||50;
-        const streak=p.zoneStreaks[zone]||0;
+        const zs=(p.zoneScores||{})[zone]||50;
+        const streak=(p.zoneStreaks||{})[zone]||0;
         const isOver=overIdx===idx;
         const isDragging=dragIdx===idx;
         return(
@@ -3162,8 +3162,8 @@ function IndividualGameView({game,players,zone,onWinner,onRemove,onReplace}){
       )}
       <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:14}}>
         {pList.map(p=>{
-          const zs=p.zoneScores[zone]||50;
-          const streak=p.zoneStreaks[zone]||0;
+          const zs=(p.zoneScores||{})[zone]||50;
+          const streak=(p.zoneStreaks||{})[zone]||0;
           const isFav=favoredId===p.id;
           return(
             <div key={p.id} style={{...S.row(),padding:"8px 10px",borderRadius:10,background:"#0d0f1a",
@@ -3320,7 +3320,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
   // Remettre à false à chaque changement du nombre de joueurs en file
   useEffect(()=>{setConfirmShortGame(false);},[qPlayers.length]);
   const validSprintSizes=[4,10,15,20,25,30,40,50].filter(s=>s<=qPlayers.length);
-  const sprintLine=[...qPlayers].sort((a,b)=>(a.zoneScores.speed||50)-(b.zoneScores.speed||50));
+  const sprintLine=[...qPlayers].sort((a,b)=>((a.zoneScores||{}).speed||50)-((b.zoneScores||{}).speed||50));
 
   const handleAdd=()=>{
     const n=parseInt(numInput,10);
