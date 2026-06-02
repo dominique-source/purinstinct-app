@@ -31,9 +31,9 @@ const ZONES = {
     fr:{name:"PurInstinct",sn:"PurInstinct",sub:"Match 5 min - 2x6 joueurs",rules:["2 équipes de 6 joueurs, match de 5 minutes","Objectif : traverser un terrain avec un ballon à 3 vs 2 sans se faire toucher et sans échapper le ballon","L'équipe offensive a 16 secondes pour marquer","À chaque séquence, trois nouveaux joueurs offensifs et 2 nouveaux joueurs défensifs entrent en jeu","Chaque arrêt donne 1 retrait à la défensive — après 3 retraits, on change les équipes offensives et défensives de façon dynamique","Victoire: +10 pts  |  Défaite: -3 pts"]}},
   speed:{icon:"⚡",color:"#f97316",bg:"#1c0800",border:"#f9731640",winPts:4,lossPts:2,minP:4,maxP:50,teamSize:null,gameStyle:"sprint",
     fr:{name:"Zone Vitesse",sn:"Vitesse",sub:"Sprint 40m - 4 à 50 joueurs",rules:["Sprint de 40 mètres, 4 à 50 joueurs","Positionnement selon 5 niveaux de handicap : Niv.1 (avant) > Niv.5 (arrière)","Le niveau se construit à mesure que les courses s'accumulent","Victoire: +4 pts  |  Défaite: -2 pts  |  Deuxième place: +2 pts"]}},
-  handAgility:{icon:"✋",color:"#56A0D3",bg:"#080f1a",border:"#56A0D340",winPts:4,lossPts:2,minP:6,maxP:6,teamSize:3,gameStyle:"team",
+  handAgility:{icon:"✋",color:"#3b82f6",bg:"#080f1f",border:"#3b82f640",winPts:4,lossPts:2,minP:6,maxP:6,teamSize:3,gameStyle:"team",
     fr:{name:"Zone Habileté Main",sn:"Habileté Main",sub:"Ultimatum Ball - 2x3 joueurs",rules:["2 équipes de 3 joueurs","1 joueur par équipe à la fois sur le jeu","Éliminer un joueur adverse en lançant un ballon sur l'adversaire","Les séquences commencent toujours avec les joueurs sans ballon en main","Après une élimination, le joueur gagnant a 2 secondes pour revenir à sa base (sans ballon) — ensuite un nouvel adversaire entre en jeu","Le joueur éliminé sort — premier à 5 points gagne (1 pt par élimination)","Victoire: +4 pts  |  Défaite: -2 pts"]}},
-  footAgility:{icon:"👟",color:"#22c55e",bg:"#041a0c",border:"#22c55e40",winPts:4,lossPts:2,minP:2,maxP:2,teamSize:1,gameStyle:"duel",
+  footAgility:{icon:"👟",color:"#56A0D3",bg:"#080f1a",border:"#56A0D340",winPts:4,lossPts:2,minP:2,maxP:2,teamSize:1,gameStyle:"duel",
     fr:{name:"Zone Habileté Pied",sn:"Habileté Pied",sub:"Jeux de Lumières - 1 vs 1",rules:["Duel 1v1, Jeux de lumières réactifs au sol","Toucher du pied la lumière correspondante avant son adversaire","30 secondes pour toucher un maximum de lumières","À chaque fois qu'un mini duel est terminé, de nouvelles lumières s'allument","Victoire: +4 pts  |  Défaite: -2 pts"]}},
   generalAgility:{icon:"🎯",color:"#eab308",bg:"#191000",border:"#eab30840",winPts:4,lossPts:2,minP:6,maxP:6,teamSize:3,gameStyle:"team",
     fr:{name:"Zone Agilité Générale",sn:"Agilité",sub:"Ultimatum Tag - 2x3 joueurs",rules:["2 équipes de 3 joueurs","1 joueur par équipe à la fois sur le jeu","Un joueur est chasseur, l'autre est chassé","Le chasseur a 7 secondes pour toucher le chassé — le gagnant du duel devient chasseur, le perdant est éliminé","Le gagnant du duel doit retourner à sa base — les 7 secondes commencent dès que le duel est terminé : 7 secondes pour retourner à sa base et toucher l'adversaire","Premier à 5 points gagne (1 pt par élimination en tant que chasseur)","Victoire: +4 pts  |  Défaite: -2 pts"]}},
@@ -1101,8 +1101,8 @@ function ProgressChart({player}){
   const history=player.history||[];
   if(history.length===0) return null;
 
-  const zoneColors={purinstinct:"#84cc16",speed:"#f97316",handAgility:"#56A0D3",
-    footAgility:"#22c55e",generalAgility:"#eab308",iq:"#a855f7"};
+  const zoneColors={purinstinct:"#84cc16",speed:"#f97316",handAgility:"#3b82f6",
+    footAgility:"#56A0D3",generalAgility:"#eab308",iq:"#a855f7"};
   const zoneShort={purinstinct:"PurI.",speed:"Vitesse",handAgility:"Main",
     footAgility:"Pied",generalAgility:"Agilité",iq:"IQ"};
 
