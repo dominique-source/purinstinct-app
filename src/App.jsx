@@ -2290,7 +2290,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                               <Bib n={p.number} size="sm"/>
                               <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name.split(" ")[0]}</span>
                               <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
-                                {(p.zoneStreaks&&p.zoneStreaks[zk]>=2)&&<span style={{fontSize:11,color:"#f97316"}}>🔥×{p.zoneStreaks[zk]}</span>}
+                                {((p.zoneStreaks||{})[zk]||0)>=2&&<span style={{fontSize:11,color:"#f97316"}}>🔥×{(p.zoneStreaks||{})[zk]}</span>}
                                 <span style={{color:z.color,fontSize:13,fontWeight:700}}>{z.icon} {(p.zoneScores||{})[zk]||50}</span>
                               </div>
                             </div>
@@ -2309,7 +2309,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                                   <Bib n={p.number} size="sm"/>
                                   <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name.split(" ")[0]}</span>
                                   <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
-                                    {(p.zoneStreaks&&p.zoneStreaks[zk]>=2)&&<span style={{fontSize:11,color:"#f97316"}}>🔥×{p.zoneStreaks[zk]}</span>}
+                                    {((p.zoneStreaks||{})[zk]||0)>=2&&<span style={{fontSize:11,color:"#f97316"}}>🔥×{(p.zoneStreaks||{})[zk]}</span>}
                                     <span style={{color:z.color,fontSize:13,fontWeight:700}}>{z.icon} {(p.zoneScores||{})[zk]||50}</span>
                                   </div>
                                 </div>
@@ -2341,7 +2341,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                             <Bib n={p.number} size="sm"/>
                             <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
                             <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
-                              {(p.zoneStreaks&&p.zoneStreaks[zk]>=2)&&<span style={{fontSize:11,color:"#f97316"}}>🔥×{p.zoneStreaks[zk]}</span>}
+                              {((p.zoneStreaks||{})[zk]||0)>=2&&<span style={{fontSize:11,color:"#f97316"}}>🔥×{(p.zoneStreaks||{})[zk]}</span>}
                               <span style={{color:z.color,fontSize:13,fontWeight:700}}>{z.icon} {(p.zoneScores||{})[zk]||50}</span>
                             </div>
                           </div>
@@ -2700,7 +2700,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
 
             // Carte Gagnant Overall
             if(type==="overall"&&overall){
-              const streaks=ZK.filter(zk=>(overall.zoneStreaks[zk]||0)>=2);
+              const streaks=ZK.filter(zk=>((overall.zoneStreaks||{})[zk]||0)>=2);
               return(
                 <FullCard accent="#ca8a04"
 >
@@ -2734,7 +2734,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                       {streaks.map(zk=>(
                         <span key={zk} style={{padding:"3px 8px",borderRadius:6,background:"#f9731620",
                           color:"#f97316",fontSize:11,fontWeight:700}}>
-                          🔥 {zoneNames[zk]} ×{overall.zoneStreaks[zk]}
+                          🔥 {zoneNames[zk]} ×{(overall.zoneStreaks||{})[zk]}
                         </span>
                       ))}
                     </div>
@@ -2775,7 +2775,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
             if(type==="zone"&&zk&&zoneChamps[zk]){
               const champ=zoneChamps[zk];
               const z=ZONES[zk];
-              const hasStreak=(champ.zoneStreaks[zk]||0)>=2;
+              const hasStreak=((champ.zoneStreaks||{})[zk]||0)>=2;
               return(
                 <FullCard accent={z.color}
 >
@@ -2796,7 +2796,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                       <div style={{marginTop:14,padding:"6px 16px",borderRadius:20,
                         background:"#f9731620",display:"inline-block"}}>
                         <span style={{color:"#f97316",fontWeight:700,fontSize:14}}>
-                          🔥 Série ×{champ.zoneStreaks[zk]}
+                          🔥 Série ×{(champ.zoneStreaks||{})[zk]}
                         </span>
                       </div>
                     )}
@@ -2894,7 +2894,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                         <div style={{color:"#fff",fontWeight:700,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{champ.name}</div>
                         <div style={{...S.row(),gap:6,marginTop:2}}>
                           <span style={{color:z.color,fontWeight:700,fontSize:13}}>{cham(p.zoneScores||{})[zk]||50} pts zone</span>
-                          {(champ.zoneStreaks[zk]||0)>=2&&<span style={{color:"#f97316",fontSize:11}}>🔥×{champ.zoneStreaks[zk]}</span>}
+                          {((champ.zoneStreaks||{})[zk]||0)>=2&&<span style={{color:"#f97316",fontSize:11}}>🔥×{(champ.zoneStreaks||{})[zk]}</span>}
                         </div>
                       </div>
                     </div>
@@ -4468,7 +4468,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
             );
 
             if(type==="overall"&&overall){
-              const streaks=activeZK.filter(zk=>(overall.zoneStreaks[zk]||0)>=2);
+              const streaks=activeZK.filter(zk=>((overall.zoneStreaks||{})[zk]||0)>=2);
               return(<FullCard accent="#ca8a04">
                 <div style={{textAlign:"center",marginBottom:16}}>
                   <div style={{fontSize:52,lineHeight:1,marginBottom:8}}>🥇</div>
@@ -4489,7 +4489,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                   })}
                 </div>
                 {streaks.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center"}}>
-                  {streaks.map(zk=>(<span key={zk} style={{padding:"3px 8px",borderRadius:6,background:"#f9731620",color:"#f97316",fontSize:11,fontWeight:700}}>🔥 {zoneNames[zk]} ×{overall.zoneStreaks[zk]}</span>))}
+                  {streaks.map(zk=>(<span key={zk} style={{padding:"3px 8px",borderRadius:6,background:"#f9731620",color:"#f97316",fontSize:11,fontWeight:700}}>🔥 {zoneNames[zk]} ×{(overall.zoneStreaks||{})[zk]}</span>))}
                 </div>}
               </FullCard>);
             }
@@ -4515,7 +4515,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
             }
             if(type==="zone"&&zk&&zoneChamps[zk]){
               const champ=zoneChamps[zk]; const z=ZONES[zk];
-              const hasStreak=(champ.zoneStreaks[zk]||0)>=2;
+              const hasStreak=((champ.zoneStreaks||{})[zk]||0)>=2;
               return(<FullCard accent={z.color}>
                 <div style={{textAlign:"center",marginBottom:20}}>
                   <div style={{fontSize:56,lineHeight:1,marginBottom:10}}>{zoneIcons[zk]}</div>
@@ -4527,7 +4527,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                     <div style={{fontSize:11,color:z.color+"80",marginTop:2}}>score de zone</div>
                   </div>
                   {hasStreak&&<div style={{marginTop:14,padding:"6px 16px",borderRadius:20,background:"#f9731620",display:"inline-block"}}>
-                    <span style={{color:"#f97316",fontWeight:700,fontSize:14}}>🔥 Série ×{champ.zoneStreaks[zk]}</span>
+                    <span style={{color:"#f97316",fontWeight:700,fontSize:14}}>🔥 Série ×{(champ.zoneStreaks||{})[zk]}</span>
                   </div>}
                 </div>
               </FullCard>);
@@ -4594,7 +4594,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                         </div>
                         <div style={{...S.row(),gap:6,marginTop:2}}>
                           <span style={{color:z.color,fontWeight:700,fontSize:13}}>{cham(p.zoneScores||{})[zk]||50} pts</span>
-                          {(champ.zoneStreaks[zk]||0)>=2&&<span style={{color:"#f97316",fontSize:11}}>🔥×{champ.zoneStreaks[zk]}</span>}
+                          {((champ.zoneStreaks||{})[zk]||0)>=2&&<span style={{color:"#f97316",fontSize:11}}>🔥×{(champ.zoneStreaks||{})[zk]}</span>}
                         </div>
                       </div>
                     </div>
