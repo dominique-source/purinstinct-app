@@ -822,7 +822,7 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
   const handleAdd=()=>{
     const n=addName.trim();
     if(!n) return;
-    onAddPlayer(n,addGender);
+    onAddPlayer(n,addGender,null,activeRosterId||"main");
     setAddName("");
   };
 
