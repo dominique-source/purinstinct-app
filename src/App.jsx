@@ -353,8 +353,8 @@ function computeIndividualResult(players, participants, winnerId, zone, secondId
   let favoredId = null;
   if (zone==="footAgility"&&participants.length===2) {
     const [a,b]=participants;
-    if(Math.abs((pMap[a]?.zoneScores[zone]||50)-(pMap[b]?.zoneScores[zone]||50))>=5)
-      favoredId = (pMap[a]?.zoneScores[zone]||50)>(pMap[b]?.zoneScores[zone]||50)?a:b;
+    if(Math.abs(((pMap[a]?.zoneScores||{})[zone]||50)-((pMap[b]?.zoneScores||{})[zone]||50))>=5)
+      favoredId = ((pMap[a]?.zoneScores||{})[zone]||50)>((pMap[b]?.zoneScores||{})[zone]||50)?a:b;
   }
   return players.map(p => {
     if (!participants.includes(p.id)) return p;
@@ -366,7 +366,7 @@ function computeIndividualResult(players, participants, winnerId, zone, secondId
     const bonus = isWin&&prev>=2;
     let tierAdj = 0;
     if (zone==="speed") {
-      const tier = getSprintTier(p.zoneScores.speed||50);
+      const tier = getSprintTier((p.zoneScores||{}).speed||50);
       if(isWin) tierAdj = tier===5?1:tier===1?-1:0;
       else tierAdj = tier===5?-1:tier===1?1:0;
     }
@@ -2291,7 +2291,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                               <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name.split(" ")[0]}</span>
                               <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
                                 {(p.zoneStreaks&&p.zoneStreaks[zk]>=2)&&<span style={{fontSize:11,color:"#f97316"}}>🔥×{p.zoneStreaks[zk]}</span>}
-                                <span style={{color:z.color,fontSize:13,fontWeight:700}}>{z.icon} {p.zoneScores[zk]||50}</span>
+                                <span style={{color:z.color,fontSize:13,fontWeight:700}}>{z.icon} {(p.zoneScores||{})[zk]||50}</span>
                               </div>
                             </div>
                           ))}
@@ -2310,7 +2310,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                                   <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name.split(" ")[0]}</span>
                                   <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
                                     {(p.zoneStreaks&&p.zoneStreaks[zk]>=2)&&<span style={{fontSize:11,color:"#f97316"}}>🔥×{p.zoneStreaks[zk]}</span>}
-                                    <span style={{color:z.color,fontSize:13,fontWeight:700}}>{z.icon} {p.zoneScores[zk]||50}</span>
+                                    <span style={{color:z.color,fontSize:13,fontWeight:700}}>{z.icon} {(p.zoneScores||{})[zk]||50}</span>
                                   </div>
                                 </div>
                               ))}
@@ -2342,7 +2342,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                             <span style={{color:"#fff",fontSize:13,fontWeight:600,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
                             <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}>
                               {(p.zoneStreaks&&p.zoneStreaks[zk]>=2)&&<span style={{fontSize:11,color:"#f97316"}}>🔥×{p.zoneStreaks[zk]}</span>}
-                              <span style={{color:z.color,fontSize:13,fontWeight:700}}>{z.icon} {p.zoneScores[zk]||50}</span>
+                              <span style={{color:z.color,fontSize:13,fontWeight:700}}>{z.icon} {(p.zoneScores||{})[zk]||50}</span>
                             </div>
                           </div>
                         ))}
@@ -2637,7 +2637,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
           const zoneChamps={};
           activeZK.forEach(zk=>{
             const played=players.filter(p=>(p.zonesPlayed||[]).includes(zk));
-            if(played.length>0) zoneChamps[zk]=[...played].sort((a,b)=>(b.zoneScores[zk]||50)-(a.zoneScores[zk]||50))[0];
+            if(played.length>0) zoneChamps[zk]=[...played].sort((a,b)=>((b.zoneScores||{})[zk]||50)-(a.zoneScores[zk]||50))[0];
           });
           const zoneIcons={purinstinct:"🏟️",speed:"⚡",handAgility:"✋",footAgility:"👟",generalAgility:"🏃",iq:"🧠"};
           const zoneNames={purinstinct:"PurInstinct",speed:"Vitesse",handAgility:"Habileté Main",footAgility:"Habileté Pied",generalAgility:"Agilité",iq:"IQ de Jeu"};
@@ -2723,7 +2723,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                           border:"1px solid "+(played?"#84cc1650":"#1f2937")}}>
                           <div style={{fontSize:18}}>{zoneIcons[zk]}</div>
                           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
-                            color:played?"#84cc16":"#374151"}}>{overall.zoneScores[zk]||50}</div>
+                            color:played?"#84cc16":"#374151"}}>{(overall.zoneScores||{})[zk]||50}</div>
                           <div style={{fontSize:9,color:played?"#6b7280":"#1f2937",marginTop:1}}>{zoneNames[zk].split(" ")[0]}</div>
                         </div>
                       );
@@ -2789,7 +2789,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                     <div style={{display:"inline-block",padding:"12px 24px",borderRadius:16,
                       background:z.color+"20",border:"2px solid "+z.color+"60"}}>
                       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:52,
-                        color:z.color,lineHeight:1}}>{champ.zoneScores[zk]||50}</div>
+                        color:z.color,lineHeight:1}}>{cham(p.zoneScores||{})[zk]||50}</div>
                       <div style={{fontSize:11,color:z.color+"80",marginTop:2}}>score de zone</div>
                     </div>
                     {hasStreak&&(
@@ -2893,7 +2893,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                           color:z.color,letterSpacing:2,marginBottom:2}}>CHAMPION {zoneNames[zk].toUpperCase()}</div>
                         <div style={{color:"#fff",fontWeight:700,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{champ.name}</div>
                         <div style={{...S.row(),gap:6,marginTop:2}}>
-                          <span style={{color:z.color,fontWeight:700,fontSize:13}}>{champ.zoneScores[zk]||50} pts zone</span>
+                          <span style={{color:z.color,fontWeight:700,fontSize:13}}>{cham(p.zoneScores||{})[zk]||50} pts zone</span>
                           {(champ.zoneStreaks[zk]||0)>=2&&<span style={{color:"#f97316",fontSize:11}}>🔥×{champ.zoneStreaks[zk]}</span>}
                         </div>
                       </div>
@@ -3057,9 +3057,9 @@ function SprintGameView({game,players,zone,onWinner,onRemove,onReplace}){
       {/* Participants */}
       <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:16}}>
         {pList.map((p,i)=>{
-          const tier=getSprintTier(p.zoneScores.speed||50);
+          const tier=getSprintTier((p.zoneScores||{}).speed||50);
           const t=TIERS[tier];
-          const streak=p.zoneStreaks[zone]||0;
+          const streak=(p.zoneStreaks||{})[zone]||0;
           const isFirst=selectedFirst===p.id;
           const isSecond=selectedSecond===p.id;
           return(
@@ -3069,13 +3069,13 @@ function SprintGameView({game,players,zone,onWinner,onRemove,onReplace}){
               <div style={{width:24,height:24,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",
                 fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
                 background:t.color+"22",color:t.color,flexShrink:0}}>{i+1}</div>
-              <TierBadge score={p.zoneScores.speed||50}/>
+              <TierBadge score={(p.zoneScores||{}).speed||50}/>
               <Bib n={p.number} size="sm" color={t.color}/>
               <span style={{flex:1,color:"#fff",fontWeight:600,fontSize:13}}>{p.name}</span>
               {isFirst&&<span style={{fontSize:11,color:"#84cc16",fontWeight:700}}>🥇 1er</span>}
               {isSecond&&<span style={{fontSize:11,color:"#ca8a04",fontWeight:700}}>🥈 2e</span>}
               {streak>=2&&<span style={{fontSize:11,color:"#f97316"}}>🔥x{streak}</span>}
-              <span style={{fontSize:11,color:t.color,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{p.zoneScores.speed||50}</span>
+              <span style={{fontSize:11,color:t.color,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{(p.zoneScores||{}).speed||50}</span>
               <button onClick={()=>onRemove(p.id)} title="Retirer de la course"
                 style={{background:"none",border:"none",cursor:"pointer",color:"#374151",fontSize:16,lineHeight:1}}
                 onMouseEnter={e=>e.target.style.color="#ef4444"}
@@ -3095,7 +3095,7 @@ function SprintGameView({game,players,zone,onWinner,onRemove,onReplace}){
       </div>
       <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
         {pList.filter(p=>p.id!==selectedSecond).map(p=>{
-          const tier=getSprintTier(p.zoneScores.speed||50);
+          const tier=getSprintTier((p.zoneScores||{}).speed||50);
           const t=TIERS[tier];
           const isFirst=selectedFirst===p.id;
           return(
@@ -3145,7 +3145,7 @@ function IndividualGameView({game,players,zone,onWinner,onRemove,onReplace}){
   let favoredId=null;
   if(zone==="footAgility"&&participants.length===2){
     const [a,b]=participants;
-    const sa=pMap[a]?.zoneScores[zone]||50, sb=pMap[b]?.zoneScores[zone]||50;
+    const sa=(pMap[a]?.zoneScores||{})[zone]||50, sb=(pMap[b]?.zoneScores||{})[zone]||50;
     if(Math.abs(sa-sb)>=5) favoredId=sa>sb?a:b;
   }
 
@@ -3244,7 +3244,7 @@ function TeamGameView({game,players,zone,onResult,onRemove,onReplace}){
                   <div key={p.id} style={{...S.row()}}>
                     <Bib n={p.number} size="sm" color={z.color}/>
                     <span style={{fontSize:12,color:"#fff",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name.split(" ")[0]}</span>
-                    {(p.zoneStreaks[zone]||0)>=2&&<span style={{fontSize:10,color:"#f97316"}}>🔥{p.zoneStreaks[zone]}</span>}
+                    {((p.zoneStreaks||{})[zone]||0)>=2&&<span style={{fontSize:10,color:"#f97316"}}>🔥{(p.zoneStreaks||{})[zone]}</span>}
                     <button onClick={()=>onRemove(p.id)}
                       style={{background:"none",border:"none",cursor:"pointer",color:"#374151",fontSize:14,lineHeight:1,flexShrink:0}}
                       onMouseEnter={e=>e.target.style.color="#ef4444"}
@@ -3610,7 +3610,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                       {sprintLine.map((p,i)=>(
                         <div key={p.id} style={{...S.row(),padding:"3px 7px",borderRadius:7,background:"#1f2937",gap:4}}>
                           <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,color:z.color}}>{i+1}</span>
-                          <TierBadge score={p.zoneScores.speed||50}/>
+                          <TierBadge score={(p.zoneScores||{}).speed||50}/>
                           <span style={{fontSize:11,color:"#fff"}}>{p.name.split(" ")[0]}</span>
                         </div>
                       ))}
@@ -4390,7 +4390,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
           const zoneChamps={};
           activeZK.forEach(zk=>{
             const played=players.filter(p=>(p.zonesPlayed||[]).includes(zk));
-            if(played.length>0) zoneChamps[zk]=[...played].sort((a,b)=>(b.zoneScores[zk]||50)-(a.zoneScores[zk]||50))[0];
+            if(played.length>0) zoneChamps[zk]=[...played].sort((a,b)=>((b.zoneScores||{})[zk]||50)-(a.zoneScores[zk]||50))[0];
           });
           const zoneIcons={purinstinct:"🏟️",speed:"⚡",handAgility:"✋",footAgility:"👟",generalAgility:"🏃",iq:"🧠"};
           const zoneNames={purinstinct:"PurInstinct",speed:"Vitesse",handAgility:"Habileté Main",footAgility:"Habileté Pied",generalAgility:"Agilité",iq:"IQ de Jeu"};
@@ -4483,7 +4483,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                     return(<div key={zk} style={{borderRadius:10,padding:"8px 6px",textAlign:"center",
                       background:played?"#1a2e05":"#111827",border:"1px solid "+(played?"#84cc1650":"#1f2937")}}>
                       <div style={{fontSize:18}}>{zoneIcons[zk]}</div>
-                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:played?"#84cc16":"#374151"}}>{overall.zoneScores[zk]||50}</div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:played?"#84cc16":"#374151"}}>{(overall.zoneScores||{})[zk]||50}</div>
                       <div style={{fontSize:9,color:played?"#6b7280":"#1f2937",marginTop:1}}>{zoneNames[zk].split(" ")[0]}</div>
                     </div>);
                   })}
@@ -4523,7 +4523,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:z.color,marginBottom:16}}>{zoneNames[zk].toUpperCase()}</div>
                   <div style={{color:champ.id===playerId?"#84cc16":"#fff",fontWeight:700,fontSize:28,marginBottom:8}}>{champ.name}{champ.id===playerId?" 👈":""}</div>
                   <div style={{display:"inline-block",padding:"12px 24px",borderRadius:16,background:z.color+"20",border:"2px solid "+z.color+"60"}}>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:52,color:z.color,lineHeight:1}}>{champ.zoneScores[zk]||50}</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:52,color:z.color,lineHeight:1}}>{cham(p.zoneScores||{})[zk]||50}</div>
                     <div style={{fontSize:11,color:z.color+"80",marginTop:2}}>score de zone</div>
                   </div>
                   {hasStreak&&<div style={{marginTop:14,padding:"6px 16px",borderRadius:20,background:"#f9731620",display:"inline-block"}}>
@@ -4593,7 +4593,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                           {champ.name}{champ.id===playerId?" 👈":""}
                         </div>
                         <div style={{...S.row(),gap:6,marginTop:2}}>
-                          <span style={{color:z.color,fontWeight:700,fontSize:13}}>{champ.zoneScores[zk]||50} pts</span>
+                          <span style={{color:z.color,fontWeight:700,fontSize:13}}>{cham(p.zoneScores||{})[zk]||50} pts</span>
                           {(champ.zoneStreaks[zk]||0)>=2&&<span style={{color:"#f97316",fontSize:11}}>🔥×{champ.zoneStreaks[zk]}</span>}
                         </div>
                       </div>
@@ -4834,7 +4834,7 @@ export default function PurInstinctApp(){
 
     let gameData;
     if(z.gameStyle==="sprint"){
-      const sorted=[...selected].sort((a,b)=>(pMap[a]?.zoneScores.speed||50)-(pMap[b]?.zoneScores.speed||50));
+      const sorted=[...selected].sort((a,b)=>((pMap[a]?.zoneScores||{}).speed||50)-((pMap[b]?.zoneScores||{}).speed||50));
       gameData={type:"sprint",participants:sorted};
     } else if(z.gameStyle==="individual"||z.gameStyle==="duel"){
       const s=shuffle(selected.slice(0,need));
@@ -4960,7 +4960,7 @@ export default function PurInstinctApp(){
       syncGames({...activeGames,[zone]:{...game,teamA:newA,teamB:newB}});
     } else {
       let newP=[...(game.participants||[]),nextId];
-      if(game.type==="sprint") newP=newP.sort((a,b)=>(pMap[a]?.zoneScores.speed||50)-(pMap[b]?.zoneScores.speed||50));
+      if(game.type==="sprint") newP=newP.sort((a,b)=>((pMap[a]?.zoneScores||{}).speed||50)-((pMap[b]?.zoneScores||{}).speed||50));
       syncQueues({...queues,[zone]:newQ});
       syncGames({...activeGames,[zone]:{...game,participants:newP}});
     }
