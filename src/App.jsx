@@ -2896,10 +2896,10 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
           const zoneChamps={};
           activeZK.forEach(zk=>{
             const played=players.filter(p=>(p.zonesPlayed||[]).includes(zk));
-            if(played.length>0) zoneChamps[zk]=[...played].sort((a,b)=>((b.zoneScores||{})[zk]||50)-(a.zoneScores[zk]||50))[0];
+            if(played.length>0) zoneChamps[zk]=[...played].sort((a,b)=>((b.zoneScores||{})[zk]||50)-((a.zoneScores||{})[zk]||50))[0];
           });
           const zoneIcons={purinstinct:"🏟️",speed:"⚡",handAgility:"✋",footAgility:"👟",generalAgility:"🏃",iq:"🧠"};
-          const zoneNames={purinstinct:"PurInstinct",speed:"Vitesse",handAgility:"Habileté Main",footAgility:"Habileté Pied",generalAgility:"Agilité",iq:"IQ de Jeu"};
+          const zoneNames=Object.fromEntries(ZK.map(zk=>[zk,zn(zk).name]));
           const medals=["🥇","🥈","🥉","4️⃣","5️⃣"];
 
           const copyText=(text)=>{ navigator.clipboard&&navigator.clipboard.writeText(text); };
@@ -4660,10 +4660,10 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
           const zoneChamps={};
           activeZK.forEach(zk=>{
             const played=players.filter(p=>(p.zonesPlayed||[]).includes(zk));
-            if(played.length>0) zoneChamps[zk]=[...played].sort((a,b)=>((b.zoneScores||{})[zk]||50)-(a.zoneScores[zk]||50))[0];
+            if(played.length>0) zoneChamps[zk]=[...played].sort((a,b)=>((b.zoneScores||{})[zk]||50)-((a.zoneScores||{})[zk]||50))[0];
           });
           const zoneIcons={purinstinct:"🏟️",speed:"⚡",handAgility:"✋",footAgility:"👟",generalAgility:"🏃",iq:"🧠"};
-          const zoneNames={purinstinct:"PurInstinct",speed:"Vitesse",handAgility:"Habileté Main",footAgility:"Habileté Pied",generalAgility:"Agilité",iq:"IQ de Jeu"};
+          const zoneNames=Object.fromEntries(ZK.map(zk=>[zk,zn(zk).name]));
           const medals=["🥇","🥈","🥉","4️⃣","5️⃣"];
 
           // Vérifier si le joueur figure dans les résultats
