@@ -139,7 +139,7 @@ const T={
     teamA:"ÉQUIPE A GAGNE", teamB:"ÉQUIPE B GAGNE",
     substitute:"+ Remplaçant depuis la file",
     minRequired:"minimum requis",
-    noGameInProgress:"Aucune partie en cours",
+    noGameInProgress:"{t.noGameInZone}",
     queue:"File d'attente",
     addPlayer:"+ Ajouter",
     playerNum:"# Joueur",
@@ -221,6 +221,63 @@ const T={
     rulesSubtitle:"Comprends les règles de chaque zone avant de jouer.",
     handicapDesc:"Le joueur/équipe avec le score de zone le plus élevé joue avec un désavantage pour rééquilibrer la compétition.",
     streakDesc:"3 victoires consécutives dans une même zone = multiplicateur ×1.5 sur les points gagnés.",
+    tabSurvey:"📊 Sondage", tabComments:"💬 Commentaires", tabWinners:"🥇 Gagnants",
+    searchPlayer:"🔍 Rechercher un joueur...",
+    noGameInZone:"{t.noGameInZone}",
+    queueLabel:"File d'attente", queueEmpty:"File vide",
+    resetHistoryTitle:"Remettre l'historique à 0", resetHistoryDesc:"Efface l'historique de parties pour tous les joueurs actifs",
+    resetHistoryConfirm:"Effacer l'historique de TOUS les joueurs ?", resetHistoryBtn:"🗑️ Effacer",
+    resetPointsTitle:"Remettre les points à 0", resetPointsDesc:"Remet globalPoints et zonesPlayed à zéro pour tous les joueurs",
+    resetPointsConfirm:"Remettre les points à 0 pour TOUS les joueurs ?", resetPointsBtn:"🔄 Remettre à 0",
+    winnersPublished:"🏆 Gagnants publiés", publishWinners:"Publier les gagnants",
+    winnersVisible:"Les joueurs voient les résultats dans leur classement",
+    winnersHidden:"Les joueurs ne voient pas encore les résultats",
+    unpublish:"Retirer", publish:"Publier",
+    noPlayersRegistered:"{t.noPlayersRegistered}",
+    favoredPlayer:"est favori - handicap actif",
+    favoredTeam:"Equipe favorisée (delta:", handicapNote:"- handicap actif",
+    stationDisabled:"{t.stationDisabled}",
+    stationDisabledDesc:"{t.stationDisabledDesc}",
+    backToStations:"{t.backToStations}",
+    goPlayer:"👤 Joueur", goAdmin:"🛡️ Admin",
+    disconnect:"🚪 Déconnecter",
+    statusActive:"EN COURS", statusPaused:"EN PAUSE", statusEnded:"TERMINÉ", statusWaiting:"EN ATTENTE",
+    participants:"Participants",
+    returnToQueue:"↩ Retour à la file d'attente",
+    returnToQueueConfirm:"Retourner tous les joueurs dans la file d'attente ?",
+    playersInQueue:"joueurs en file", raceOf:"course de",
+    missingPlayers:"Manque", playAnyway:"— jouer quand même ?",
+    yesPlay:"✓ Oui", noPlay:"✕ Non",
+    emptyQueue:"File d'attente vide",
+    minPlayers:"joueurs minimum pour afficher les options",
+    sprintOrder:"{t.sprintOrder}",
+    pointTypes:"Types de points", globalPointsTitle:"🏆 Points globaux",
+    globalPointsDesc:"Pour gagner la partie finale.",
+    globalPointsRange:"Début à 0 · Pas de maximum",
+    zonePointsTitle:"⚡ Points de zone",
+    zonePointsDesc:"Détermine les gagnants de chaque zone et les handicaps.",
+    zonePointsRange:"Début à 50 · Min 0 · Max 100",
+    pointSystem:"Système de points",
+    handicapLabel:"Handicap", winStreakLabel:"Série de victoires",
+    hubQueue:"Se mettre en file", hubQueueSub:"Choisir une station",
+    hubLeaderboard:"Classement", hubLeaderboardSub:"Voir tous les joueurs",
+    hubStation:"Responsable de plateau", hubStationSub:"Gérer les stations",
+    hubDisconnect:"Déconnexion", hubDisconnectSub:"Changer de session",
+    hubTitle:"⚡ Choisir une station",
+    stationManager:"📍 Responsable",
+    backHome:"← Accueil",
+    showQueue:"▼ Voir la file d'attente", hideQueue:"▲ Masquer",
+    winnersTab:"🏆 Gagnants — Voir les résultats",
+    adminCentre:"Centre de contrôle",
+    sessionInProgress:"Session en cours", sessionSub:"Classement · Timer · Gestion",
+    stationManagerShort:"Responsable de plateau", stationManagerSub:"Gérer les stations",
+    sessionsTab:"Sessions", sessionsSub:"Listes · Codes · QR",
+    disconnectShort:"Déconnexion", disconnectSub:"Changer de session",
+    sessionActiveNote:"● Session active en cours",
+    chooseStation:"📍 Choisissez votre station",
+    returnAsPlayer:"👤 Retourner comme joueur",
+    switchToAdmin:"🛡️ Basculer en mode Admin",
+    disconnectSession:"Déconnecter la session",
   },
   en:{
     lang:"EN", langOther:"FR",
@@ -334,6 +391,63 @@ const T={
     rulesSubtitle:"Understand the rules of each zone before playing.",
     handicapDesc:"The player/team with the highest zone score plays with a disadvantage to rebalance the competition.",
     streakDesc:"3 consecutive wins in the same zone = ×1.5 multiplier on points earned.",
+    tabSurvey:"📊 Survey", tabComments:"💬 Comments", tabWinners:"🥇 Winners",
+    searchPlayer:"🔍 Search a player...",
+    noGameInZone:"No match in progress",
+    queueLabel:"Queue", queueEmpty:"Empty queue",
+    resetHistoryTitle:"Reset history", resetHistoryDesc:"Clears match history for all active players",
+    resetHistoryConfirm:"Clear history for ALL players?", resetHistoryBtn:"🗑️ Clear",
+    resetPointsTitle:"Reset points", resetPointsDesc:"Resets globalPoints and zonesPlayed to zero for all players",
+    resetPointsConfirm:"Reset points to 0 for ALL players?", resetPointsBtn:"🔄 Reset",
+    winnersPublished:"🏆 Winners published", publishWinners:"Publish winners",
+    winnersVisible:"Players can see the results in their leaderboard",
+    winnersHidden:"Players cannot see the results yet",
+    unpublish:"Unpublish", publish:"Publish",
+    noPlayersRegistered:"No players registered yet.",
+    favoredPlayer:"is favored - handicap active",
+    favoredTeam:"Team favored (delta:", handicapNote:"- handicap active",
+    stationDisabled:"Station disabled",
+    stationDisabledDesc:"This station has been disabled by the admin for this session.",
+    backToStations:"← Back to stations",
+    goPlayer:"👤 Player", goAdmin:"🛡️ Admin",
+    disconnect:"🚪 Disconnect",
+    statusActive:"ACTIVE", statusPaused:"PAUSED", statusEnded:"ENDED", statusWaiting:"WAITING",
+    participants:"Participants",
+    returnToQueue:"↩ Return to queue",
+    returnToQueueConfirm:"Return all players to the queue?",
+    playersInQueue:"players in queue", raceOf:"race of",
+    missingPlayers:"Missing", playAnyway:"— play anyway?",
+    yesPlay:"✓ Yes", noPlay:"✕ No",
+    emptyQueue:"Empty queue",
+    minPlayers:"players minimum to show options",
+    sprintOrder:"Start order - front (Lvl.1) -- back (Lvl.5)",
+    pointTypes:"Point types", globalPointsTitle:"🏆 Global points",
+    globalPointsDesc:"To win the final match.",
+    globalPointsRange:"Starts at 0 · No maximum",
+    zonePointsTitle:"⚡ Zone points",
+    zonePointsDesc:"Determines zone winners and handicaps.",
+    zonePointsRange:"Starts at 50 · Min 0 · Max 100",
+    pointSystem:"Point system",
+    handicapLabel:"Handicap", winStreakLabel:"Win streak",
+    hubQueue:"Join a queue", hubQueueSub:"Choose a station",
+    hubLeaderboard:"Leaderboard", hubLeaderboardSub:"See all players",
+    hubStation:"Station manager", hubStationSub:"Manage stations",
+    hubDisconnect:"Disconnect", hubDisconnectSub:"Change session",
+    hubTitle:"⚡ Choose a station",
+    stationManager:"📍 Manager",
+    backHome:"← Home",
+    showQueue:"▼ Show queue", hideQueue:"▲ Hide",
+    winnersTab:"🏆 Winners — See results",
+    adminCentre:"Control centre",
+    sessionInProgress:"Current session", sessionSub:"Leaderboard · Timer · Management",
+    stationManagerShort:"Station manager", stationManagerSub:"Manage stations",
+    sessionsTab:"Sessions", sessionsSub:"Lists · Codes · QR",
+    disconnectShort:"Disconnect", disconnectSub:"Change session",
+    sessionActiveNote:"● Active session in progress",
+    chooseStation:"📍 Choose your station",
+    returnAsPlayer:"👤 Return as player",
+    switchToAdmin:"🛡️ Switch to Admin",
+    disconnectSession:"Disconnect session",
   },
 };
 
@@ -2300,7 +2414,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                 {[30,45,60,75,90,120].map(m=><option key={m} value={m}>{m} min</option>)}
               </select>
               <div className={arenaState.active?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:timerColor,lineHeight:1}}>{timer}</div>
-              <div style={{fontSize:9,color:"#4b5563"}}>{arenaState.active?t.active:arenaState.paused?"EN PAUSE":arenaState.ended?t.ended:t.waiting}</div>
+              <div style={{fontSize:9,color:"#4b5563"}}>{arenaState.active?t.statusActive:arenaState.paused?t.statusPaused:arenaState.ended?t.statusEnded:t.statusWaiting}</div>
             </div>
             {!arenaState.active&&!arenaState.paused&&<button onClick={()=>onStart(sessionMins)} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12}}>{t.start}</button>}
             {arenaState.active&&<button onClick={onPause} style={{...S.btn("#f97316"),padding:"6px 12px",fontSize:12,color:"#000",fontWeight:700}}>⏸ Pause</button>}
@@ -2312,7 +2426,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
           </div>
         </div>
         <div style={{display:"flex",gap:4}}>
-          {[["leaderboard",t.tabLeader],["stations",t.tabStations],["players",t.tabPlayers],["session",t.tabSession],["survey","📊 Sondage"],["comments","💬 Commentaires"],["winners","🥇 Gagnants"]].map(([t,l])=>(
+          {[["leaderboard",t.tabLeader],["stations",t.tabStations],["players",t.tabPlayers],["session",t.tabSession],["survey",t.tabSurvey],["comments",t.tabComments],["winners",t.tabWinners]].map(([t,l])=>(
             <button key={t} onClick={()=>{setTab(t);setSelectedStation(null);}} style={{
               padding:"6px 10px",borderRadius:8,fontSize:11,fontWeight:600,border:"none",cursor:"pointer",
               background:tab===t?"#84cc16":"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
@@ -2332,7 +2446,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
             {/* Barre de recherche */}
             <div style={{position:"relative",marginBottom:10}}>
               <input value={leaderSearch} onChange={e=>{setLeaderSearch(e.target.value);setLeaderHighlight(null);}}
-                placeholder="🔍 Rechercher un joueur..."
+                placeholder={t.searchPlayer}
                 style={{width:"100%",padding:"8px 12px",borderRadius:10,border:"1px solid #374151",
                   background:"#0d0f1a",color:"#fff",fontSize:16,outline:"none",boxSizing:"border-box"}}/>
               {leaderSearch.trim().length>0&&(()=>{
@@ -2466,15 +2580,15 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                     </div>
                   ):(
                     <div style={{...S.card(),border:"1px solid #1f2937",marginBottom:10,textAlign:"center",color:"#4b5563",fontSize:13,padding:"20px 12px"}}>
-                      Aucune partie en cours
+                      {t.noGameInZone}
                     </div>
                   )}
 
                   {/* Queue */}
                   <div style={{...S.card(),border:"1px solid #1f2937"}}>
-                    <div style={{fontWeight:700,fontSize:13,color:"#fff",marginBottom:10}}>File d'attente ({inQueue.length})</div>
+                    <div style={{fontWeight:700,fontSize:13,color:"#fff",marginBottom:10}}>{t.queueLabel} ({inQueue.length})</div>
                     {inQueue.length===0?(
-                      <div style={{color:"#4b5563",fontSize:12,textAlign:"center",padding:"8px 0"}}>File vide</div>
+                      <div style={{color:"#4b5563",fontSize:12,textAlign:"center",padding:"8px 0"}}>{t.queueEmpty}</div>
                     ):(
                       <div style={{display:"flex",flexDirection:"column",gap:4}}>
                         {inQueue.map((p,i)=>(
@@ -2644,24 +2758,24 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
           {onResetAllHistory&&(
             <div style={{margin:"0 0 16px 0",padding:"14px 16px",borderRadius:14,background:"#1a0505",border:"1px solid #ef444440",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
               <div>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,color:"#ef4444"}}>Remettre l'historique à 0</div>
-                <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>Efface l'historique de parties pour tous les joueurs actifs</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,color:"#ef4444"}}>{t.resetHistoryTitle}</div>
+                <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>{t.resetHistoryDesc}</div>
               </div>
-              <button onClick={()=>{if(window.confirm("Effacer l'historique de TOUS les joueurs ?")) onResetAllHistory();}}
+              <button onClick={()=>{if(window.confirm(t.resetHistoryConfirm)) onResetAllHistory();}}
                 style={{padding:"8px 16px",borderRadius:10,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,flexShrink:0}}>
-                🗑️ Effacer
+                {t.resetHistoryBtn}
               </button>
             </div>
           )}
           {onResetAllPoints&&(
             <div style={{margin:"0 0 16px 0",padding:"14px 16px",borderRadius:14,background:"#1a0505",border:"1px solid #ef444440",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
               <div>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,color:"#ef4444"}}>Remettre les points à 0</div>
-                <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>Remet globalPoints et zonesPlayed à zéro pour tous les joueurs</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,color:"#ef4444"}}>{t.resetPointsTitle}</div>
+                <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>{t.resetPointsDesc}</div>
               </div>
-              <button onClick={()=>{if(window.confirm("Remettre les points à 0 pour TOUS les joueurs ?")) onResetAllPoints();}}
+              <button onClick={()=>{if(window.confirm(t.resetPointsConfirm)) onResetAllPoints();}}
                 style={{padding:"8px 16px",borderRadius:10,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,flexShrink:0}}>
-                🔄 Remettre à 0
+                {t.resetPointsBtn}
               </button>
             </div>
           )}
@@ -2975,16 +3089,16 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                 display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
                 <div>
                   <div style={{color:"#fff",fontWeight:700,fontSize:13}}>
-                    {winnersPublished?"🏆 Gagnants publiés":"Publier les gagnants"}
+                    {winnersPublished?t.winnersPublished:t.publishWinners}
                   </div>
                   <div style={{color:"#4b5563",fontSize:11,marginTop:2}}>
-                    {winnersPublished?"Les joueurs voient les résultats dans leur classement":"Les joueurs ne voient pas encore les résultats"}
+                    {winnersPublished?t.winnersVisible:t.winnersHidden}
                   </div>
                 </div>
                 <button onClick={winnersPublished?onUnpublishWinners:onPublishWinners}
                   style={{...S.btn(winnersPublished?"#374151":"#84cc16"),padding:"8px 16px",fontSize:12,
                     color:winnersPublished?"#9ca3af":"#000",flexShrink:0}}>
-                  {winnersPublished?"Retirer":"Publier"}
+                  {winnersPublished?t.unpublish:t.publish}
                 </button>
               </div>
 
@@ -3049,7 +3163,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
 
               {ranked.length===0&&(
                 <div style={{textAlign:"center",padding:"40px 0",color:"#4b5563",fontSize:13}}>
-                  Aucun joueur enregistré pour l'instant.
+                  {t.noPlayersRegistered}
                 </div>
               )}
             </div>
@@ -3306,7 +3420,7 @@ function IndividualGameView({game,players,zone,onWinner,onRemove,onReplace}){
       </div>
       {favoredId&&(
         <div style={{marginBottom:12,padding:"8px 12px",borderRadius:10,fontSize:12,fontWeight:600,textAlign:"center",background:"#fbbf2412",color:"#fbbf24",border:"1px solid #fbbf2425"}}>
-          ⚠ {pMap[favoredId]?.name.split(" ")[0]} est favori - handicap actif
+          ⚠ {pMap[favoredId]?.name.split(" ")[0]} {t.favoredPlayer}
         </div>
       )}
       <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:14}}>
@@ -3374,7 +3488,7 @@ function TeamGameView({game,players,zone,onResult,onRemove,onReplace}){
       </div>
       {favored&&(
         <div style={{marginBottom:10,padding:"7px 12px",borderRadius:10,fontSize:12,fontWeight:600,textAlign:"center",background:"#fbbf2412",color:"#fbbf24",border:"1px solid #fbbf2425"}}>
-          ⚠ Equipe {favored} favorisee (delta:{diff.toFixed(0)}) - handicap actif
+          ⚠ {t.favoredTeam}{diff.toFixed(0)}) {t.handicapNote}
         </div>
       )}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
@@ -3526,15 +3640,15 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
       <style>{FONTS}</style>
       <div style={{fontSize:56,opacity:0.3}}>{z.icon}</div>
       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#374151",textAlign:"center"}}>
-        Station désactivée
+        {t.stationDisabled}
       </div>
       <div style={{fontSize:13,color:"#4b5563",textAlign:"center",maxWidth:260}}>
-        Cette station a été désactivée par l'admin pour cette session.
+        {t.stationDisabledDesc}
       </div>
       {sessionName&&<div style={{fontSize:11,color:"#374151",fontWeight:600}}>📋 {sessionName}</div>}
-      <button onClick={onBack||onLogout} style={{marginTop:16,...S.btn(),padding:"8px 20px",fontSize:13}}>← Retour aux stations</button>
-      {onGoAdmin&&<button onClick={onGoAdmin} style={{marginTop:8,...S.btn("#84cc16"),padding:"8px 20px",fontSize:13,color:"#000"}}>{fromPlayerId?"👤 Joueur":"🛡️ Admin"}</button>}
-      <button onClick={onLogout} style={{marginTop:8,background:"none",border:"none",color:"#4b5563",fontSize:12,cursor:"pointer"}}>🚪 Déconnecter</button>
+      <button onClick={onBack||onLogout} style={{marginTop:16,...S.btn(),padding:"8px 20px",fontSize:13}}>{t.backToStations}</button>
+      {onGoAdmin&&<button onClick={onGoAdmin} style={{marginTop:8,...S.btn("#84cc16"),padding:"8px 20px",fontSize:13,color:"#000"}}>{fromPlayerId?t.goPlayer:t.goAdmin}</button>}
+      <button onClick={onLogout} style={{marginTop:8,background:"none",border:"none",color:"#4b5563",fontSize:12,cursor:"pointer"}}>{t.disconnect}</button>
     </div>
   );
 
@@ -3572,7 +3686,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                 color:arenaStatus==="active"?"#84cc16":arenaStatus==="paused"?"#f97316":arenaStatus==="ended"?"#dc2626":"#374151",
                 lineHeight:1}}>{arenaTimer}</div>
               <div style={{fontSize:9,color:"#4b5563"}}>
-                {arenaStatus==="active"?"EN COURS":arenaStatus==="paused"?"EN PAUSE":arenaStatus==="ended"?"TERMINÉ":"EN ATTENTE"}
+                {arenaStatus==="active"?t.statusActive:arenaStatus==="paused"?t.statusPaused:arenaStatus==="ended"?t.statusEnded:t.statusWaiting}
               </div>
             </div>}
             <button onClick={onBack||onLogout} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>←</button>
@@ -3590,12 +3704,12 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
             <button onClick={()=>setShowRoster(true)} style={{
               padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
               background:"#1f2937",color:"#9ca3af"}}>
-              👥 Participants ({players.length})
+              👥 {t.participants} ({players.length})
             </button>
-            {onGoAdmin&&<button onClick={onGoAdmin} title={fromPlayerId?"Retourner comme joueur":"Basculer en mode admin"}
+            {onGoAdmin&&<button onClick={onGoAdmin} title={fromPlayerId?t.returnAsPlayer:t.switchToAdmin}
               style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:700,border:"1px solid #84cc1640",cursor:"pointer",
                 background:"#111827",color:"#84cc16"}}>
-              {fromPlayerId?"👤 Joueur":"🛡️ Admin"}
+              {fromPlayerId?t.goPlayer:t.goAdmin}
             </button>}
           </div>
         </div>
@@ -3645,10 +3759,10 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
             {/* ACTIVE GAME */}
             {activeGame?(
               <div>
-                {onCancelGame&&<button onClick={()=>{if(window.confirm("Retourner tous les joueurs dans la file d'attente ?"))onCancelGame(zone);}}
+                {onCancelGame&&<button onClick={()=>{if(window.confirm(t.returnToQueueConfirm))onCancelGame(zone);}}
                   style={{...S.btn(),width:"100%",padding:"8px",fontSize:12,marginBottom:10,
                     border:"1px solid #374151",color:"#9ca3af",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                  ↩ Retour à la file d'attente
+                  {t.returnToQueue}
                 </button>}
                 {z.gameStyle==="sprint"?(
                 <SprintGameView game={activeGame} players={players} zone={zone}
@@ -3710,25 +3824,25 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                   {canGen?(
                     <div>
                       <div style={{fontSize:13,color:"#6b7280",marginBottom:12}}>
-                        {zone==="speed"?(()=>{const eff=sprintSize==="tous"?qPlayers.length:sprintSize; return qPlayers.length+" joueurs en file — course de "+eff;})()
-                          :qPlayers.length+" joueurs en file"}
+                        {zone==="speed"?(()=>{const eff=sprintSize==="tous"?qPlayers.length:sprintSize; return qPlayers.length+" "+t.playersInQueue+" — "+t.raceOf+" "+eff;})()
+                          :qPlayers.length+" "+t.playersInQueue}
                       </div>
                       {!hasIdeal&&zone!=="speed"&&!confirmShortGame&&(
                         <div style={{background:"#f9731615",border:"1px solid #f9731650",borderRadius:12,
                           padding:"12px 14px",marginBottom:12}}>
                           <div style={{fontSize:13,color:"#f97316",fontWeight:700,marginBottom:10}}>
-                            ⚠️ Manque {idealCount-qPlayers.length} joueur{idealCount-qPlayers.length>1?"s":""} — jouer quand même ?
+                            ⚠️ {t.missingPlayers} {idealCount-qPlayers.length} {t.playAnyway}
                           </div>
                           <div style={{display:"flex",gap:8}}>
                             <button onClick={()=>onGenerate(null,true)}
                               style={{flex:1,padding:"10px",borderRadius:10,border:"none",cursor:"pointer",
                                 background:z.color,color:"#000",fontWeight:700,fontSize:14}}>
-                              ✓ Oui
+                              {t.yesPlay}
                             </button>
                             <button onClick={()=>setConfirmShortGame(true)}
                               style={{flex:1,padding:"10px",borderRadius:10,cursor:"pointer",
                                 background:"#1f2937",color:"#9ca3af",border:"1px solid #374151",fontSize:14}}>
-                              ✕ Non
+                              {t.noPlay}
                             </button>
                           </div>
                         </div>
@@ -3742,9 +3856,9 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                     </div>
                   ):(
                     <div>
-                      <div style={{color:"#4b5563",fontSize:13,marginBottom:8}}>File d'attente vide</div>
+                      <div style={{color:"#4b5563",fontSize:13,marginBottom:8}}>{t.emptyQueue}</div>
                       <div style={{color:z.color,fontSize:12,marginBottom:8}}>
-                        {qPlayers.length}/{minToShow} joueurs minimum pour afficher les options
+                        {qPlayers.length}/{minToShow} {t.minPlayers}
                       </div>
                       <div style={{height:6,borderRadius:4,maxWidth:160,margin:"0 auto",background:"#1f2937"}}>
                         <div style={{height:"100%",borderRadius:4,background:z.color,
@@ -3757,7 +3871,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                 {/* Sprint lineup preview */}
                 {zone==="speed"&&sprintLine.length>0&&(
                   <div style={{borderRadius:12,padding:10,marginBottom:10,background:z.bg,border:"1px solid "+z.border}}>
-                    <div style={{...S.label(),color:z.color,marginBottom:8}}>Ordre de depart - avant (Niv.1) -- arriere (Niv.5)</div>
+                    <div style={{...S.label(),color:z.color,marginBottom:8}}>{t.sprintOrder}</div>
                     <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
                       {sprintLine.map((p,i)=>(
                         <div key={p.id} style={{...S.row(),padding:"3px 7px",borderRadius:7,background:"#1f2937",gap:4}}>
@@ -3825,19 +3939,19 @@ function PlayerRulesView(){
       {/* Types de points */}
       <div style={{borderRadius:14,padding:14,marginBottom:12,background:"#0d0f1a",border:"1px solid #1f2937"}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"#fff",letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>
-          Types de points
+          {t.pointTypes}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           <div style={{borderRadius:10,padding:"10px 12px",background:"#84cc1610",border:"1px solid #84cc1630"}}>
-            <div style={{fontWeight:700,color:"#84cc16",fontSize:13,marginBottom:3}}>🏆 Points globaux</div>
-            <div style={{fontSize:12,color:"#9ca3af",lineHeight:1.5}}>Pour gagner la partie finale.<br/>
-              <span style={{color:"#6b7280"}}>Début à <strong style={{color:"#fff"}}>0</strong> · Pas de maximum</span>
+            <div style={{fontWeight:700,color:"#84cc16",fontSize:13,marginBottom:3}}>{t.globalPointsTitle}</div>
+            <div style={{fontSize:12,color:"#9ca3af",lineHeight:1.5}}>{t.globalPointsDesc}<br/>
+              <span style={{color:"#6b7280"}}>{t.globalPointsRange}</span>
             </div>
           </div>
           <div style={{borderRadius:10,padding:"10px 12px",background:"#6366f110",border:"1px solid #6366f130"}}>
-            <div style={{fontWeight:700,color:"#818cf8",fontSize:13,marginBottom:3}}>⚡ Points de zone</div>
-            <div style={{fontSize:12,color:"#9ca3af",lineHeight:1.5}}>Détermine les gagnants de chaque zone et les handicaps.<br/>
-              <span style={{color:"#6b7280"}}>Début à <strong style={{color:"#fff"}}>50</strong> · Min <strong style={{color:"#fff"}}>0</strong> · Max <strong style={{color:"#fff"}}>100</strong></span>
+            <div style={{fontWeight:700,color:"#818cf8",fontSize:13,marginBottom:3}}>{t.zonePointsTitle}</div>
+            <div style={{fontSize:12,color:"#9ca3af",lineHeight:1.5}}>{t.zonePointsDesc}<br/>
+              <span style={{color:"#6b7280"}}>{t.zonePointsRange}</span>
             </div>
           </div>
         </div>
@@ -3846,13 +3960,13 @@ function PlayerRulesView(){
       {/* Global points banner */}
       <div style={{borderRadius:14,padding:14,marginBottom:16,background:"#111a05",border:"1px solid #84cc1630"}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"#84cc16",letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>
-          {"Système de points"}
+          {t.pointSystem}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
             <div style={{width:32,height:32,borderRadius:8,background:"#84cc1620",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>🏆</div>
             <div>
-              <div style={{fontSize:12,color:"#9ca3af",fontWeight:600,marginBottom:2}}>{"Handicap"}</div>
+              <div style={{fontSize:12,color:"#9ca3af",fontWeight:600,marginBottom:2}}>{t.handicapLabel}</div>
               <div style={{fontSize:12,color:"#6b7280",lineHeight:1.5}}>{t.handicapDesc}</div>
             </div>
           </div>
@@ -3860,7 +3974,7 @@ function PlayerRulesView(){
           <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
             <div style={{width:32,height:32,borderRadius:8,background:"#f9731620",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>🔥</div>
             <div>
-              <div style={{fontSize:12,color:"#9ca3af",fontWeight:600,marginBottom:2}}>{"Série de victoires"}</div>
+              <div style={{fontSize:12,color:"#9ca3af",fontWeight:600,marginBottom:2}}>{t.winStreakLabel}</div>
               <div style={{fontSize:12,color:"#6b7280",lineHeight:1.5}}>{t.streakDesc}</div>
             </div>
           </div>
@@ -3871,7 +3985,7 @@ function PlayerRulesView(){
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
         {ZK.map(zk=>{
           const z=ZONES[zk];
-          const zl=z.fr;
+          const zl=zn(zk);
           const isOpen=openZone===zk;
           return(
             <div key={zk} style={{borderRadius:14,overflow:"hidden",border:"1px solid "+(isOpen?z.color:"#1f2937"),transition:"border-color .2s"}}>
@@ -3995,7 +4109,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
         {arenaState&&<div style={{marginTop:6}}>
           <span className={arenaStatus==="active"?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
             color:arenaStatus==="active"?"#84cc16":arenaStatus==="paused"?"#f97316":"#374151"}}>
-            {arenaTimer} {arenaStatus==="active"?"EN COURS":arenaStatus==="paused"?"EN PAUSE":""}
+            {arenaTimer} {arenaStatus==="active"?t.statusActive:arenaStatus==="paused"?t.statusPaused:""}
           </span>
         </div>}
       </div>
@@ -4018,13 +4132,13 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                 setShowQR(true);
               }
             }},
-          {icon:"⚡",label:"Se mettre en file",sub:"Choisir une station",color:"#f97316",
+          {icon:"⚡",label:t.hubQueue,sub:t.hubQueueSub,color:"#f97316",
             action:()=>{setShowHub(false);setTab("queue");}},
-          {icon:"🏆",label:"Classement",sub:"Voir tous les joueurs",color:"#eab308",
+          {icon:"🏆",label:t.hubLeaderboard,sub:t.hubLeaderboardSub,color:"#eab308",
             action:()=>{setShowHub(false);setTab("leaderboard");}},
-          ...(onBecomeStation?[{icon:"📍",label:"Responsable de plateau",sub:"Gérer les stations",color:"#f97316",
+          ...(onBecomeStation?[{icon:"📍",label:t.hubStation,sub:t.hubStationSub,color:"#f97316",
             action:onBecomeStation}]:[]),
-          {icon:null,label:"Déconnexion",sub:"Changer de session",color:"#ef4444",isLogout:true,
+          {icon:null,label:t.hubDisconnect,sub:t.hubDisconnectSub,color:"#ef4444",isLogout:true,
             action:onLogout},
         ].map(({icon,label,sub,color,action,isStats,isInvite,isLogout})=>(
           <button key={label} onClick={action}
@@ -4076,14 +4190,14 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
       <style>{FONTS}</style>
       <div style={{paddingTop:"calc(env(safe-area-inset-top) + 16px)",padding:"calc(env(safe-area-inset-top) + 16px) 16px 16px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <button onClick={()=>setShowHub(true)} style={{...S.btn(),padding:"8px 18px",fontSize:13,fontWeight:700,display:"inline-flex",alignItems:"center",gap:6}}>← Accueil</button>
+          <button onClick={()=>setShowHub(true)} style={{...S.btn(),padding:"8px 18px",fontSize:13,fontWeight:700,display:"inline-flex",alignItems:"center",gap:6}}>{t.backHome}</button>
           {onBecomeStation&&<button onClick={onBecomeStation}
             style={{padding:"6px 12px",borderRadius:10,border:"1px solid #f9731650",background:"#1a0d00",
               color:"#f97316",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12}}>
-            📍 Responsable
+            {t.stationManager}
           </button>}
         </div>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:"#fff",marginBottom:12}}>⚡ Choisir une station</div>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:"#fff",marginBottom:12}}>{t.hubTitle}</div>
         {inQueues.length>=2&&(
           <div style={{background:"#f9731620",border:"1px solid #f9731650",borderRadius:10,padding:"8px 12px",
             marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
@@ -4121,7 +4235,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                       <button onClick={()=>setExpandedQueues(prev=>({...prev,[zk]:!prev[zk]}))}
                         style={{background:"none",border:"none",cursor:"pointer",color:z.color,
                           fontSize:11,fontWeight:600,padding:0,display:"flex",alignItems:"center",gap:4}}>
-                        {expandedQueues[zk]?"▲ Masquer":"▼ Voir la file d'attente"} ({zoneQueue.length})
+                        {expandedQueues[zk]?t.hideQueue:t.showQueue} ({zoneQueue.length})
                       </button>
                     </div>
                     {expandedQueues[zk]&&(
@@ -4193,7 +4307,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
               background:tab==="winners"?"#ca8a04":"#2d1a00",
               color:tab==="winners"?"#000":"#f59e0b",
               border:"1px solid "+(tab==="winners"?"#ca8a04":"#ca8a0480")}}>
-              🏆 Gagnants — Voir les résultats
+              {t.winnersTab}
             </button>
           )}
         </div>
@@ -4492,7 +4606,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
             {/* Barre de recherche */}
             <div style={{position:"relative",marginBottom:10}}>
               <input value={leaderSearch} onChange={e=>{setLeaderSearch(e.target.value);setLeaderHighlight(null);}}
-                placeholder="🔍 Rechercher un joueur..."
+                placeholder={t.searchPlayer}
                 style={{width:"100%",padding:"8px 12px",borderRadius:10,border:"1px solid #374151",
                   background:"#0d0f1a",color:"#fff",fontSize:16,outline:"none",boxSizing:"border-box"}}/>
               {leaderSearch.trim().length>0&&(()=>{
@@ -5172,14 +5286,14 @@ export default function PurInstinctApp(){
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=DM+Sans:wght@400;600;700&display=swap');`}</style>
       <div style={{textAlign:"center",marginBottom:32}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#fff",letterSpacing:2}}>🛡️ ADMIN</div>
-        <div style={{fontSize:12,color:"#4b5563",marginTop:4}}>Centre de contrôle</div>
+        <div style={{fontSize:12,color:"#4b5563",marginTop:4}}>{T[lang].adminCentre}</div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,width:"100%",maxWidth:360}}>
         {[
-          {icon:"⚡",label:"Session en cours",sub:"Classement · Timer · Gestion",color:"#84cc16",action:()=>setView({type:"admin"})},
-          {icon:"📍",label:"Responsable de plateau",sub:"Gérer les stations",color:"#f97316",action:()=>setView({type:"stationPick"})},
-          {icon:"📋",label:"Sessions",sub:"Listes · Codes · QR",color:"#3b82f6",action:()=>setView({type:"admin",tab:"session"})},
-          {icon:null,label:"Déconnexion",sub:"Changer de session",color:"#ef4444",isLogout:true,action:()=>setView({type:"login",live:true})},
+          {icon:"⚡",label:T[lang].sessionInProgress,sub:T[lang].sessionSub,color:"#84cc16",action:()=>setView({type:"admin"})},
+          {icon:"📍",label:T[lang].stationManagerShort,sub:T[lang].stationManagerSub,color:"#f97316",action:()=>setView({type:"stationPick"})},
+          {icon:"📋",label:T[lang].sessionsTab,sub:T[lang].sessionsSub,color:"#3b82f6",action:()=>setView({type:"admin",tab:"session"})},
+          {icon:null,label:T[lang].disconnectShort,sub:T[lang].disconnectSub,color:"#ef4444",isLogout:true,action:()=>setView({type:"login",live:true})},
         ].map(({icon,label,sub,color,action,isLogout})=>(
           <button key={label} onClick={action}
             style={{padding:"24px 16px",borderRadius:20,border:"1px solid "+color+"30",
@@ -5200,7 +5314,7 @@ export default function PurInstinctApp(){
       </div>
       {arenaState.active&&(
         <div style={{marginTop:20,fontSize:12,color:"#84cc16",fontWeight:600}}>
-          ● Session active en cours
+          {T[lang].sessionActiveNote}
         </div>
       )}
       <LangFooter/>
@@ -5333,7 +5447,7 @@ export default function PurInstinctApp(){
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=DM+Sans:wght@400;600;700&display=swap');`}</style>
       <div style={{width:"100%",maxWidth:380}}>
         <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#fff"}}>📍 Choisissez votre station</div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#fff"}}>{T[lang].chooseStation}</div>
           {(rosterCodes||{})[activeRosterId]&&<div style={{fontSize:12,color:"#4b5563",marginTop:4}}>
             {(rosters.find(r=>r.id===activeRosterId)||{name:"Session Standard"}).name}
             <span style={{color:"#84cc16",fontWeight:700,letterSpacing:3,marginLeft:8}}>{(rosterCodes||{})[activeRosterId]}</span>
@@ -5351,7 +5465,7 @@ export default function PurInstinctApp(){
                 <span style={{fontSize:22}}>{z.icon}</span>
                 <span style={{fontWeight:700,fontSize:14,flex:1,textAlign:"left"}}>{zl.name}</span>
                 {isOff&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,
-                  background:"#ef444420",color:"#ef4444",border:"1px solid #ef444440"}}>DÉSACTIVÉE</span>}
+                  background:"#ef444420",color:"#ef4444",border:"1px solid #ef444440"}}>{T[lang].stationDisabled}</span>}
               </button>
             );
           })}
@@ -5360,13 +5474,13 @@ export default function PurInstinctApp(){
           <button onClick={()=>setView({type:"player",id:view.fromPlayerId})}
             style={{width:"100%",padding:"12px",borderRadius:12,background:"#111827",
               border:"1px solid #84cc1640",color:"#84cc16",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
-            👤 Retourner comme joueur
+            {T[lang].returnAsPlayer}
           </button>
         ):(
           <button onClick={()=>setView({type:"admin"})}
             style={{width:"100%",padding:"12px",borderRadius:12,background:"#111827",
               border:"1px solid #84cc1640",color:"#84cc16",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
-            🛡️ Basculer en mode Admin
+            {T[lang].switchToAdmin}
           </button>
         )}
         <button onClick={()=>setView({type:"login",live:true})}
@@ -5375,7 +5489,7 @@ export default function PurInstinctApp(){
           <div style={{width:20,height:20,borderRadius:"50%",border:"2px solid #ef4444",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",flexShrink:0}}>
             <div style={{position:"absolute",width:"70%",height:2,background:"#ef4444",borderRadius:1,transform:"rotate(45deg)"}}/>
           </div>
-          Déconnecter la session
+          {T[lang].disconnectSession}
         </button>
       </div>
       <LangFooter/>
