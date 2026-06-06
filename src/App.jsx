@@ -1774,7 +1774,7 @@ function LangFooter(){
   const {setLang,lang}=useLang();
   const flag=lang==="fr"?"🇫🇷":"🇬🇧";
   return(
-    <div style={{position:"sticky",bottom:0,zIndex:20,display:"flex",justifyContent:"center",
+    <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:100,display:"flex",justifyContent:"center",
       padding:"8px 16px",background:"#06070fdd",backdropFilter:"blur(6px)",
       borderTop:"1px solid #1f293760"}}>
       <button onClick={()=>setLang(l=>l==="fr"?"en":"fr")} style={{
