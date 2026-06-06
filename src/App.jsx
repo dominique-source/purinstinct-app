@@ -3048,7 +3048,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                     <div style={{display:"inline-block",padding:"12px 24px",borderRadius:16,
                       background:z.color+"20",border:"2px solid "+z.color+"60"}}>
                       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:52,
-                        color:z.color,lineHeight:1}}>{cham(p.zoneScores||{})[zk]||50}</div>
+                        color:z.color,lineHeight:1}}>{(champ.zoneScores||{})[zk]||50}</div>
                       <div style={{fontSize:11,color:z.color+"80",marginTop:2}}>score de zone</div>
                     </div>
                     {hasStreak&&(
