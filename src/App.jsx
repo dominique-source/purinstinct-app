@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import html2canvas from "html2canvas";
 import confetti from "canvas-confetti";
 import QRCode from "qrcode";
@@ -28,17 +28,23 @@ body { background: #06070f; }
 // ----------------------------------------------------------------
 const ZONES = {
   purinstinct:{icon:"🏟️",color:"#84cc16",bg:"#111a05",border:"#84cc1640",winPts:10,lossPts:3,minP:12,maxP:12,teamSize:6,gameStyle:"team",
-    fr:{name:"PurInstinct",sn:"PurInstinct",sub:"Match 5 min - 2x6 joueurs",rules:["2 équipes de 6 joueurs, match de 5 minutes","Objectif : traverser un terrain avec un ballon à 3 vs 2 sans se faire toucher et sans échapper le ballon","L'équipe offensive a 16 secondes pour marquer","À chaque séquence, trois nouveaux joueurs offensifs et 2 nouveaux joueurs défensifs entrent en jeu","Chaque arrêt donne 1 retrait à la défensive — après 3 retraits, on change les équipes offensives et défensives de façon dynamique","Victoire: +10 pts  |  Défaite: -3 pts"]}},
+    fr:{name:"PurInstinct",sn:"PurInstinct",sub:"Match 5 min - 2x6 joueurs",rules:["2 équipes de 6 joueurs, match de 5 minutes","Objectif : traverser un terrain avec un ballon à 3 vs 2 sans se faire toucher et sans échapper le ballon","L'équipe offensive a 16 secondes pour marquer","À chaque séquence, trois nouveaux joueurs offensifs et 2 nouveaux joueurs défensifs entrent en jeu","Chaque arrêt donne 1 retrait à la défensive — après 3 retraits, on change les équipes offensives et défensives de façon dynamique","Victoire: +10 pts  |  Défaite: -3 pts"]},
+    en:{name:"PurInstinct",sn:"PurInstinct",sub:"5 min Match - 2x6 players",rules:["2 teams of 6 players, 5-minute match","Goal: cross the field with a ball 3 vs 2 without being tagged and without dropping the ball","The offensive team has 16 seconds to score","Each sequence, three new offensive and 2 new defensive players enter","Each stop gives 1 out to the defense — after 3 outs, offensive and defensive teams swap dynamically","Win: +10 pts  |  Loss: -3 pts"]}},
   speed:{icon:"⚡",color:"#f97316",bg:"#1c0800",border:"#f9731640",winPts:4,lossPts:2,minP:4,maxP:50,teamSize:null,gameStyle:"sprint",
-    fr:{name:"Zone Vitesse",sn:"Vitesse",sub:"Sprint 40m - 4 à 50 joueurs",rules:["Sprint de 40 mètres, 4 à 50 joueurs","Positionnement selon 5 niveaux de handicap : Niv.1 (avant) > Niv.5 (arrière)","Le niveau se construit à mesure que les courses s'accumulent","Victoire: +4 pts  |  Défaite: -2 pts  |  Deuxième place: +2 pts"]}},
+    fr:{name:"Zone Vitesse",sn:"Vitesse",sub:"Sprint 40m - 4 à 50 joueurs",rules:["Sprint de 40 mètres, 4 à 50 joueurs","Positionnement selon 5 niveaux de handicap : Niv.1 (avant) > Niv.5 (arrière)","Le niveau se construit à mesure que les courses s'accumulent","Victoire: +4 pts  |  Défaite: -2 pts  |  Deuxième place: +2 pts"]},
+    en:{name:"Speed Zone",sn:"Speed",sub:"40m Sprint - 4 to 50 players",rules:["40-metre sprint, 4 to 50 players","Positioning based on 5 handicap levels: Lvl.1 (front) > Lvl.5 (back)","Level builds as races accumulate","Win: +4 pts  |  Loss: -2 pts  |  2nd place: +2 pts"]}},
   handAgility:{icon:"✋",color:"#3b82f6",bg:"#080f1f",border:"#3b82f640",winPts:4,lossPts:2,minP:6,maxP:6,teamSize:3,gameStyle:"team",
-    fr:{name:"Zone Habileté Main",sn:"Habileté Main",sub:"Ultimatum Ball - 2x3 joueurs",rules:["2 équipes de 3 joueurs","1 joueur par équipe à la fois sur le jeu","Éliminer un joueur adverse en lançant un ballon sur l'adversaire","Les séquences commencent toujours avec les joueurs sans ballon en main","Après une élimination, le joueur gagnant a 2 secondes pour revenir à sa base (sans ballon) — ensuite un nouvel adversaire entre en jeu","Le joueur éliminé sort — premier à 5 points gagne (1 pt par élimination)","Victoire: +4 pts  |  Défaite: -2 pts"]}},
+    fr:{name:"Zone Habileté Main",sn:"Habileté Main",sub:"Ultimatum Ball - 2x3 joueurs",rules:["2 équipes de 3 joueurs","1 joueur par équipe à la fois sur le jeu","Éliminer un joueur adverse en lançant un ballon sur l'adversaire","Les séquences commencent toujours avec les joueurs sans ballon en main","Après une élimination, le joueur gagnant a 2 secondes pour revenir à sa base (sans ballon) — ensuite un nouvel adversaire entre en jeu","Le joueur éliminé sort — premier à 5 points gagne (1 pt par élimination)","Victoire: +4 pts  |  Défaite: -2 pts"]},
+    en:{name:"Hand Skill Zone",sn:"Hand Skill",sub:"Ultimatum Ball - 2x3 players",rules:["2 teams of 3 players","1 player per team at a time in play","Eliminate an opponent by throwing a ball at them","Sequences always start with players holding no ball","After an elimination, the winning player has 2 seconds to return to their base (no ball) — then a new opponent enters","The eliminated player exits — first to 5 points wins (1 pt per elimination)","Win: +4 pts  |  Loss: -2 pts"]}},
   footAgility:{icon:"👟",color:"#56A0D3",bg:"#080f1a",border:"#56A0D340",winPts:4,lossPts:2,minP:2,maxP:2,teamSize:1,gameStyle:"duel",
-    fr:{name:"Zone Habileté Pied",sn:"Habileté Pied",sub:"Jeux de Lumières - 1 vs 1",rules:["Duel 1v1, Jeux de lumières réactifs au sol","Toucher du pied la lumière correspondante avant son adversaire","30 secondes pour toucher un maximum de lumières","À chaque fois qu'un mini duel est terminé, de nouvelles lumières s'allument","Victoire: +4 pts  |  Défaite: -2 pts"]}},
+    fr:{name:"Zone Habileté Pied",sn:"Habileté Pied",sub:"Jeux de Lumières - 1 vs 1",rules:["Duel 1v1, Jeux de lumières réactifs au sol","Toucher du pied la lumière correspondante avant son adversaire","30 secondes pour toucher un maximum de lumières","À chaque fois qu'un mini duel est terminé, de nouvelles lumières s'allument","Victoire: +4 pts  |  Défaite: -2 pts"]},
+    en:{name:"Foot Skill Zone",sn:"Foot Skill",sub:"Light Games - 1 vs 1",rules:["1v1 duel, reactive floor lights","Touch the matching light with your foot before your opponent","30 seconds to touch as many lights as possible","After each mini-duel ends, new lights activate","Win: +4 pts  |  Loss: -2 pts"]}},
   generalAgility:{icon:"🎯",color:"#eab308",bg:"#191000",border:"#eab30840",winPts:4,lossPts:2,minP:6,maxP:6,teamSize:3,gameStyle:"team",
-    fr:{name:"Zone Agilité Générale",sn:"Agilité",sub:"Ultimatum Tag - 2x3 joueurs",rules:["2 équipes de 3 joueurs","1 joueur par équipe à la fois sur le jeu","Un joueur est chasseur, l'autre est chassé","Le chasseur a 7 secondes pour toucher le chassé — le gagnant du duel devient chasseur, le perdant est éliminé","Le gagnant du duel doit retourner à sa base — les 7 secondes commencent dès que le duel est terminé : 7 secondes pour retourner à sa base et toucher l'adversaire","Premier à 5 points gagne (1 pt par élimination en tant que chasseur)","Victoire: +4 pts  |  Défaite: -2 pts"]}},
+    fr:{name:"Zone Agilité Générale",sn:"Agilité",sub:"Ultimatum Tag - 2x3 joueurs",rules:["2 équipes de 3 joueurs","1 joueur par équipe à la fois sur le jeu","Un joueur est chasseur, l'autre est chassé","Le chasseur a 7 secondes pour toucher le chassé — le gagnant du duel devient chasseur, le perdant est éliminé","Le gagnant du duel doit retourner à sa base — les 7 secondes commencent dès que le duel est terminé : 7 secondes pour retourner à sa base et toucher l'adversaire","Premier à 5 points gagne (1 pt par élimination en tant que chasseur)","Victoire: +4 pts  |  Défaite: -2 pts"]},
+    en:{name:"General Agility Zone",sn:"Agility",sub:"Ultimatum Tag - 2x3 players",rules:["2 teams of 3 players","1 player per team at a time in play","One player is the chaser, the other is chased","The chaser has 7 seconds to tag the chased — the duel winner becomes the chaser, the loser is eliminated","The duel winner must return to base — 7 seconds start once the duel ends: 7 seconds to return and tag the opponent","First to 5 points wins (1 pt per elimination as chaser)","Win: +4 pts  |  Loss: -2 pts"]}},
   iq:{icon:"🧠",color:"#a855f7",bg:"#120422",border:"#a855f740",winPts:4,lossPts:2,minP:6,maxP:6,teamSize:3,gameStyle:"team",
-    fr:{name:"Zone IQ de Jeu",sn:"IQ",sub:"3 vs 3 — Chrono",rules:["3 vs 3 — Chrono de 1 minute par équipe","Se faire des passes et courir pour toucher l'équipe adverse — seulement le porteur de ballon peut toucher les adversaires","Le joueur qui tague doit immédiatement faire une passe ensuite","Une fois les 3 joueurs adverses touchés, l'équipe arrête son chrono et part le chrono adverse","L'équipe gagnante est celle ayant encore du temps sur son cadran","Victoire: +4 pts  |  Défaite: -2 pts"]}}
+    fr:{name:"Zone IQ de Jeu",sn:"IQ",sub:"3 vs 3 — Chrono",rules:["3 vs 3 — Chrono de 1 minute par équipe","Se faire des passes et courir pour toucher l'équipe adverse — seulement le porteur de ballon peut toucher les adversaires","Le joueur qui tague doit immédiatement faire une passe ensuite","Une fois les 3 joueurs adverses touchés, l'équipe arrête son chrono et part le chrono adverse","L'équipe gagnante est celle ayant encore du temps sur son cadran","Victoire: +4 pts  |  Défaite: -2 pts"]},
+    en:{name:"Game IQ Zone",sn:"IQ",sub:"3 vs 3 — Timer",rules:["3 vs 3 — 1-minute timer per team","Pass and run to tag the opposing team — only the ball carrier can tag opponents","The player who tags must immediately pass afterward","Once all 3 opponents are tagged, the team stops their timer and starts the opponent's","The winning team is the one with time remaining on their clock","Win: +4 pts  |  Loss: -2 pts"]}}
 };
 
 const ZK = ["purinstinct","speed","handAgility","footAgility","generalAgility","iq"];
@@ -99,7 +105,8 @@ const ZONE_IMAGES = {
 
 
 // ── TRANSLATIONS ─────────────────────────────────────────────────────────────
-function zn(zone){return ZONES[zone].fr;}
+function zn(zone,lang="fr"){return ZONES[zone][lang]||ZONES[zone].fr;}
+function useZn(){const{lang}=useContext(LangContext);return(zone)=>zn(zone,lang);}
 
 const T={
   fr:{
@@ -215,7 +222,127 @@ const T={
     handicapDesc:"Le joueur/équipe avec le score de zone le plus élevé joue avec un désavantage pour rééquilibrer la compétition.",
     streakDesc:"3 victoires consécutives dans une même zone = multiplicateur ×1.5 sur les points gagnés.",
   },
+  en:{
+    lang:"EN", langOther:"FR",
+    subtitle:"Sport Games · 75 minutes",
+    subInfo:"50 players · 6 stations · Max 2 queues",
+    rolesTab:"Roles", playersTab:"Players #1–50",
+    adminRole:"Admin Dashboard", adminSub:"Leaderboard · Timer · Session · Management",
+    stationManagers:"Station Managers",
+    selectNumber:"Select your number",
+    start:"Start", end:"End",
+    active:"ACTIVE", ended:"ENDED", waiting:"WAITING",
+    champion:"ARENA CHAMPION",
+    tabLeader:"🏆 Leaderboard", tabStations:"📍 Stations", tabPlayers:"👥 Players", tabSession:"📋 Session",
+    realtimeRank:"Real-time leaderboard",
+    eligible:"eligible", eligibles:"eligible",
+    queueCount:"in queue",
+    live:"LIVE",
+    tabGame:"Management", tabRules:"Rules",
+    generateTeams:"Generate teams",
+    launchRace:"Launch race",
+    generateIQ:"Generate IQ match",
+    matchInProgress:"Match in progress",
+    raceInProgress:"Race in progress",
+    iqInProgress:"IQ match in progress",
+    duelInProgress:"Duel in progress",
+    declareWinner:"Declare winner",
+    whichWon:"Who won the race?",
+    whichWonIQ:"Who won?",
+    teamA:"TEAM A WINS", teamB:"TEAM B WINS",
+    substitute:"+ Sub from queue",
+    minRequired:"minimum required",
+    noGameInProgress:"No match in progress",
+    queue:"Queue",
+    addPlayer:"+ Add",
+    playerNum:"Player #",
+    raceGroupSize:"Race group size",
+    iqFormat:"IQ match format",
+    startOrder:"Start order",
+    frontBack:"front (Lvl.1) -- back (Lvl.5)",
+    groupA:"GROUP A (FRONT)", groupB:"GROUP B (BACK)",
+    favored:"favored", handicapActive:"handicap active",
+    myStats:"My stats", myRank:"Ranking", myProfile:"My Profile",
+    lastActivity:"Last activity", victory:"WIN", defeat:"LOSS",
+    activeQueues:"Active queues",
+    zonesToComplete:"Zones to complete for victory",
+    inProgress:"in progress", inQueue:"in queue",
+    joinQueue:"Join queue",
+    missingZones:"Missing zones to be eligible:",
+    activityHistory:"Activity history",
+    win:"Win", loss:"Loss",
+    streakBonus:"Streak", streak:"Streak",
+    allZonesDone:"✓ All 6 zones completed - Eligible for victory!",
+    max2queues:"2 active queues (max)",
+    inGameElsewhere:"In a game elsewhere",
+    freeStatus:"Free", inParty:"⚡ In game ·", inFileStat:"In queue ·",
+    max2reached:"Max 2 queues reached",
+    openDossier:"Open profile",
+    legend:"Legend", free:"Free", inFile:"In queue", inGame:"In game",
+    addBtn:"+ Add",
+    removeBtn:"Remove",
+    legend2:"→ = open profile",
+    legend3:"buttons + Zone = add to that queue",
+    totalPlayers:"players",
+    savedLists:"Saved lists (NEXT GAME)",
+    activeSession:"Active session",
+    addNow:"Add a player now",
+    playerName:"Player name",
+    newList:"+ Create new list",
+    modify:"Edit", activate:"Activate",
+    back:"← Back", save:"Save", saveOK:"✓ OK",
+    savedMsg:"✓ Changes saved!", saveBtn:"Save",
+    dossierTitle:"PROFILE",
+    fullName:"Full name", sex:"Sex", age:"Age",
+    consents:"Consents",
+    photoConsent:"📷 Photo consent", photoConsentDesc:"Allow publication of photos",
+    videoConsent:"🎬 Video consent", videoConsentDesc:"Allow publication of videos and highlights",
+    contact:"Contact & social media",
+    emailLbl:"📧 Email", igLbl:"📸 Instagram", ttLbl:"🎵 TikTok", scLbl:"👻 Snapchat",
+    highlights:"Video highlight reel",
+    noHighlight:"No highlight added",
+    addHighlight:"+ Add this highlight",
+    videoUrl:"Video URL (YouTube, TikTok...)",
+    captionOpt:"Caption (optional)",
+    gameStats:"Game statistics",
+    globalPts:"Global pts", zones:"Zones", victories:"Wins", defeats:"Losses",
+    nowPlay:"Play now", later:"Later", removeFromQ:"Leave queue",
+    autoRefill:"Queue empty — auto-refilling...",
+    coureurs:"runners", groupFront:"Group A (front):", groupBack:"Group B (back):",
+    raceSizeTitle:"Group size",
+    series:"Streak", bonusX:"Bonus x1.5",
+    favWarning:"is favored - handicap active",
+    handicapWarning:"favored (delta:",
+    cancelQueue:"Leave",
+    eligible6:"All 6 zones completed - Eligible for victory!",
+    missingFor:"Missing zones:",
+    historyCount:"Activity history",
+    parts:"game", parts2:"games",
+    totalLabel:"Total:",
+    rang:"RANK",
+    man:"Male", woman:"Female", other:"Other / N/A",
+    male:"Male", female:"Female",
+    newRoster:"New list",
+    playerCount:"players",
+    retirer:"Remove",
+    infoBack:"← Back",
+    addBack:"← Back",
+    sprintFront:"← Front (underdogs)",
+    sprintBack:"Back (favorites) →",
+    myRules:"Rules",
+    rulesTitle:"Zone rules",
+    rulesSubtitle:"Understand the rules of each zone before playing.",
+    handicapDesc:"The player/team with the highest zone score plays with a disadvantage to rebalance the competition.",
+    streakDesc:"3 consecutive wins in the same zone = ×1.5 multiplier on points earned.",
+  },
 };
+
+// ----------------------------------------------------------------
+// LANGUAGE CONTEXT
+// ----------------------------------------------------------------
+const LangContext = createContext({ lang:"fr", setLang:()=>{} });
+function useT() { const { lang } = useContext(LangContext); return T[lang]; }
+function useLang() { return useContext(LangContext); }
 
 // ----------------------------------------------------------------
 // UTILITIES
@@ -453,6 +580,7 @@ function Bib({n,size,color}){
 }
 
 function ZonePip({zone,played}){
+  const zn=useZn();
   const z=ZONES[zone];
   const zl=zn(zone);
   return(
@@ -600,6 +728,7 @@ function PlayerAvatar({gender,skinColor,hairColor,morphology}){
 }
 
 function RulesCard({zone}){
+  const zn=useZn();
   const z=ZONES[zone];
   const zl=zn(zone);
   const img=ZONE_IMAGES[zone];
@@ -708,6 +837,7 @@ function RulesCard({zone}){
 // ROSTER EDITOR  (used inside admin Session tab)
 // ----------------------------------------------------------------
 function RosterEditor({roster,onSave,onCancel}){
+  const t=useT();
   const [name,setName]=useState(roster.name);
   const [entries,setEntries]=useState([...roster.entries]);
   const [newName,setNewName]=useState("");
@@ -728,26 +858,26 @@ function RosterEditor({roster,onSave,onCancel}){
   return(
     <div className="anim-up">
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-        <button onClick={onCancel} style={{...S.btn(),padding:"6px 12px",fontSize:12}}>{T.fr.back}</button>
+        <button onClick={onCancel} style={{...S.btn(),padding:"6px 12px",fontSize:12}}>{t.back}</button>
         <div style={{flex:1}}>
           <input value={name} onChange={e=>setName(e.target.value)}
             style={{width:"100%",padding:"8px 12px",borderRadius:10,border:"1px solid #84cc1640",
               background:"#111a05",color:"#84cc16",fontSize:14,fontWeight:700,outline:"none"}}/>
         </div>
-        <button onClick={()=>onSave({...roster,name,entries})} style={{...S.btn("#84cc16"),padding:"8px 14px"}}>{T.fr.save}</button>
+        <button onClick={()=>onSave({...roster,name,entries})} style={{...S.btn("#84cc16"),padding:"8px 14px"}}>{t.save}</button>
       </div>
       <div style={{...S.label(),marginBottom:8}}>{entries.length} joueurs</div>
       <div style={{display:"flex",gap:8,marginBottom:12}}>
         <input value={newName} onChange={e=>setNewName(e.target.value)}
           onKeyDown={e=>{if(e.key==="Enter")addEntry();}}
-          placeholder={T.fr.playerName}
+          placeholder={t.playerName}
           style={{flex:1,padding:"8px 12px",borderRadius:10,border:"1px solid #1f2937",background:"#0d0f1a",color:"#fff",fontSize:13,outline:"none"}}/>
         <select value={newGender} onChange={e=>setNewGender(e.target.value)}
           style={{padding:"8px 10px",borderRadius:10,border:"1px solid #1f2937",background:"#0d0f1a",color:"#9ca3af",fontSize:13,outline:"none"}}>
           <option value="M">H</option>
           <option value="F">F</option>
         </select>
-        <button onClick={addEntry} style={{...S.btn("#84cc16"),padding:"8px 14px"}}>{T.fr.addBtn}</button>
+        <button onClick={addEntry} style={{...S.btn("#84cc16"),padding:"8px 14px"}}>{t.addBtn}</button>
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:340,overflowY:"auto"}}>
         {entries.map((e,i)=>(
@@ -775,6 +905,8 @@ const PROD_URL="https://purinstinct-app.vercel.app";
 const BASE_URL=window.location.hostname==="localhost"?PROD_URL:window.location.origin;
 
 function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSetActiveRoster,onUpdateRoster,onAddPlayer,onCreateRoster,onDeleteRoster,onRemovePlayer,onOpenDossier,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onAddGroupToQueue}){
+  const t=useT();
+  const zn=useZn();
   const [editIdx,setEditIdx]=useState(null);
   const [addName,setAddName]=useState("");
   const [addGender,setAddGender]=useState("M");
@@ -842,8 +974,8 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
       <div style={{...S.card(),marginBottom:16,border:"1px solid #84cc1640"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
           <div>
-            <div style={{color:"#84cc16",fontWeight:700,fontSize:14}}>{T.fr.activeSession}</div>
-            <div style={{color:"#6b7280",fontSize:12,marginTop:2}}>{players.length} {T.fr.playerCount}</div>
+            <div style={{color:"#84cc16",fontWeight:700,fontSize:14}}>{t.activeSession}</div>
+            <div style={{color:"#6b7280",fontSize:12,marginTop:2}}>{players.length} {t.playerCount}</div>
           </div>
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#84cc16"}}>{players.length}</div>
         </div>
@@ -893,17 +1025,17 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
             ))}
           </div>
         )}
-        <div style={{...S.label(),marginBottom:8}}>{T.fr.addNow}</div>
+        <div style={{...S.label(),marginBottom:8}}>{t.addNow}</div>
         <div style={{display:"flex",gap:8}}>
           <input value={addName} onChange={e=>setAddName(e.target.value)}
             onKeyDown={e=>{if(e.key==="Enter")handleAdd();}}
-            placeholder={T.fr.playerName}
+            placeholder={t.playerName}
             style={{flex:1,padding:"8px 12px",borderRadius:10,border:"1px solid #1f2937",background:"#06070f",color:"#fff",fontSize:13,outline:"none"}}/>
           <select value={addGender} onChange={e=>setAddGender(e.target.value)}
             style={{padding:"8px 10px",borderRadius:10,border:"1px solid #1f2937",background:"#06070f",color:"#9ca3af",fontSize:13,outline:"none"}}>
             <option value="M">H</option><option value="F">F</option>
           </select>
-          <button onClick={handleAdd} style={{...S.btn("#84cc16"),padding:"8px 14px"}}>{T.fr.addBtn}</button>
+          <button onClick={handleAdd} style={{...S.btn("#84cc16"),padding:"8px 14px"}}>{t.addBtn}</button>
         </div>
       </div>
 
@@ -996,7 +1128,7 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
       })()}
 
       {/* Saved rosters */}
-      <div style={{...S.label(),marginBottom:10}}>{T.fr.savedLists}</div>
+      <div style={{...S.label(),marginBottom:10}}>{t.savedLists}</div>
       <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
         {rosters.map((r,i)=>{
           const code=getCode(r.id);
@@ -1087,7 +1219,7 @@ function SessionPanel({rosters,players,allPlayers,activeRosterId,onActivate,onSe
       </div>
       <button onClick={onCreateRoster}
         style={{...S.btn(),width:"100%",padding:"12px",fontSize:13,border:"1px dashed #374151"}}>
-        {T.fr.newList}
+        {t.newList}
       </button>
     </div>
   );
@@ -1232,6 +1364,7 @@ function ProgressChart({player}){
 }
 
 function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onAddComment}){
+  const t=useT();
   const [form,setForm]=useState({
     name:player.name||"",gender:player.gender||"M",age:player.age||"",
     email:player.email||"",instagram:player.instagram||"",
@@ -1320,7 +1453,7 @@ function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onAddComme
         </div>
         <div style={{flex:1,display:"flex",flexDirection:"column",gap:8}}>
           <div>
-            <div style={{...S.label(),marginBottom:4}}>{T.fr.fullName}</div>
+            <div style={{...S.label(),marginBottom:4}}>{t.fullName}</div>
             <input value={form.name} onChange={e=>set("name",e.target.value)} style={inp}/>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
@@ -1476,7 +1609,7 @@ function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onAddComme
         padding:"14px",borderRadius:14,border:"none",cursor:"pointer",width:"100%",
         fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
         background:saved?"#22c55e":"#84cc16",color:"#000",transition:"background .3s"}}>
-        {saved?T.fr.savedMsg:T.fr.saveBtn}
+        {saved?t.savedMsg:t.saveBtn}
       </button>
     </div>
   );
@@ -1490,7 +1623,7 @@ function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onAddComme
         paddingTop:"calc(env(safe-area-inset-top) + 12px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",
         background:"#06070f",borderBottom:"1px solid #111827",
         display:"flex",alignItems:"center",gap:12}}>
-        {onBack&&<button onClick={onBack} style={{...S.btn(),padding:"6px 12px",fontSize:12}}>{T.fr.back}</button>}
+        {onBack&&<button onClick={onBack} style={{...S.btn(),padding:"6px 12px",fontSize:12}}>{t.back}</button>}
         <div style={{flex:1}}>
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#84cc16"}}>
             #{player.number}
@@ -1504,7 +1637,7 @@ function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onAddComme
             📍
           </button>}
           <button onClick={handleSave} style={{...S.btn(saved?"#22c55e":"#84cc16"),padding:"8px 16px"}}>
-            {saved?T.fr.saveOK:T.fr.save}
+            {saved?t.saveOK:t.save}
           </button>
         </div>
       </div>
@@ -1516,20 +1649,26 @@ function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onAddComme
 // ----------------------------------------------------------------
 // LOGIN VIEW
 // ----------------------------------------------------------------
-function LangBtn({lang}){const t=T.fr;return(<button onClick={onLangToggle} style={{padding:"4px 10px",borderRadius:8,border:"1px solid #84cc1650",background:"#111a05",color:"#84cc16",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{t.langOther}</button>);}
+function LangBtn(){
+  const t=useT();
+  const {setLang,lang}=useLang();
+  return(<button onClick={()=>setLang(l=>l==="fr"?"en":"fr")} style={{padding:"4px 10px",borderRadius:8,border:"1px solid #84cc1650",background:"#111a05",color:"#84cc16",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{t.langOther}</button>);
+}
 
-function LangFooter({lang}){
-  const tl=T.fr;
+function LangFooter(){
+  const t=useT();
+  const {setLang,lang}=useLang();
+  const flag=lang==="fr"?"🇫🇷":"🇬🇧";
   return(
     <div style={{position:"sticky",bottom:0,zIndex:20,display:"flex",justifyContent:"center",
       padding:"8px 16px",background:"#06070fdd",backdropFilter:"blur(6px)",
       borderTop:"1px solid #1f293760"}}>
-      <button onClick={onLangToggle} style={{
+      <button onClick={()=>setLang(l=>l==="fr"?"en":"fr")} style={{
         display:"flex",alignItems:"center",gap:8,padding:"7px 18px",borderRadius:10,
         border:"1px solid #84cc1650",background:"#111a05",cursor:"pointer"}}>
-        <span style={{fontSize:16}}>{"🇫🇷"}</span>
+        <span style={{fontSize:16}}>{flag}</span>
         <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
-          color:"#84cc16",letterSpacing:1}}>{tl.langOther}</span>
+          color:"#84cc16",letterSpacing:1}}>{t.langOther}</span>
       </button>
     </div>
   );
@@ -1537,8 +1676,10 @@ function LangFooter({lang}){
 
 
 function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
+  const t=useT();
+  const zn=useZn();
   const [tab,setTab]=useState("roles");
-  return(
+  return(<>
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
       padding:"40px 16px",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
@@ -1555,7 +1696,7 @@ function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
       </div>
 
       <div style={{display:"flex",gap:4,padding:4,borderRadius:12,background:"#0d0f1a",marginBottom:24}}>
-        {[["roles",T.fr.rolesTab],["players",T.fr.playersTab],["station","📍 Responsable"]].map(([t,l])=>(
+        {[["roles",t.rolesTab],["players",t.playersTab],["station","📍 Responsable"]].map(([t,l])=>(
           <button key={t} onClick={()=>setTab(t)} style={{
             padding:"8px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",
             background:tab===t?"#84cc16":"transparent",color:tab===t?"#000":"#6b7280"}}>
@@ -1571,11 +1712,11 @@ function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
             display:"flex",alignItems:"center",gap:12,fontFamily:"'DM Sans',sans-serif"}}>
             <span style={{fontSize:22}}>🛡️</span>
             <div style={{textAlign:"left"}}>
-              <div style={{fontWeight:700,fontSize:14}}>{T.fr.adminRole}</div>
-              <div style={{color:"#6b7280",fontSize:12,fontWeight:400,marginTop:2}}>{T.fr.adminSub}</div>
+              <div style={{fontWeight:700,fontSize:14}}>{t.adminRole}</div>
+              <div style={{color:"#6b7280",fontSize:12,fontWeight:400,marginTop:2}}>{t.adminSub}</div>
             </div>
           </button>
-          <div style={{...S.label(),textAlign:"center",paddingTop:12,paddingBottom:4}}>{T.fr.stationManagers}</div>
+          <div style={{...S.label(),textAlign:"center",paddingTop:12,paddingBottom:4}}>{t.stationManagers}</div>
           {ZK.map(zk=>{
             const zl=zn(zk);
             const isOff=(disabledZones||[]).includes(zk);
@@ -1602,7 +1743,7 @@ function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
       ):tab==="players"?(
         <div className="anim-up" style={{width:"100%",maxWidth:420}}>
           <div style={{textAlign:"center",marginBottom:20}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"#4b5563",letterSpacing:3,textTransform:"uppercase",marginBottom:6}}>{T.fr.selectNumber}</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"#4b5563",letterSpacing:3,textTransform:"uppercase",marginBottom:6}}>{t.selectNumber}</div>
 
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6}}>
@@ -1668,7 +1809,8 @@ function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
         <div style={{fontSize:10,color:"#374151",marginTop:8}}>Expérience joueur simplifiée · Accès sécurisé par PIN</div>
       </div>
     </div>
-  );
+    <LangFooter/>
+  </>);
 }
 
 // ----------------------------------------------------------------
@@ -1809,7 +1951,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
     </div>
   );
 
-  return(
+  return(<>
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
       justifyContent:"center",padding:"32px 16px",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
@@ -2066,7 +2208,8 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
         </div>
       )}
     </div>
-  );
+    <LangFooter/>
+  </>);
 }
 
 // ----------------------------------------------------------------
@@ -2074,6 +2217,8 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
 // ----------------------------------------------------------------
 // ----------------------------------------------------------------
 function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,activeRosterId,initialTab,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,onRemovePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onResetAllPoints,onResetAllHistory,onResetAllSurveys,comments,onClearComments}){
+  const t=useT();
+  const zn=useZn();
   const [tab,setTab]=useState(initialTab||"leaderboard");
   const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
   const [timer,setTimer]=useState("75:00");
@@ -2119,7 +2264,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
       onBack={()=>{setDossierPlayerId(null);if(dossierOrigin){setTab(dossierOrigin.tab);setSelectedStation(dossierOrigin.station);}setDossierOrigin(null);}}/>
   );
 
-  return(
+  return(<>
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
 
@@ -2129,7 +2274,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
           <div className="anim-pop" style={{borderRadius:24,padding:32,textAlign:"center",maxWidth:320,width:"100%",
             background:"#0d1508",border:"2px solid #84cc16",boxShadow:"0 0 80px #84cc1630"}}>
             <div style={{fontSize:56,marginBottom:12}}>🏆</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#fff",marginBottom:4}}>{T.fr.champion}</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#fff",marginBottom:4}}>{t.champion}</div>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:52,color:"#84cc16"}}>#{winner.number}</div>
             <div style={{fontSize:18,fontWeight:700,color:"#fff",margin:"4px 0"}}>{winner.name}</div>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:40,color:"#84cc16",marginBottom:16}}>{winner.globalPoints} pts</div>
@@ -2155,9 +2300,9 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                 {[30,45,60,75,90,120].map(m=><option key={m} value={m}>{m} min</option>)}
               </select>
               <div className={arenaState.active?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:timerColor,lineHeight:1}}>{timer}</div>
-              <div style={{fontSize:9,color:"#4b5563"}}>{arenaState.active?T.fr.active:arenaState.paused?"EN PAUSE":arenaState.ended?T.fr.ended:T.fr.waiting}</div>
+              <div style={{fontSize:9,color:"#4b5563"}}>{arenaState.active?t.active:arenaState.paused?"EN PAUSE":arenaState.ended?t.ended:t.waiting}</div>
             </div>
-            {!arenaState.active&&!arenaState.paused&&<button onClick={()=>onStart(sessionMins)} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12}}>{T.fr.start}</button>}
+            {!arenaState.active&&!arenaState.paused&&<button onClick={()=>onStart(sessionMins)} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12}}>{t.start}</button>}
             {arenaState.active&&<button onClick={onPause} style={{...S.btn("#f97316"),padding:"6px 12px",fontSize:12,color:"#000",fontWeight:700}}>⏸ Pause</button>}
             {arenaState.paused&&<button onClick={onResume} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12,color:"#000",fontWeight:700}}>▶ Reprendre</button>}
             {(arenaState.active||arenaState.paused)&&<button onClick={onEnd} style={{...S.btn("#dc2626"),padding:"6px 12px",fontSize:12,color:"#fff"}}>■ Terminer</button>}
@@ -2167,7 +2312,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
           </div>
         </div>
         <div style={{display:"flex",gap:4}}>
-          {[["leaderboard",T.fr.tabLeader],["stations",T.fr.tabStations],["players",T.fr.tabPlayers],["session",T.fr.tabSession],["survey","📊 Sondage"],["comments","💬 Commentaires"],["winners","🥇 Gagnants"]].map(([t,l])=>(
+          {[["leaderboard",t.tabLeader],["stations",t.tabStations],["players",t.tabPlayers],["session",t.tabSession],["survey","📊 Sondage"],["comments","💬 Commentaires"],["winners","🥇 Gagnants"]].map(([t,l])=>(
             <button key={t} onClick={()=>{setTab(t);setSelectedStation(null);}} style={{
               padding:"6px 10px",borderRadius:8,fontSize:11,fontWeight:600,border:"none",cursor:"pointer",
               background:tab===t?"#84cc16":"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
@@ -2181,8 +2326,8 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
         {tab==="leaderboard"&&(
           <div className="anim-up">
             <div style={{...S.row(),justifyContent:"space-between",marginBottom:12}}>
-              <div style={{...S.label()}}>{T.fr.realtimeRank}</div>
-              <div style={{fontSize:11,color:"#4b5563"}}><span style={{color:"#84cc16"}}>✓</span> = 6/6 {T.fr.eligible}</div>
+              <div style={{...S.label()}}>{t.realtimeRank}</div>
+              <div style={{fontSize:11,color:"#4b5563"}}><span style={{color:"#84cc16"}}>✓</span> = 6/6 {t.eligible}</div>
             </div>
             {/* Barre de recherche */}
             <div style={{position:"relative",marginBottom:10}}>
@@ -2912,13 +3057,15 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
         })()}
       </div>
     </div>
-  );
+    <LangFooter/>
+  </>);
 }
 
 // ----------------------------------------------------------------
 // QUEUE ITEM  (presence management + drag)
 // ----------------------------------------------------------------
 function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReorder,highlightId}){
+  const t=useT();
   const z=ZONES[zone];
   const [dragIdx,setDragIdx]=useState(null);
   const [overIdx,setOverIdx]=useState(null);
@@ -2967,7 +3114,7 @@ function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReorder,high
   if(qPlayers.length===0) return(
     <div style={{textAlign:"center",padding:"28px 0",color:"#374151",fontSize:13}}>
       <div style={{fontSize:32,marginBottom:6,opacity:.25}}>⏳</div>
-      {T.fr.autoRefill}
+      {t.autoRefill}
     </div>
   );
 
@@ -3025,6 +3172,7 @@ function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReorder,high
 // SPRINT ACTIVE GAME
 // ----------------------------------------------------------------
 function SprintGameView({game,players,zone,onWinner,onRemove,onReplace}){
+  const t=useT();
   const z=ZONES[zone];
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
   const participants=game.participants||[];
@@ -3041,8 +3189,8 @@ function SprintGameView({game,players,zone,onWinner,onRemove,onReplace}){
   return(
     <div>
       <div style={{...S.row(),justifyContent:"space-between",marginBottom:12}}>
-        <div style={{...S.label()}}>{T.fr.raceInProgress} - {pList.length} {T.fr.coureurs}</div>
-        <div className="pulse-lime" style={{...S.tag("#dc2626")}}>{T.fr.live}</div>
+        <div style={{...S.label()}}>{t.raceInProgress} - {pList.length} {t.coureurs}</div>
+        <div className="pulse-lime" style={{...S.tag("#dc2626")}}>{t.live}</div>
       </div>
 
       {/* Sprint handicap legend */}
@@ -3086,7 +3234,7 @@ function SprintGameView({game,players,zone,onWinner,onRemove,onReplace}){
       </div>
 
       <button onClick={onReplace} style={{...S.btn(),width:"100%",padding:"8px",fontSize:12,marginBottom:14,border:"1px dashed #374151"}}>
-        {T.fr.substitute}
+        {t.substitute}
       </button>
 
       {/* Sélection 1er place */}
@@ -3137,6 +3285,7 @@ function SprintGameView({game,players,zone,onWinner,onRemove,onReplace}){
 // INDIVIDUAL ACTIVE GAME  (duel, IQ)
 // ----------------------------------------------------------------
 function IndividualGameView({game,players,zone,onWinner,onRemove,onReplace}){
+  const t=useT();
   const z=ZONES[zone];
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
   const participants=game.participants||[];
@@ -3152,7 +3301,7 @@ function IndividualGameView({game,players,zone,onWinner,onRemove,onReplace}){
   return(
     <div>
       <div style={{...S.row(),justifyContent:"space-between",marginBottom:12}}>
-        <div style={{...S.label()}}>{zone==="iq"?T.fr.iqInProgress:T.fr.duelInProgress} - {pList.length} {T.fr.totalPlayers}</div>
+        <div style={{...S.label()}}>{zone==="iq"?t.iqInProgress:t.duelInProgress} - {pList.length} {t.totalPlayers}</div>
         <div className="pulse-lime" style={{...S.tag("#dc2626")}}>LIVE</div>
       </div>
       {favoredId&&(
@@ -3182,9 +3331,9 @@ function IndividualGameView({game,players,zone,onWinner,onRemove,onReplace}){
         })}
       </div>
       <button onClick={onReplace} style={{...S.btn(),width:"100%",padding:"8px",fontSize:12,marginBottom:14,border:"1px dashed #374151"}}>
-        {T.fr.substitute}
+        {t.substitute}
       </button>
-      <div style={{...S.label(),textAlign:"center",marginBottom:10}}>{T.fr.whichWonIQ}</div>
+      <div style={{...S.label(),textAlign:"center",marginBottom:10}}>{t.whichWonIQ}</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
         {pList.map(p=>(
           <button key={p.id} onClick={()=>onWinner(p.id)}
@@ -3203,6 +3352,7 @@ function IndividualGameView({game,players,zone,onWinner,onRemove,onReplace}){
 // TEAM ACTIVE GAME  (with player swap)
 // ----------------------------------------------------------------
 function TeamGameView({game,players,zone,onResult,onRemove,onReplace}){
+  const t=useT();
   const z=ZONES[zone];
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
   const teamA=(game.teamA||[]).map(id=>pMap[id]).filter(Boolean);
@@ -3219,7 +3369,7 @@ function TeamGameView({game,players,zone,onResult,onRemove,onReplace}){
   return(
     <div>
       <div style={{...S.row(),justifyContent:"space-between",marginBottom:10}}>
-        <div style={{...S.label()}}>{T.fr.matchInProgress}</div>
+        <div style={{...S.label()}}>{t.matchInProgress}</div>
         <div className="pulse-lime" style={{...S.tag("#dc2626")}}>LIVE</div>
       </div>
       {favored&&(
@@ -3262,15 +3412,15 @@ function TeamGameView({game,players,zone,onResult,onRemove,onReplace}){
         })}
       </div>
       <button onClick={onReplace} style={{...S.btn(),width:"100%",padding:"8px",fontSize:12,marginBottom:12,border:"1px dashed #374151"}}>
-        {T.fr.substitute}
+        {t.substitute}
       </button>
-      <div style={{...S.label(),textAlign:"center",marginBottom:8}}>{T.fr.declareWinner}</div>
+      <div style={{...S.label(),textAlign:"center",marginBottom:8}}>{t.declareWinner}</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
         <button onClick={()=>onResult("A")} style={{padding:"18px 10px",borderRadius:14,border:"none",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:z.color,color:"#000",boxShadow:"0 4px 18px "+z.color+"40"}}>
-          {T.fr.teamA}
+          {t.teamA}
         </button>
         <button onClick={()=>onResult("B")} style={{padding:"18px 10px",borderRadius:14,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:"#0d0f1a",color:"#fff",border:"2px solid "+z.color}}>
-          {T.fr.teamB}
+          {t.teamB}
         </button>
       </div>
     </div>
@@ -3299,6 +3449,8 @@ function useArenaTimer(arenaState){
 // STATION VIEW
 // ----------------------------------------------------------------
 function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId,onFillQueue}){
+  const t=useT();
+  const zn=useZn();
   const z=ZONES[zone];
   const zl=zn(zone);
   const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
@@ -3386,7 +3538,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
     </div>
   );
 
-  return(
+  return(<>
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
 
@@ -3427,7 +3579,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
           </div>
         </div>
         <div style={{display:"flex",gap:4,alignItems:"center",justifyContent:"space-between"}}>
-          {[["game",T.fr.tabGame],["rules",T.fr.tabRules]].map(([t,l])=>(
+          {[["game",t.tabGame],["rules",t.tabRules]].map(([t,l])=>(
             <button key={t} onClick={()=>setTab(t)} style={{
               padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
               background:tab===t?z.color:"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
@@ -3520,7 +3672,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                 {/* Sprint size selector */}
                 {zone==="speed"&&(
                   <div style={{borderRadius:14,padding:12,marginBottom:12,background:z.bg,border:"1px solid "+z.border}}>
-                    <div style={{...S.label(),color:z.color,marginBottom:10}}>{T.fr.raceGroupSize}</div>
+                    <div style={{...S.label(),color:z.color,marginBottom:10}}>{t.raceGroupSize}</div>
                     {qPlayers.length<4
                       ?<div style={{fontSize:12,color:"#4b5563",textAlign:"center"}}>Minimum 4 joueurs requis</div>
                       :<div>
@@ -3584,7 +3736,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                       {(hasIdeal||zone==="speed")&&(
                         <button onClick={()=>onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):null)}
                           style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:z.color,color:"#000"}}>
-                          {zone==="speed"?T.fr.launchRace+" ("+(sprintSize==="tous"?qPlayers.length:sprintSize)+")":T.fr.generateTeams}
+                          {zone==="speed"?t.launchRace+" ("+(sprintSize==="tous"?qPlayers.length:sprintSize)+")":t.generateTeams}
                         </button>
                       )}
                     </div>
@@ -3621,7 +3773,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                 {/* Queue */}
                 <div>
                   <div style={{...S.row(),justifyContent:"space-between",marginBottom:8}}>
-                    <div style={{...S.label()}}>{T.fr.queue} ({qPlayers.length})</div>
+                    <div style={{...S.label()}}>{t.queue} ({qPlayers.length})</div>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       {onFillQueue&&<button onClick={onFillQueue}
                         style={{padding:"4px 10px",borderRadius:8,border:"1px solid #84cc1640",
@@ -3636,7 +3788,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                       value={numInput} onChange={e=>setNumInput(e.target.value)}
                       onKeyDown={e=>{if(e.key==="Enter")handleAdd();}}
                       style={{flex:1,padding:"8px 12px",borderRadius:10,border:"1px solid #1f2937",background:"#0d0f1a",color:"#fff",fontSize:13,outline:"none"}}/>
-                    <button onClick={handleAdd} style={{...S.btn(z.color),padding:"8px 14px"}}>{T.fr.addPlayer}</button>
+                    <button onClick={handleAdd} style={{...S.btn(z.color),padding:"8px 14px"}}>{t.addPlayer}</button>
                   </div>
                   <QueueList zone={zone} qPlayers={qPlayers}
                     onMoveTop={handleMoveTop} onMoveBottom={handleMoveBottom}
@@ -3648,7 +3800,8 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
         )}
       </div>
     </div>
-  );
+    <LangFooter/>
+  </>);
 }
 
 // ----------------------------------------------------------------
@@ -3659,7 +3812,8 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
 // ----------------------------------------------------------------
 function PlayerRulesView(){
   const [openZone,setOpenZone]=useState(null);
-  const t=T.fr;
+  const t=useT();
+  const zn=useZn();
   return(
     <div className="anim-up">
       {/* Header */}
@@ -3771,6 +3925,8 @@ function PlayerRulesView(){
 }
 
 function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaState,rosterCodes,sessionRosterId,winnersPublished,onJoin,onLeave,onLogout,onUpdatePlayer,onBecomeStation,onAddComment}){
+  const t=useT();
+  const zn=useZn();
   const player=players.find(p=>p.id===playerId);
   const {timer:arenaTimer,status:arenaStatus}=useArenaTimer(arenaState);
   const [tab,setTab]=useState("stats");
@@ -3989,7 +4145,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
     </div>
   );
 
-  return(
+  return(<>
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
       <div style={{position:"sticky",top:0,zIndex:10,paddingTop:"calc(env(safe-area-inset-top) + 16px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",background:"#06070f",borderBottom:"1px solid #111827"}}>
@@ -4022,7 +4178,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
         <div style={{display:"flex",flexDirection:"column",gap:6}}>
           {/* Onglets principaux */}
           <div style={{display:"flex",gap:4}}>
-            {[["stats",T.fr.myStats],["leaderboard",T.fr.myRank],["rules",T.fr.myRules],["profil",T.fr.myProfile]].map(([t,l])=>(
+            {[["stats",t.myStats],["leaderboard",t.myRank],["rules",t.myRules],["profil",t.myProfile]].map(([t,l])=>(
               <button key={t} onClick={()=>setTab(t)} style={{
                 flex:1,padding:"6px 4px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
                 background:tab===t?"#84cc16":"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
@@ -4139,13 +4295,13 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                 border:"1px solid "+(player.lastResult.isWin?"#84cc1630":"#dc262630")}}>
                 <div style={{fontSize:22}}>{player.lastResult.isWin?"🎉":"😤"}</div>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:10,color:"#4b5563",textTransform:"uppercase",letterSpacing:2,fontWeight:600,marginBottom:2}}>{T.fr.lastActivity}</div>
+                  <div style={{fontSize:10,color:"#4b5563",textTransform:"uppercase",letterSpacing:2,fontWeight:600,marginBottom:2}}>{t.lastActivity}</div>
                   <div style={{fontWeight:700,color:"#fff",fontSize:13}}>
                     {ZONES[player.lastResult.zone].icon} {zn(player.lastResult.zone).name}
                     {player.lastResult.bonus?" 🔥":""}
                   </div>
                   <div style={{fontSize:12,marginTop:1,color:player.lastResult.isWin?"#84cc16":"#dc2626",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>
-                    {player.lastResult.isWin?T.fr.victory:T.fr.defeat}{" "}
+                    {player.lastResult.isWin?t.victory:t.defeat}{" "}
                     <span style={{fontSize:18}}>{player.lastResult.delta>0?"+"+player.lastResult.delta:player.lastResult.delta} pts</span>
                     {player.lastResult.newStreak>=2&&<span style={{fontSize:11,color:"#f97316",marginLeft:6}}>Serie {player.lastResult.newStreak} 🔥</span>}
                   </div>
@@ -4263,9 +4419,9 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
                         :canJoin
                           ?<button onClick={()=>onJoin(playerId,zk)} style={{marginTop:8,width:"100%",padding:"6px 12px",borderRadius:8,
                             border:"1px solid "+zc.color+"35",background:zc.color+"15",color:zc.color,cursor:"pointer",fontSize:12,fontWeight:700}}>
-                            {played?"Rejouer — "+T.fr.joinQueue:T.fr.joinQueue}
+                            {played?"Rejouer — "+t.joinQueue:t.joinQueue}
                           </button>
-                          :<div style={{fontSize:11,color:"#4b5563",marginTop:6}}>{playingAt?T.fr.inGameElsewhere:T.fr.max2queues}</div>
+                          :<div style={{fontSize:11,color:"#4b5563",marginTop:6}}>{playingAt?t.inGameElsewhere:t.max2queues}</div>
                     )}
                   </div>
                 );
@@ -4276,7 +4432,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
             <div style={{padding:12,borderRadius:12,marginBottom:16,textAlign:"center",fontSize:12,
               background:elig?"#0d1508":"#0d0f1a",border:"1px solid "+(elig?"#84cc1630":"#374151")}}>
               {elig
-                ?<span style={{color:"#84cc16",fontWeight:700}}>{T.fr.allZonesDone}</span>
+                ?<span style={{color:"#84cc16",fontWeight:700}}>{t.allZonesDone}</span>
                 :<div>
                   <div style={{color:"#6b7280",marginBottom:6}}>Zones manquantes pour etre eligible:</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center"}}>
@@ -4332,7 +4488,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
         )}
         {tab==="leaderboard"&&(
           <div className="anim-up">
-            <div style={{...S.label(),marginBottom:10}}>{T.fr.tabLeader} - {sorted.filter(p=>(p.zonesPlayed||[]).length===6).length} {T.fr.eligibles}</div>
+            <div style={{...S.label(),marginBottom:10}}>{t.tabLeader} - {sorted.filter(p=>(p.zonesPlayed||[]).length===6).length} {t.eligibles}</div>
             {/* Barre de recherche */}
             <div style={{position:"relative",marginBottom:10}}>
               <input value={leaderSearch} onChange={e=>{setLeaderSearch(e.target.value);setLeaderHighlight(null);}}
@@ -4606,7 +4762,8 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
         })()}
       </div>
     </div>
-  );
+    <LangFooter/>
+  </>);
 }
 
 // ----------------------------------------------------------------
@@ -4626,7 +4783,7 @@ export default function PurInstinctApp(){
   const [view,setView]=useState({type:"login"});
   const [liveMode,setLiveMode]=useState(false);
   const [fbReady,setFbReady]=useState(false);
-  const [setLang]=useState("fr");
+  const [lang,setLang]=useState("fr");
 
   const playersRef=useRef(players);
   const gamesRef=useRef(activeGames);
@@ -4966,13 +5123,17 @@ export default function PurInstinctApp(){
     }
   };
 
+  const onLangToggle=()=>setLang(l=>l==="fr"?"en":"fr");
+
   // --- Routing ---
-  if(!fbReady) return(
-    <div style={{minHeight:"100vh",background:"#06070f",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#84cc16",letterSpacing:4}}>PURINSTINCT</div>
-    </div>
-  );
-  if(view.type==="login") return (liveMode||view.live)
+  let content=null;
+  if(!fbReady){
+    content=(
+      <div style={{minHeight:"100vh",background:"#06070f",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#84cc16",letterSpacing:4}}>PURINSTINCT</div>
+      </div>
+    );
+  } else if(view.type==="login") content=(liveMode||view.live)
     ?<LiveLoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         rosterCodes={rosterCodes}
         onAddPlayer={addPlayerToSession}
@@ -5005,7 +5166,7 @@ export default function PurInstinctApp(){
         onLogin={(t,id)=>setView({type:t,id})}
         onGoLive={()=>{fbSet("liveMode",true);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());}}/>;
 
-  if(view.type==="adminHome") return(
+  else if(view.type==="adminHome") content=(
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=DM+Sans:wght@400;600;700&display=swap');`}</style>
@@ -5042,10 +5203,11 @@ export default function PurInstinctApp(){
           ● Session active en cours
         </div>
       )}
+      <LangFooter/>
     </div>
   );
 
-  if(view.type==="admin") return(
+  else if(view.type==="admin") content=(
     <AdminView players={players.filter(p=>{
       if((p.groupId||"main")===activeRosterId) return true;
       if(ZK.some(zk=>queues[zk]&&queues[zk].includes(p.id))) return true;
@@ -5137,7 +5299,7 @@ export default function PurInstinctApp(){
       onUnpublishWinners={()=>{setWinnersPublished(false);fbSet("winnersPublished",false);}}/>
   );
 
-  if(view.type==="station") return(
+  else if(view.type==="station") content=(
     <StationView zone={view.id} players={players.filter(p=>{
       if((p.groupId||"main")===activeRosterId) return true;
       if(ZK.some(zk=>queues[zk]&&queues[zk].includes(p.id))) return true;
@@ -5165,7 +5327,7 @@ export default function PurInstinctApp(){
       onFillQueue={()=>fillQueue(view.id)}/>
   );
 
-  if(view.type==="stationPick") return(
+  else if(view.type==="stationPick") content=(
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=DM+Sans:wght@400;600;700&display=swap');`}</style>
@@ -5179,7 +5341,7 @@ export default function PurInstinctApp(){
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:24}}>
           {ZK.map(zk=>{
-            const z=ZONES[zk];const zl=zn(zk);
+            const z=ZONES[zk];const zl=zn(zk,lang);
             const isOff=(arenaState.disabledZones||[]).includes(zk);
             return(
               <button key={zk} onClick={()=>setView({type:"station",id:zk,fromPlayerId:view.fromPlayerId})}
@@ -5216,15 +5378,15 @@ export default function PurInstinctApp(){
           Déconnecter la session
         </button>
       </div>
+      <LangFooter/>
     </div>
   );
 
-  if(view.type==="player"){
+  else if(view.type==="player"){
     const p=players.find(px=>px.id===view.id);
     if(p){
-      // Filtrer les joueurs du même groupe seulement
       const groupPlayers=players.filter(px=>px.groupId===(p.groupId||"main"));
-      return(
+      content=(
         <PlayerView playerId={view.id} players={groupPlayers} queues={queues} activeGames={activeGames}
           disabledZones={arenaState.disabledZones||[]}
           arenaState={arenaState}
@@ -5240,5 +5402,5 @@ export default function PurInstinctApp(){
     }
   }
 
-  return null;
+  return <LangContext.Provider value={{lang,setLang}}>{content}</LangContext.Provider>;
 }
