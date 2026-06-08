@@ -2021,7 +2021,7 @@ function AugmentedLanding({augState,onSelect,onBack}){
       <style>{FONTS}</style>
       {/* Header */}
       <div className="anim-pop" style={{textAlign:"center",marginBottom:28}}>
-        <button onClick={onBack} style={{...S.backBtn,marginBottom:16}}>← Retour</button>
+        <button onClick={onBack} style={{...S.backBtn,marginBottom:16}}>🏠 Home</button>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
           color:AUG_COLOR,letterSpacing:4,textTransform:"uppercase",marginBottom:4}}>Moment Factory</div>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:36,
@@ -2123,7 +2123,7 @@ function AugmentedStation({gameId,gameState,onUpdate,onBack}){
       <style>{FONTS}</style>
       {/* Header */}
       <div style={{width:"100%",maxWidth:420,marginBottom:20}}>
-        <button onClick={onBack} style={{...S.backBtn,marginBottom:14}}>← Retour</button>
+        <button onClick={onBack} style={{...S.backBtn,marginBottom:14}}>🏠 Home</button>
         <div style={{display:"flex",alignItems:"center",gap:14}}>
           <div style={{width:56,height:56,borderRadius:12,overflow:"hidden",flexShrink:0,
             border:"2px solid "+AUG_COLOR+"50"}}>
@@ -4165,7 +4165,7 @@ function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionN
                 {arenaStatus==="active"?t.statusActive:arenaStatus==="paused"?t.statusPaused:arenaStatus==="ended"?t.statusEnded:t.statusWaiting}
               </div>
             </div>}
-            <button onClick={onBack||onLogout} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>←</button>
+            <button onClick={onBack||onLogout} style={{padding:"8px 14px",borderRadius:10,background:"#111827",color:"#e5e7eb",border:"1px solid #374151",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,letterSpacing:1,display:"flex",alignItems:"center",gap:6}}>🏠 Home</button>
           </div>
         </div>
         <div style={{display:"flex",gap:4,alignItems:"center",justifyContent:"space-between"}}>
