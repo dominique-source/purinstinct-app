@@ -1789,6 +1789,123 @@ function LangFooter(){
 }
 
 
+// ----------------------------------------------------------------
+// MODE SELECT VIEW  (entry screen — Live or Test)
+// ----------------------------------------------------------------
+const MODE_PIN="1111";
+function ModeSelectView({onLive,onTest}){
+  const t=useT();
+  const [mode,setMode]=useState(null); // null | "live" | "test"
+  const [pin,setPin]=useState("");
+  const [pinError,setPinError]=useState(false);
+
+  const handlePin=(val)=>{
+    setPin(val);
+    if(val.length===4){
+      if(val===MODE_PIN){
+        setPinError(false);
+        setTimeout(()=>{ mode==="live"?onLive():onTest(); },150);
+      } else {
+        setPinError(true);
+        setTimeout(()=>{setPin("");setPinError(false);},800);
+      }
+    }
+  };
+
+  return(
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
+      justifyContent:"center",padding:"32px 16px",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
+      <style>{FONTS}</style>
+      {/* Logo */}
+      <div className="anim-pop" style={{textAlign:"center",marginBottom:48}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:72,letterSpacing:-2,lineHeight:1}}>
+          <span style={{color:"#84cc16"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
+        </div>
+        <div style={{color:"#84cc16",fontSize:13,letterSpacing:3,textTransform:"uppercase",marginTop:6,fontWeight:700}}>
+          PurInstinct Games
+        </div>
+      </div>
+
+      {!mode?(
+        /* Mode selection */
+        <div className="anim-up" style={{width:"100%",maxWidth:340,display:"flex",flexDirection:"column",gap:14}}>
+          <button onClick={()=>setMode("live")}
+            style={{width:"100%",padding:"22px 20px",borderRadius:20,border:"2px solid #84cc1650",
+              background:"#111a05",color:"#84cc16",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
+              fontWeight:900,fontSize:22,letterSpacing:1,display:"flex",alignItems:"center",gap:14}}
+            onMouseEnter={e=>{e.currentTarget.style.background="#84cc16";e.currentTarget.style.color="#000";}}
+            onMouseLeave={e=>{e.currentTarget.style.background="#111a05";e.currentTarget.style.color="#84cc16";}}>
+            <span style={{fontSize:28}}>⚡</span>
+            <div style={{textAlign:"left"}}>
+              <div>LIVE MODE</div>
+              <div style={{fontSize:12,fontWeight:400,opacity:0.7,fontFamily:"'DM Sans',sans-serif",marginTop:2}}>
+                Expérience joueur · Session en direct
+              </div>
+            </div>
+          </button>
+          <button onClick={()=>setMode("test")}
+            style={{width:"100%",padding:"22px 20px",borderRadius:20,border:"2px solid #3b82f650",
+              background:"#080f1f",color:"#3b82f6",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
+              fontWeight:900,fontSize:22,letterSpacing:1,display:"flex",alignItems:"center",gap:14}}
+            onMouseEnter={e=>{e.currentTarget.style.background="#3b82f6";e.currentTarget.style.color="#000";}}
+            onMouseLeave={e=>{e.currentTarget.style.background="#080f1f";e.currentTarget.style.color="#3b82f6";}}>
+            <span style={{fontSize:28}}>🧪</span>
+            <div style={{textAlign:"left"}}>
+              <div>TEST MODE</div>
+              <div style={{fontSize:12,fontWeight:400,opacity:0.7,fontFamily:"'DM Sans',sans-serif",marginTop:2}}>
+                Admin complet · Accès toutes fonctions
+              </div>
+            </div>
+          </button>
+        </div>
+      ):(
+        /* PIN entry */
+        <div className="anim-up" style={{width:"100%",maxWidth:300,textAlign:"center"}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+            color:mode==="live"?"#84cc16":"#3b82f6",letterSpacing:2,marginBottom:6}}>
+            {mode==="live"?"⚡ LIVE MODE":"🧪 TEST MODE"}
+          </div>
+          <div style={{fontSize:13,color:"#4b5563",marginBottom:28}}>Entrez le code PIN</div>
+
+          {/* PIN dots */}
+          <div style={{display:"flex",justifyContent:"center",gap:14,marginBottom:24}}>
+            {[0,1,2,3].map(i=>(
+              <div key={i} style={{width:16,height:16,borderRadius:"50%",
+                background:i<pin.length?(pinError?"#ef4444":mode==="live"?"#84cc16":"#3b82f6"):"#1f2937",
+                border:"2px solid "+(i<pin.length?(pinError?"#ef4444":mode==="live"?"#84cc16":"#3b82f6"):"#374151"),
+                transition:"all .15s"}}/>
+            ))}
+          </div>
+
+          {/* Numpad */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,maxWidth:260,margin:"0 auto 24px"}}>
+            {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((k,i)=>(
+              <button key={i} onClick={()=>{
+                if(k==="") return;
+                if(k==="⌫") handlePin(pin.slice(0,-1));
+                else if(pin.length<4) handlePin(pin+k);
+              }} style={{padding:"16px",borderRadius:14,border:"1px solid #1f2937",
+                background:k===""?"transparent":"#0d0f1a",color:"#fff",
+                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:22,
+                cursor:k===""?"default":"pointer",opacity:k===""?0:1}}
+                onMouseEnter={e=>{if(k!=="")e.currentTarget.style.background="#1f2937";}}
+                onMouseLeave={e=>{if(k!=="")e.currentTarget.style.background="#0d0f1a";}}>
+                {k}
+              </button>
+            ))}
+          </div>
+
+          <button onClick={()=>{setMode(null);setPin("");setPinError(false);}}
+            style={{fontSize:12,color:"#4b5563",background:"none",border:"none",cursor:"pointer"}}>
+            ← Retour
+          </button>
+        </div>
+      )}
+      <LangFooter/>
+    </div>
+  );
+}
+
 function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
   const t=useT();
   const zn=useZn();
@@ -4947,7 +5064,10 @@ export default function PurInstinctApp(){
       }
       setRosterCodes(loadedCodes);
       setPendingSessions(data.pendingSessions?Object.values(data.pendingSessions):[]);
-      if(typeof data.liveMode==="boolean") setLiveMode(data.liveMode);
+      if(typeof data.liveMode==="boolean"){
+        setLiveMode(data.liveMode);
+        if(data.liveMode) setView(v=>v.type==="login"?{type:"liveLogin"}:v);
+      }
       if(data.activeRosterId) setActiveRosterId(data.activeRosterId);
       if(data.extraRosters) setRosters([...INITIAL_ROSTERS,...Object.values(data.extraRosters).map(r=>({...r,entries:r.entries||[]}))]);
 
@@ -5247,18 +5367,22 @@ export default function PurInstinctApp(){
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#84cc16",letterSpacing:4}}>PURINSTINCT</div>
       </div>
     );
-  } else if(view.type==="login") content=(liveMode||view.live)
-    ?<LiveLoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
+  } else if(view.type==="login") content=(
+    <ModeSelectView
+      onLive={()=>{fbSet("liveMode",true);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());setView({type:"liveLogin"});}}
+      onTest={()=>{fbSet("liveMode",false);setView({type:"testLogin"});}}/>
+  );
+
+  else if(view.type==="liveLogin") content=(
+    <LiveLoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         rosterCodes={rosterCodes}
         onAddPlayer={addPlayerToSession}
         onRequestSolo={(name,gender,callback)=>{
           const soloGroupId="solo_"+Date.now();
-          // Générer un code unique qui n'est pas déjà utilisé
           let soloCode;
           const usedCodes=Object.values(rosterCodes||{});
           do { soloCode=String(Math.floor(1000+Math.random()*9000)); }
           while(usedCodes.includes(soloCode));
-          // Sauvegarder le code dans Firebase
           const newCodes={...(rosterCodes||{}),[soloGroupId]:soloCode};
           setRosterCodes(newCodes);
           fbSet("rosterCodes",newCodes);
@@ -5269,16 +5393,20 @@ export default function PurInstinctApp(){
             setPendingSessions(prev=>{
               const updated=[...prev,newSession];
               const obj={};updated.forEach(s=>{obj[s.id]=s;});
-              fbSet("pendingSessions",obj); // ← persister immédiatement dans Firebase
+              fbSet("pendingSessions",obj);
               return updated;
             });
           },soloGroupId);
         }}
         onLogin={(t,id)=>setView({type:t,id})}
-        onGoTest={()=>{fbSet("liveMode",false);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(buildInitialQueues(players));}}/>
-    :<LoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
+        onGoTest={()=>{fbSet("liveMode",false);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(buildInitialQueues(players));setView({type:"login"});}}/>
+  );
+
+  else if(view.type==="testLogin") content=(
+    <LoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         onLogin={(t,id)=>setView({type:t,id})}
-        onGoLive={()=>{fbSet("liveMode",true);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());}}/>;
+        onGoLive={()=>{fbSet("liveMode",true);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());setView({type:"liveLogin"});}}/>
+  );
 
   else if(view.type==="adminHome") content=(
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
@@ -5293,7 +5421,7 @@ export default function PurInstinctApp(){
           {icon:"⚡",label:T[lang].sessionInProgress,sub:T[lang].sessionSub,color:"#84cc16",action:()=>setView({type:"admin"})},
           {icon:"📍",label:T[lang].stationManagerShort,sub:T[lang].stationManagerSub,color:"#f97316",action:()=>setView({type:"stationPick"})},
           {icon:"📋",label:T[lang].sessionsTab,sub:T[lang].sessionsSub,color:"#3b82f6",action:()=>setView({type:"admin",tab:"session"})},
-          {icon:null,label:T[lang].disconnectShort,sub:T[lang].disconnectSub,color:"#ef4444",isLogout:true,action:()=>setView({type:"login",live:true})},
+          {icon:null,label:T[lang].disconnectShort,sub:T[lang].disconnectSub,color:"#ef4444",isLogout:true,action:()=>setView({type:"liveLogin"})},
         ].map(({icon,label,sub,color,action,isLogout})=>(
           <button key={label} onClick={action}
             style={{padding:"24px 16px",borderRadius:20,border:"1px solid "+color+"30",
@@ -5436,7 +5564,7 @@ export default function PurInstinctApp(){
       onReorderQ={reorderQueue}
       onBack={()=>setView({type:"stationPick",fromPlayerId:view.fromPlayerId})}
       onGoAdmin={view.fromPlayerId?()=>setView({type:"player",id:view.fromPlayerId}):()=>setView({type:"adminHome"})}
-      onLogout={()=>setView({type:"login",live:true})}
+      onLogout={()=>setView({type:"liveLogin"})}
       fromPlayerId={view.fromPlayerId}
       onFillQueue={()=>fillQueue(view.id)}/>
   );
@@ -5483,7 +5611,7 @@ export default function PurInstinctApp(){
             {T[lang].switchToAdmin}
           </button>
         )}
-        <button onClick={()=>setView({type:"login",live:true})}
+        <button onClick={()=>setView({type:"liveLogin"})}
           style={{width:"100%",padding:"12px",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",gap:10,
             border:"1px solid #ef444440",color:"#ef4444",cursor:"pointer",fontSize:13,fontWeight:600,background:"none"}}>
           <div style={{width:20,height:20,borderRadius:"50%",border:"2px solid #ef4444",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",flexShrink:0}}>
@@ -5508,7 +5636,7 @@ export default function PurInstinctApp(){
           sessionRosterId={p.groupId||"main"}
           winnersPublished={winnersPublished}
           onJoin={addToQueue} onLeave={removeFromQueue}
-          onLogout={()=>setView({type:"login",live:true})}
+          onLogout={()=>setView({type:"liveLogin"})}
           onBecomeStation={()=>setView({type:"stationPick",fromPlayerId:view.id})}
           onUpdatePlayer={updatePlayer}
           onAddComment={(text)=>{const p=players.find(px=>px.id===view.id);if(p)addComment(p.id,p.name,p.number,text);}}/>
