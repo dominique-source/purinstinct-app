@@ -1924,7 +1924,6 @@ function ModeSelectView({onLive,onTest}){
 // TEST MODE LANDING  (zone card grid)
 // ----------------------------------------------------------------
 const ZONE_VIGNETTES = {
-  purinstinct:    "/zone-purinstinct.png",
   handAgility:    "/zone-mains.png",
   footAgility:    "/zone-pieds.png",
   generalAgility: "/zone-agilite.png",
@@ -1941,7 +1940,7 @@ const AUGMENTED_ZONE = {
 
 function TestLanding({onEnter}){
   const zn=useZn();
-  const DISPLAY_ZK=["purinstinct","handAgility","footAgility","generalAgility","iq","speed","augmented"];
+  const DISPLAY_ZK=["handAgility","footAgility","generalAgility","iq","speed","augmented"];
   return(
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 16px 80px"}}>
