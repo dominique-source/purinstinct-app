@@ -5751,7 +5751,19 @@ export default function PurInstinctApp(){
   } else if(view.type==="login") content=(
     <ModeSelectView
       onLive={()=>{fbSet("liveMode",true);setIsTestMode(false);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());setView({type:"liveLogin"});}}
-      onTest={()=>{fbSet("liveMode",false);setIsTestMode(true);setView({type:"testLogin"});}}/>
+      onTest={()=>{
+        fbSet("liveMode",false);
+        setIsTestMode(true);
+        // Pre-fill every zone queue with all 30 test players
+        const testQ={};
+        ZK.forEach(zk=>{testQ[zk]=TEST_PLAYERS.map(p=>p.id);});
+        setQueues(testQ);
+        // Pre-fill every augmented game queue with test player names
+        const testAug={};
+        AUG_GAMES.forEach(g=>{testAug[g.id]={queue:TEST_PLAYERS.map(p=>p.name),activeMatch:null};});
+        setAugState(testAug);
+        setView({type:"testLogin"});
+      }}/>
   );
 
   else if(view.type==="liveLogin") content=(
