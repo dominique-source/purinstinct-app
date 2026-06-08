@@ -693,6 +693,9 @@ const S = {
   tag:(color,extra)=>({ padding:"2px 8px", borderRadius:6, fontSize:11, fontWeight:600, background:color+"18", color:color, ...extra }),
   label:(extra)=>({ fontSize:11, color:"#4b5563", textTransform:"uppercase", letterSpacing:"3px", fontWeight:600, ...extra }),
   row:(extra)=>({ display:"flex", alignItems:"center", gap:10, ...extra }),
+  backBtn:{ padding:"10px 20px", borderRadius:12, border:"1px solid #374151", background:"#111827",
+    color:"#e5e7eb", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif",
+    fontWeight:700, fontSize:16, letterSpacing:1, display:"inline-flex", alignItems:"center", gap:8 },
 };
 
 function Bib({n,size,color}){
@@ -986,7 +989,7 @@ function RosterEditor({roster,onSave,onCancel}){
   return(
     <div className="anim-up">
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-        <button onClick={onCancel} style={{...S.btn(),padding:"6px 12px",fontSize:12}}>{t.back}</button>
+        <button onClick={onCancel} style={{...S.backBtn}}>{t.back}</button>
         <div style={{flex:1}}>
           <input value={name} onChange={e=>setName(e.target.value)}
             style={{width:"100%",padding:"8px 12px",borderRadius:10,border:"1px solid #84cc1640",
@@ -1751,7 +1754,7 @@ function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onAddComme
         paddingTop:"calc(env(safe-area-inset-top) + 12px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",
         background:"#06070f",borderBottom:"1px solid #111827",
         display:"flex",alignItems:"center",gap:12}}>
-        {onBack&&<button onClick={onBack} style={{...S.btn(),padding:"6px 12px",fontSize:12}}>{t.back}</button>}
+        {onBack&&<button onClick={onBack} style={{...S.backBtn}}>{t.back}</button>}
         <div style={{flex:1}}>
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#84cc16"}}>
             #{player.number}
@@ -2018,8 +2021,7 @@ function AugmentedLanding({augState,onSelect,onBack}){
       <style>{FONTS}</style>
       {/* Header */}
       <div className="anim-pop" style={{textAlign:"center",marginBottom:28}}>
-        <button onClick={onBack} style={{background:"none",border:"none",color:"#6b7280",
-          cursor:"pointer",fontSize:13,marginBottom:12,display:"block",margin:"0 auto 12px"}}>← Retour</button>
+        <button onClick={onBack} style={{...S.backBtn,marginBottom:16}}>← Retour</button>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
           color:AUG_COLOR,letterSpacing:4,textTransform:"uppercase",marginBottom:4}}>Moment Factory</div>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:36,
@@ -2121,8 +2123,7 @@ function AugmentedStation({gameId,gameState,onUpdate,onBack}){
       <style>{FONTS}</style>
       {/* Header */}
       <div style={{width:"100%",maxWidth:420,marginBottom:20}}>
-        <button onClick={onBack} style={{background:"none",border:"none",color:"#6b7280",
-          cursor:"pointer",fontSize:13,marginBottom:12}}>← Retour</button>
+        <button onClick={onBack} style={{...S.backBtn,marginBottom:14}}>← Retour</button>
         <div style={{display:"flex",alignItems:"center",gap:14}}>
           <div style={{width:56,height:56,borderRadius:12,overflow:"hidden",flexShrink:0,
             border:"2px solid "+AUG_COLOR+"50"}}>
@@ -2743,7 +2744,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
       {screen==="admin"&&(
         <div style={{width:"100%",maxWidth:320}}>
           <button onClick={()=>{setScreen("sessionCode");setPin("");setPinError(false);}}
-            style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>← Retour</button>
+            style={{...S.backBtn,marginBottom:16}}>← Retour</button>
           <div style={{textAlign:"center",marginBottom:24}}>
             <div style={{fontSize:32,marginBottom:8}}>🛡️</div>
             <div style={{color:"#fff",fontWeight:700,fontSize:18}}>Accès Administrateur</div>
@@ -2758,7 +2759,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
       {screen==="station"&&(
         <div style={{width:"100%",maxWidth:320}}>
           <button onClick={()=>{setScreen("sessionCode");setPin("");setPinError(false);}}
-            style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>← Retour</button>
+            style={{...S.backBtn,marginBottom:16}}>← Retour</button>
           <div style={{textAlign:"center",marginBottom:24}}>
             <div style={{fontSize:32,marginBottom:8}}>📍</div>
             <div style={{color:"#fff",fontWeight:700,fontSize:18}}>Accès Responsable de station</div>
@@ -2773,7 +2774,7 @@ function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCode
       {screen==="stationPick"&&(
         <div className="anim-up" style={{width:"100%",maxWidth:380}}>
           <button onClick={()=>setScreen("station")}
-            style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>← Retour</button>
+            style={{...S.backBtn,marginBottom:16}}>← Retour</button>
           <div style={{color:"#fff",fontWeight:700,fontSize:16,marginBottom:16,textAlign:"center"}}>📍 Choisissez votre station</div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {ZK.map(zk=>{
@@ -4665,7 +4666,7 @@ function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaStat
       <style>{FONTS}</style>
       <div style={{paddingTop:"calc(env(safe-area-inset-top) + 16px)",padding:"calc(env(safe-area-inset-top) + 16px) 16px 16px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <button onClick={()=>setShowHub(true)} style={{...S.btn(),padding:"8px 18px",fontSize:13,fontWeight:700,display:"inline-flex",alignItems:"center",gap:6}}>{t.backHome}</button>
+          <button onClick={()=>setShowHub(true)} style={{...S.backBtn}}>{t.backHome}</button>
           {onBecomeStation&&<button onClick={onBecomeStation}
             style={{padding:"6px 12px",borderRadius:10,border:"1px solid #f9731650",background:"#1a0d00",
               color:"#f97316",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12}}>
