@@ -49,6 +49,20 @@ const ZONES = {
 
 const ZK = ["purinstinct","speed","handAgility","footAgility","generalAgility","iq"];
 const ARENA_SECS = 4500;
+
+// ── Augmented Games (Moment Factory) ────────────────────────────
+const AUG_GAMES = [
+  { id:"memory",     img:"/memory.png",     fr:"Memory",     en:"Memory"     },
+  { id:"grid",       img:"/grid.png",       fr:"Grid",       en:"Grid"       },
+  { id:"target",     img:"/target.png",     fr:"Target",     en:"Target"     },
+  { id:"obstacles",  img:"/obstacles.png",  fr:"Obstacles",  en:"Obstacles"  },
+  { id:"hotspot",    img:"/hotspot.png",    fr:"Hotspot",    en:"Hotspot"    },
+  { id:"polygon",    img:"/polygon.png",    fr:"Polygon",    en:"Polygon"    },
+  { id:"pathfinder", img:"/pathfinder.png", fr:"Pathfinder", en:"Pathfinder" },
+  { id:"maze",       img:"/maze.png",       fr:"Maze",       en:"Maze"       },
+];
+const AUG_COLOR = "#a855f7";
+const AUG_BG    = "#120422";
 const QUEUE_MIN = { purinstinct:14, speed:14, handAgility:9, footAgility:8, generalAgility:9, iq:7 };
 
 // Sprint: 5 handicap tiers (builds with games played)
@@ -1901,6 +1915,350 @@ function ModeSelectView({onLive,onTest}){
           </button>
         </div>
       )}
+      <LangFooter/>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------
+// TEST MODE LANDING  (zone card grid)
+// ----------------------------------------------------------------
+const ZONE_VIGNETTES = {
+  purinstinct:    "/zone-purinstinct.png",
+  handAgility:    "/zone-mains.png",
+  footAgility:    "/zone-pieds.png",
+  generalAgility: "/zone-agilite.png",
+  iq:             "/zone-iq.png",
+  speed:          "/zone-vitesse.png",
+  augmented:      "/zone-augmented.png",
+};
+
+const AUGMENTED_ZONE = {
+  id:"augmented", icon:"🏟️", color:"#a855f7", bg:"#120422", border:"#a855f740",
+  fr:{name:"Augmented Games",sn:"Augmented",sub:"by Moment Factory"},
+  en:{name:"Augmented Games",sn:"Augmented",sub:"by Moment Factory"},
+};
+
+function TestLanding({onEnter}){
+  const zn=useZn();
+  const DISPLAY_ZK=["purinstinct","handAgility","footAgility","generalAgility","iq","speed","augmented"];
+  return(
+    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
+      display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 16px 80px"}}>
+      <style>{FONTS}</style>
+      {/* Logo */}
+      <div className="anim-pop" style={{textAlign:"center",marginBottom:32}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:60,letterSpacing:-2,lineHeight:1}}>
+          <span style={{color:"#84cc16"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
+        </div>
+        <div style={{color:"#84cc16",fontSize:11,letterSpacing:3,textTransform:"uppercase",marginTop:4,fontWeight:700}}>
+          🧪 TEST MODE
+        </div>
+      </div>
+
+      {/* Zone grid — 2 cols */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,width:"100%",maxWidth:420}}>
+        {DISPLAY_ZK.map((zk,i)=>{
+          const isAug=zk==="augmented";
+          const z=isAug?AUGMENTED_ZONE:ZONES[zk];
+          const zl=isAug?AUGMENTED_ZONE.fr:zn(zk);
+          const img=ZONE_VIGNETTES[zk];
+          const isLast=DISPLAY_ZK.length%2!==0&&i===DISPLAY_ZK.length-1;
+          return(
+            <div key={zk}
+              style={{gridColumn:isLast?"1 / -1":undefined,
+                borderRadius:16,overflow:"hidden",cursor:"pointer",
+                border:"2px solid "+z.color+"40",
+                boxShadow:"0 4px 20px "+z.color+"20",
+                transition:"transform .15s, box-shadow .15s",
+                aspectRatio:isLast?"2.2/1":"1/1"}}
+              onClick={()=>onEnter(zk)}
+              onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.03)";e.currentTarget.style.boxShadow="0 8px 32px "+z.color+"50";}}
+              onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";e.currentTarget.style.boxShadow="0 4px 20px "+z.color+"20";}}>
+              <img src={img} alt={zl.name}
+                style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
+                onError={e=>{e.target.style.display="none";e.target.nextSibling.style.display="flex";}}/>
+              {/* Fallback */}
+              <div style={{display:"none",width:"100%",height:"100%",minHeight:160,
+                background:`linear-gradient(135deg, ${z.bg||"#0d0f1a"}, ${z.color}20)`,
+                flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,padding:16}}>
+                <div style={{fontSize:42}}>{z.icon}</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                  fontSize:16,color:z.color,textAlign:"center",letterSpacing:1}}>
+                  {zl.name.toUpperCase()}
+                </div>
+                {isAug&&<div style={{fontSize:10,color:z.color+"80",letterSpacing:2}}>by Moment Factory</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Enter admin button */}
+      <button onClick={()=>onEnter(null)}
+        style={{marginTop:24,padding:"12px 32px",borderRadius:14,
+          border:"1px solid #84cc1650",background:"#111a05",
+          color:"#84cc16",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
+          fontWeight:900,fontSize:16,letterSpacing:1}}>
+        🛡️ ADMIN DASHBOARD
+      </button>
+      <LangFooter/>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------
+// AUGMENTED LANDING  (8 game cards)
+// ----------------------------------------------------------------
+function AugmentedLanding({augState,onSelect,onBack}){
+  const {lang}=useLang();
+  return(
+    <div style={{minHeight:"100vh",background:AUG_BG,fontFamily:"'DM Sans',sans-serif",
+      display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 16px 80px"}}>
+      <style>{FONTS}</style>
+      {/* Header */}
+      <div className="anim-pop" style={{textAlign:"center",marginBottom:28}}>
+        <button onClick={onBack} style={{background:"none",border:"none",color:"#6b7280",
+          cursor:"pointer",fontSize:13,marginBottom:12,display:"block",margin:"0 auto 12px"}}>← Retour</button>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
+          color:AUG_COLOR,letterSpacing:4,textTransform:"uppercase",marginBottom:4}}>Moment Factory</div>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:36,
+          color:"#fff",letterSpacing:-1,lineHeight:1}}>AUGMENTED GAMES</div>
+        <div style={{color:"#6b7280",fontSize:12,marginTop:6}}>Choisissez un jeu pour ouvrir sa file</div>
+      </div>
+      {/* 4×2 game grid */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,width:"100%",maxWidth:420}}>
+        {AUG_GAMES.map(game=>{
+          const gs=augState[game.id]||{queue:[],activeMatch:null};
+          const qLen=gs.queue.length;
+          const hasMatch=!!gs.activeMatch;
+          return(
+            <div key={game.id} onClick={()=>onSelect(game.id)}
+              style={{borderRadius:14,overflow:"hidden",cursor:"pointer",position:"relative",
+                border:"2px solid "+(hasMatch?"#84cc16":AUG_COLOR+"50"),
+                boxShadow:"0 4px 16px "+AUG_COLOR+"20",transition:"transform .15s"}}
+              onMouseEnter={e=>e.currentTarget.style.transform="scale(1.03)"}
+              onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>
+              {/* Image */}
+              <div style={{aspectRatio:"1/1",background:"#1a0a2e",position:"relative"}}>
+                <img src={game.img} alt={game[lang]}
+                  style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
+                  onError={e=>{e.target.style.display="none";}}/>
+                {/* Overlay badges */}
+                {hasMatch&&(
+                  <div style={{position:"absolute",top:8,right:8,background:"#84cc16",
+                    borderRadius:20,padding:"3px 10px",fontSize:10,fontWeight:700,color:"#000"}}>
+                    ⚡ LIVE
+                  </div>
+                )}
+                {qLen>0&&!hasMatch&&(
+                  <div style={{position:"absolute",top:8,right:8,background:AUG_COLOR,
+                    borderRadius:20,padding:"3px 10px",fontSize:10,fontWeight:700,color:"#fff"}}>
+                    {qLen} en file
+                  </div>
+                )}
+              </div>
+              {/* Label */}
+              <div style={{padding:"8px 10px",background:"#0d0514"}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                  fontSize:15,color:"#fff",letterSpacing:1}}>{game[lang].toUpperCase()}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <LangFooter/>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------
+// AUGMENTED STATION  (queue + 1v1 / 2v2 / 3v3)
+// ----------------------------------------------------------------
+function AugmentedStation({gameId,gameState,onUpdate,onBack}){
+  const {lang}=useLang();
+  const game=AUG_GAMES.find(g=>g.id===gameId)||{id:gameId,img:"",fr:gameId,en:gameId};
+  const [format,setFormat]=useState("1v1"); // "1v1"|"2v2"|"3v3"
+  const [nameInput,setNameInput]=useState("");
+  const {queue,activeMatch}=gameState;
+
+  const teamSize=format==="1v1"?1:format==="2v2"?2:3;
+  const needed=teamSize*2;
+
+  const addToQueue=(name)=>{
+    const n=name.trim();
+    if(!n) return;
+    onUpdate(gameId,{...gameState,queue:[...queue,n]});
+    setNameInput("");
+  };
+
+  const removeFromQueue=(i)=>{
+    const nq=[...queue]; nq.splice(i,1);
+    onUpdate(gameId,{...gameState,queue:nq});
+  };
+
+  const generateMatch=()=>{
+    if(queue.length<needed) return;
+    const shuffled=[...queue].sort(()=>Math.random()-.5);
+    const teamA=shuffled.slice(0,teamSize);
+    const teamB=shuffled.slice(teamSize,needed);
+    const remaining=shuffled.slice(needed);
+    onUpdate(gameId,{queue:remaining,activeMatch:{teamA,teamB,format}});
+  };
+
+  const declareWinner=(winner)=>{
+    onUpdate(gameId,{...gameState,activeMatch:null});
+  };
+
+  const cancelMatch=()=>{
+    const restored=[...(activeMatch?.teamA||[]),...(activeMatch?.teamB||[]),...queue];
+    onUpdate(gameId,{queue:restored,activeMatch:null});
+  };
+
+  return(
+    <div style={{minHeight:"100vh",background:AUG_BG,fontFamily:"'DM Sans',sans-serif",
+      display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 16px 80px"}}>
+      <style>{FONTS}</style>
+      {/* Header */}
+      <div style={{width:"100%",maxWidth:420,marginBottom:20}}>
+        <button onClick={onBack} style={{background:"none",border:"none",color:"#6b7280",
+          cursor:"pointer",fontSize:13,marginBottom:12}}>← Retour</button>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <div style={{width:56,height:56,borderRadius:12,overflow:"hidden",flexShrink:0,
+            border:"2px solid "+AUG_COLOR+"50"}}>
+            <img src={game.img} alt={game[lang]}
+              style={{width:"100%",height:"100%",objectFit:"cover"}}
+              onError={e=>{e.target.style.display="none";}}/>
+          </div>
+          <div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+              fontSize:10,color:AUG_COLOR,letterSpacing:3}}>MOMENT FACTORY</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+              fontSize:26,color:"#fff",lineHeight:1}}>{game[lang].toUpperCase()}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{width:"100%",maxWidth:420,display:"flex",flexDirection:"column",gap:14}}>
+        {/* Format selector */}
+        {!activeMatch&&(
+          <div style={{borderRadius:14,padding:14,background:"#1a0a2e",border:"1px solid "+AUG_COLOR+"40"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+              color:AUG_COLOR,letterSpacing:2,marginBottom:10}}>FORMAT</div>
+            <div style={{display:"flex",gap:8}}>
+              {["1v1","2v2","3v3"].map(f=>(
+                <button key={f} onClick={()=>setFormat(f)}
+                  style={{flex:1,padding:"10px",borderRadius:10,border:"2px solid "+(format===f?AUG_COLOR:"#2a1040"),
+                    background:format===f?AUG_COLOR+"30":"transparent",
+                    color:format===f?"#fff":"#6b7280",
+                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,cursor:"pointer"}}>
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Active match */}
+        {activeMatch&&(
+          <div style={{borderRadius:14,padding:16,background:"#1a0a2e",border:"2px solid #84cc16"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
+                color:"#84cc16",letterSpacing:2}}>⚡ {activeMatch.format.toUpperCase()} EN COURS</div>
+              <button onClick={cancelMatch}
+                style={{fontSize:11,color:"#6b7280",background:"none",border:"none",cursor:"pointer"}}>
+                ↩ Annuler
+              </button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:10,alignItems:"center",marginBottom:16}}>
+              {/* Team A */}
+              <div style={{borderRadius:10,padding:10,background:"#3b82f620",border:"1px solid #3b82f640",textAlign:"center"}}>
+                <div style={{fontSize:10,color:"#3b82f6",fontWeight:700,marginBottom:6,letterSpacing:2}}>ÉQUIPE A</div>
+                {activeMatch.teamA.map((n,i)=>(
+                  <div key={i} style={{color:"#fff",fontWeight:600,fontSize:13,padding:"2px 0"}}>{n}</div>
+                ))}
+              </div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#4b5563"}}>VS</div>
+              {/* Team B */}
+              <div style={{borderRadius:10,padding:10,background:"#f9731620",border:"1px solid #f9731640",textAlign:"center"}}>
+                <div style={{fontSize:10,color:"#f97316",fontWeight:700,marginBottom:6,letterSpacing:2}}>ÉQUIPE B</div>
+                {activeMatch.teamB.map((n,i)=>(
+                  <div key={i} style={{color:"#fff",fontWeight:600,fontSize:13,padding:"2px 0"}}>{n}</div>
+                ))}
+              </div>
+            </div>
+            <div style={{fontSize:12,color:"#4b5563",textAlign:"center",marginBottom:10}}>Qui a gagné ?</div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>declareWinner("A")}
+                style={{flex:1,padding:"10px",borderRadius:10,border:"none",cursor:"pointer",
+                  background:"#3b82f6",color:"#fff",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14}}>
+                🏆 ÉQUIPE A
+              </button>
+              <button onClick={()=>declareWinner("B")}
+                style={{flex:1,padding:"10px",borderRadius:10,border:"none",cursor:"pointer",
+                  background:"#f97316",color:"#fff",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14}}>
+                🏆 ÉQUIPE B
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Add to queue */}
+        {!activeMatch&&(
+          <div style={{borderRadius:14,padding:14,background:"#1a0a2e",border:"1px solid "+AUG_COLOR+"40"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,
+              color:AUG_COLOR,letterSpacing:2,marginBottom:10}}>FILE D'ATTENTE ({queue.length})</div>
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              <input value={nameInput} onChange={e=>setNameInput(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&addToQueue(nameInput)}
+                placeholder="Nom du joueur..."
+                style={{flex:1,padding:"10px 12px",borderRadius:10,border:"1px solid #2a1040",
+                  background:"#0d0514",color:"#fff",fontSize:14,outline:"none"}}/>
+              <button onClick={()=>addToQueue(nameInput)}
+                style={{padding:"10px 16px",borderRadius:10,border:"none",cursor:"pointer",
+                  background:AUG_COLOR,color:"#fff",fontWeight:700,fontSize:13}}>
+                + Ajouter
+              </button>
+            </div>
+            {queue.length>0&&(
+              <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:200,overflowY:"auto"}}>
+                {queue.map((name,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",
+                    borderRadius:8,background:"#0d0514"}}>
+                    <span style={{color:"#6b7280",fontSize:12,width:20}}>{i+1}.</span>
+                    <span style={{color:"#fff",fontSize:13,flex:1}}>{name}</span>
+                    <button onClick={()=>removeFromQueue(i)}
+                      style={{background:"none",border:"none",color:"#4b5563",cursor:"pointer",fontSize:16}}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Generate button */}
+        {!activeMatch&&(
+          <div style={{textAlign:"center"}}>
+            {queue.length>=needed?(
+              <button onClick={generateMatch}
+                style={{width:"100%",padding:"14px",borderRadius:14,border:"none",cursor:"pointer",
+                  background:AUG_COLOR,color:"#fff",fontFamily:"'Barlow Condensed',sans-serif",
+                  fontWeight:900,fontSize:20,letterSpacing:1}}>
+                ⚡ GÉNÉRER {format.toUpperCase()}
+              </button>
+            ):(
+              <div style={{borderRadius:14,padding:14,background:"#1a0a2e",border:"1px solid #2a1040",
+                textAlign:"center",color:"#4b5563",fontSize:13}}>
+                {queue.length}/{needed} joueurs pour générer un {format}
+                <div style={{height:6,borderRadius:3,background:"#0d0514",marginTop:10}}>
+                  <div style={{height:"100%",borderRadius:3,background:AUG_COLOR,
+                    width:Math.min(100,(queue.length/needed)*100)+"%",transition:"width .5s"}}/>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       <LangFooter/>
     </div>
   );
@@ -5008,6 +5366,8 @@ export default function PurInstinctApp(){
   const [queues,setQueues]=useState(makeEmptyQueues());
   const [activeGames,setActiveGames]=useState(makeEmptyGames());
   const [arenaState,setArenaState]=useState({active:false,ended:false,startTime:null,disabledZones:[]});
+  // augmented games: { [gameId]: { queue:[playerNames], activeMatch:null } }
+  const [augState,setAugState]=useState(()=>Object.fromEntries(AUG_GAMES.map(g=>[g.id,{queue:[],activeMatch:null}])));
   const [winnersPublished,setWinnersPublished]=useState(false);
   const [rosterCodes,setRosterCodes]=useState({});
   const [pendingSessions,setPendingSessions]=useState([]);
@@ -5403,6 +5763,29 @@ export default function PurInstinctApp(){
   );
 
   else if(view.type==="testLogin") content=(
+    <TestLanding onEnter={(zk)=>{
+      if(zk==="augmented") setView({type:"augmentedLanding"});
+      else if(zk) setView({type:"station",id:zk});
+      else setView({type:"adminHome"});
+    }}/>
+  );
+
+  else if(view.type==="augmentedLanding") content=(
+    <AugmentedLanding
+      augState={augState}
+      onSelect={(gameId)=>setView({type:"augmentedStation",id:gameId})}
+      onBack={()=>setView({type:"testLogin"})}/>
+  );
+
+  else if(view.type==="augmentedStation") content=(
+    <AugmentedStation
+      gameId={view.id}
+      gameState={augState[view.id]||{queue:[],activeMatch:null}}
+      onUpdate={(gameId,newState)=>setAugState(prev=>({...prev,[gameId]:newState}))}
+      onBack={()=>setView({type:"augmentedLanding"})}/>
+  );
+
+  else if(view.type==="testLoginFull") content=(
     <LoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         onLogin={(t,id)=>setView({type:t,id})}
         onGoLive={()=>{fbSet("liveMode",true);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());setView({type:"liveLogin"});}}/>
