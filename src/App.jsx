@@ -5978,7 +5978,7 @@ export default function PurInstinctApp(){
       onReplaceInGame={replaceInGame}
       onReorderQ={reorderQueue}
       onBack={()=>isTestMode?testHome():setView({type:"stationPick",fromPlayerId:view.fromPlayerId})}
-      onGoAdmin={isTestMode?testHome():view.fromPlayerId?()=>setView({type:"player",id:view.fromPlayerId}):()=>setView({type:"adminHome"})}
+      onGoAdmin={()=>isTestMode?testHome():view.fromPlayerId?setView({type:"player",id:view.fromPlayerId}):setView({type:"adminHome"})}
       onLogout={()=>isTestMode?testHome():setView({type:"liveLogin"})}
       fromPlayerId={view.fromPlayerId}
       onFillQueue={()=>fillQueue(view.id)}/>
