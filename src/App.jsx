@@ -5375,6 +5375,24 @@ export default function PurInstinctApp(){
   const [liveMode,setLiveMode]=useState(false);
   const [fbReady,setFbReady]=useState(false);
   const [lang,setLang]=useState("fr");
+  const [isTestMode,setIsTestMode]=useState(false);
+
+  // 30 hardcoded test players — never synced to Firebase
+  const TEST_PLAYERS=useState(()=>
+    ["Alex Martin","Sam Tremblay","Jordan Côté","Charlie Gagnon","Riley Fortin",
+     "Morgan Bouchard","Taylor Lavoie","Casey Girard","Dana Morin","Quinn Pelletier",
+     "Avery Gagne","Blake Roy","Cameron Lapointe","Drew Lefebvre","Emery Bergeron",
+     "Finley Gauthier","Harley Dubois","Indigo Rousseau","Jamie Leblanc","Kendall Ouellet",
+     "Lane Mercier","Marley Pouliot","Noel Beaulieu","Parker Nadeau","Reese Côté",
+     "Sage Simard","Skyler Bélanger","Storm Fournier","Trace Lachance","Winter Vaillancourt"]
+    .map((name,i)=>({
+      id:1000+i, number:i+1, name,
+      gender:i%3===0?"F":"M",
+      globalPoints:Math.floor(Math.random()*120),
+      zoneScores:{}, zoneStreaks:{}, zonesPlayed:[],
+      history:[], groupId:"test"
+    }))
+  )[0];
 
   const playersRef=useRef(players);
   const gamesRef=useRef(activeGames);
@@ -5719,6 +5737,9 @@ export default function PurInstinctApp(){
 
   const onLangToggle=()=>setLang(l=>l==="fr"?"en":"fr");
 
+  // Always returns to test landing when in test mode
+  const testHome=()=>setView({type:"testLogin"});
+
   // --- Routing ---
   let content=null;
   if(!fbReady){
@@ -5729,8 +5750,8 @@ export default function PurInstinctApp(){
     );
   } else if(view.type==="login") content=(
     <ModeSelectView
-      onLive={()=>{fbSet("liveMode",true);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());setView({type:"liveLogin"});}}
-      onTest={()=>{fbSet("liveMode",false);setView({type:"testLogin"});}}/>
+      onLive={()=>{fbSet("liveMode",true);setIsTestMode(false);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());setView({type:"liveLogin"});}}
+      onTest={()=>{fbSet("liveMode",false);setIsTestMode(true);setView({type:"testLogin"});}}/>
   );
 
   else if(view.type==="liveLogin") content=(
@@ -5804,7 +5825,7 @@ export default function PurInstinctApp(){
           {icon:"⚡",label:T[lang].sessionInProgress,sub:T[lang].sessionSub,color:"#84cc16",action:()=>setView({type:"admin"})},
           {icon:"📍",label:T[lang].stationManagerShort,sub:T[lang].stationManagerSub,color:"#f97316",action:()=>setView({type:"stationPick"})},
           {icon:"📋",label:T[lang].sessionsTab,sub:T[lang].sessionsSub,color:"#3b82f6",action:()=>setView({type:"admin",tab:"session"})},
-          {icon:null,label:T[lang].disconnectShort,sub:T[lang].disconnectSub,color:"#ef4444",isLogout:true,action:()=>setView({type:"liveLogin"})},
+          {icon:null,label:T[lang].disconnectShort,sub:T[lang].disconnectSub,color:"#ef4444",isLogout:true,action:()=>isTestMode?testHome():setView({type:"liveLogin"})},
         ].map(({icon,label,sub,color,action,isLogout})=>(
           <button key={label} onClick={action}
             style={{padding:"24px 16px",borderRadius:20,border:"1px solid "+color+"30",
@@ -5833,12 +5854,12 @@ export default function PurInstinctApp(){
   );
 
   else if(view.type==="admin") content=(
-    <AdminView players={players.filter(p=>{
+    <AdminView players={isTestMode?TEST_PLAYERS:players.filter(p=>{
       if((p.groupId||"main")===activeRosterId) return true;
       if(ZK.some(zk=>queues[zk]&&queues[zk].includes(p.id))) return true;
       if(ZK.some(zk=>{const g=activeGames[zk];if(!g)return false;const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(p.id);})) return true;
       return false;
-    })} allPlayers={players} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId} initialTab={view.tab}
+    })} allPlayers={isTestMode?TEST_PLAYERS:players} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId} initialTab={view.tab}
       onStart={(mins)=>syncArena({...arenaState,active:true,ended:false,paused:false,startTime:Date.now(),sessionMins:mins||75})}
       onEnd={()=>syncArena({active:false,ended:false,paused:false,startTime:null,pausedRemaining:null,disabledZones:arenaState.disabledZones||[],sessionMins:arenaState.sessionMins||75})}
       onPause={()=>{
@@ -5847,7 +5868,7 @@ export default function PurInstinctApp(){
       }}
       onResume={()=>syncArena({...arenaState,active:true,paused:false,startTime:Date.now()-((arenaState.sessionMins||75)*60-arenaState.pausedRemaining)*1000,pausedRemaining:null})}
       onUpdateDuration={(mins)=>syncArena({...arenaState,sessionMins:mins})}
-      onGoStation={()=>setView({type:"stationPick"})}
+      onGoStation={()=>isTestMode?testHome():setView({type:"stationPick"})}
       onToggleZone={(zk)=>{
         const dz=arenaState.disabledZones||[];
         syncArena({...arenaState,disabledZones:dz.includes(zk)?dz.filter(z=>z!==zk):[...dz,zk]});
@@ -5889,7 +5910,7 @@ export default function PurInstinctApp(){
           ...(groupP.length>0?{queues:queuesToFb(newQ)}:{})
         });
       }}
-      onLogout={()=>{setWinnersPublished(false);fbSet("winnersPublished",false);setView({type:"adminHome"});}}
+      onLogout={()=>{setWinnersPublished(false);fbSet("winnersPublished",false);isTestMode?testHome():setView({type:"adminHome"});}}
       onActivateRoster={activateRoster}
       onSetActiveRoster={(id)=>{setActiveRosterId(id);fbSet("activeRosterId",id);}}
       onUpdateRoster={updateRoster} onDeleteRoster={deleteRoster}
@@ -5925,10 +5946,9 @@ export default function PurInstinctApp(){
   );
 
   else if(view.type==="station") content=(
-    <StationView zone={view.id} players={players.filter(p=>{
+    <StationView zone={view.id} players={isTestMode?TEST_PLAYERS:players.filter(p=>{
       if((p.groupId||"main")===activeRosterId) return true;
       if(ZK.some(zk=>queues[zk]&&queues[zk].includes(p.id))) return true;
-      // Inclure aussi les joueurs actuellement en jeu
       if(ZK.some(zk=>{const g=activeGames[zk];if(!g)return false;const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(p.id);})) return true;
       return false;
     })}
@@ -5945,9 +5965,9 @@ export default function PurInstinctApp(){
       onRemoveFromGame={removeFromGame}
       onReplaceInGame={replaceInGame}
       onReorderQ={reorderQueue}
-      onBack={()=>setView({type:"stationPick",fromPlayerId:view.fromPlayerId})}
-      onGoAdmin={view.fromPlayerId?()=>setView({type:"player",id:view.fromPlayerId}):()=>setView({type:"adminHome"})}
-      onLogout={()=>setView({type:"liveLogin"})}
+      onBack={()=>isTestMode?testHome():setView({type:"stationPick",fromPlayerId:view.fromPlayerId})}
+      onGoAdmin={isTestMode?testHome():view.fromPlayerId?()=>setView({type:"player",id:view.fromPlayerId}):()=>setView({type:"adminHome"})}
+      onLogout={()=>isTestMode?testHome():setView({type:"liveLogin"})}
       fromPlayerId={view.fromPlayerId}
       onFillQueue={()=>fillQueue(view.id)}/>
   );
@@ -5988,13 +6008,13 @@ export default function PurInstinctApp(){
             {T[lang].returnAsPlayer}
           </button>
         ):(
-          <button onClick={()=>setView({type:"admin"})}
+          <button onClick={()=>isTestMode?testHome():setView({type:"admin"})}
             style={{width:"100%",padding:"12px",borderRadius:12,background:"#111827",
               border:"1px solid #84cc1640",color:"#84cc16",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
-            {T[lang].switchToAdmin}
+            {isTestMode?"← Retour":T[lang].switchToAdmin}
           </button>
         )}
-        <button onClick={()=>setView({type:"liveLogin"})}
+        <button onClick={()=>isTestMode?testHome():setView({type:"liveLogin"})}
           style={{width:"100%",padding:"12px",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",gap:10,
             border:"1px solid #ef444440",color:"#ef4444",cursor:"pointer",fontSize:13,fontWeight:600,background:"none"}}>
           <div style={{width:20,height:20,borderRadius:"50%",border:"2px solid #ef4444",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",flexShrink:0}}>
@@ -6019,8 +6039,8 @@ export default function PurInstinctApp(){
           sessionRosterId={p.groupId||"main"}
           winnersPublished={winnersPublished}
           onJoin={addToQueue} onLeave={removeFromQueue}
-          onLogout={()=>setView({type:"liveLogin"})}
-          onBecomeStation={()=>setView({type:"stationPick",fromPlayerId:view.id})}
+          onLogout={()=>isTestMode?testHome():setView({type:"liveLogin"})}
+          onBecomeStation={()=>isTestMode?testHome():setView({type:"stationPick",fromPlayerId:view.id})}
           onUpdatePlayer={updatePlayer}
           onAddComment={(text)=>{const p=players.find(px=>px.id===view.id);if(p)addComment(p.id,p.name,p.number,text);}}/>
       );
