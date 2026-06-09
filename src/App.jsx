@@ -52,14 +52,10 @@ const ARENA_SECS = 4500;
 
 // ── Augmented Games (Moment Factory) ────────────────────────────
 const AUG_GAMES = [
-  { id:"memory",     img:"/memory.png",     fr:"Memory",     en:"Memory"     },
-  { id:"grid",       img:"/grid.png",       fr:"Grid",       en:"Grid"       },
-  { id:"target",     img:"/target.png",     fr:"Target",     en:"Target"     },
-  { id:"obstacles",  img:"/obstacles.png",  fr:"Obstacles",  en:"Obstacles"  },
-  { id:"hotspot",    img:"/hotspot.png",    fr:"Hotspot",    en:"Hotspot"    },
-  { id:"polygon",    img:"/polygon.png",    fr:"Polygon",    en:"Polygon"    },
   { id:"pathfinder", img:"/pathfinder.png", fr:"Pathfinder", en:"Pathfinder" },
-  { id:"maze",       img:"/maze.png",       fr:"Maze",       en:"Maze"       },
+  { id:"hotspot",    img:"/hotspot.png",    fr:"Hotspots",   en:"Hotspots"   },
+  { id:"obstacles",  img:"/obstacles.png",  fr:"Obstacles",  en:"Obstacles"  },
+  { id:"grid",       img:"/grid.png",       fr:"Grid",       en:"Grid"       },
 ];
 const AUG_COLOR = "#a855f7";
 const AUG_BG    = "#120422";
