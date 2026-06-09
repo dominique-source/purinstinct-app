@@ -3094,18 +3094,22 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
                 const z=ZONES[zk]; const zl=zn(zk); const q=queues[zk]||[]; const game=activeGames[zk];
                 const allInGame=game?(game.participants||[...(game.teamA||[]),...(game.teamB||[])]).length:0;
                 const isDisabled=(arenaState.disabledZones||[]).includes(zk);
+                const vignette=ZONE_VIGNETTES[zk];
                 return(
                   <div key={zk} style={{position:"relative",marginBottom:0}}>
                     {/* Contenu de la carte — opaque si désactivée */}
                     <div style={{...S.card(),border:"1px solid "+(isDisabled?"#1f2937":z.border),
-                      opacity:isDisabled?0.4:1,marginBottom:0}}
+                      opacity:isDisabled?0.4:1,marginBottom:0,padding:0,overflow:"hidden"}}
                       onClick={()=>{if(!isDisabled){setSelectedStation(zk);setStationTab("live");}}}
                       onMouseEnter={e=>{if(!isDisabled)e.currentTarget.style.borderColor=z.color;}}
                       onMouseLeave={e=>{e.currentTarget.style.borderColor=isDisabled?"#1f2937":z.border;}}>
                       <div style={{...S.row(),justifyContent:"space-between",cursor:isDisabled?"default":"pointer",paddingRight:100}}>
-                        <div style={{...S.row()}}>
-                          <span style={{fontSize:20}}>{z.icon}</span>
-                          <div>
+                        <div style={{...S.row(),gap:0}}>
+                          <div style={{width:64,height:64,flexShrink:0,overflow:"hidden",background:z.bg}}>
+                            {vignette&&<img src={vignette} alt={zl.name} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>e.target.style.display="none"}/>}
+                            {!vignette&&<div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>{z.icon}</div>}
+                          </div>
+                          <div style={{padding:"10px 12px"}}>
                             <div style={{color:"#fff",fontWeight:700,fontSize:14}}>{zl.name}</div>
                           </div>
                         </div>
