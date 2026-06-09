@@ -2913,7 +2913,7 @@ function AdminView({players,allPlayers,queues,activeGames,arenaState,rosters,act
         </div>
       </div>
 
-      <div style={{padding:16}}>
+      <div style={{padding:16,paddingBottom:80}}>
         {tab==="leaderboard"&&(
           <div className="anim-up">
             <div style={{...S.row(),justifyContent:"space-between",marginBottom:12}}>
