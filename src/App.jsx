@@ -31,6 +31,8 @@ export default function PurInstinctApp(){
   const [queues,setQueues]=useState(makeEmptyQueues());
   const [activeGames,setActiveGames]=useState(makeEmptyGames());
   const [arenaState,setArenaState]=useState({active:false,ended:false,startTime:null,disabledZones:[]});
+  // horodatage du dernier résultat soumis par zone: { [zone]: ms } — alimente les alertes de stagnation du cockpit
+  const [lastResultAt,setLastResultAt]=useState({});
   // augmented games: { [gameId]: { queue:[playerNames], activeMatch:null } }
   const [augState,setAugState]=useState(()=>Object.fromEntries(AUG_GAMES.map(g=>[g.id,{queue:[],activeMatch:null}])));
   const [winnersPublished,setWinnersPublished]=useState(false);
@@ -100,6 +102,7 @@ export default function PurInstinctApp(){
       if(data.queues) setQueues(queuesFromFb(data.queues));
       if(data.activeGames) setActiveGames(data.activeGames);
       if(data.arenaState) setArenaState(data.arenaState);
+      if(data.lastResultAt) setLastResultAt(data.lastResultAt);
       if(typeof data.winnersPublished==="boolean") setWinnersPublished(data.winnersPublished);
       const loadedCodes=data.rosterCodes||{};
       // S'assurer que la session principale a toujours un code
@@ -361,9 +364,11 @@ export default function PurInstinctApp(){
     const newGames={...activeGames,[zone]:null};
     const refilled=refillQueues(updated,queues,newGames);
     // Mise à jour locale immédiate
+    const stamp=Date.now();
     setPlayers(updated);
     setActiveGames(newGames);
     setQueues(refilled);
+    setLastResultAt(la=>({...la,[zone]:stamp}));
     // Écriture granulaire atomique: SEULS les joueurs du match, le match
     // de cette zone, et les files réellement modifiées sont écrits.
     // Deux plateaux peuvent soumettre en même temps sans s'écraser.
@@ -377,6 +382,8 @@ export default function PurInstinctApp(){
       if(before.length!==after.length||before.some((v,i)=>v!==after[i]))
         writes["state/queues/"+zk]=after.length>0?after:null;
     });
+    // Chevauche l'écriture atomique existante (jamais un fbUpdate séparé)
+    writes["state/lastResultAt/"+zone]=stamp;
     fbUpdate(writes);
   };
 
@@ -570,7 +577,7 @@ export default function PurInstinctApp(){
       if(ZK.some(zk=>queues[zk]&&queues[zk].includes(p.id))) return true;
       if(ZK.some(zk=>{const g=activeGames[zk];if(!g)return false;const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(p.id);})) return true;
       return false;
-    })} allPlayers={isTestMode?TEST_PLAYERS:players} queues={queues} activeGames={activeGames} arenaState={arenaState} rosters={rosters} activeRosterId={activeRosterId} initialTab={view.tab}
+    })} allPlayers={isTestMode?TEST_PLAYERS:players} queues={queues} activeGames={activeGames} arenaState={arenaState} lastResultAt={lastResultAt} rosters={rosters} activeRosterId={activeRosterId} initialTab={view.tab}
       onStart={(mins)=>syncArena({...arenaState,active:true,ended:false,paused:false,startTime:Date.now(),sessionMins:mins||75})}
       onEnd={()=>syncArena({active:false,ended:false,paused:false,startTime:null,pausedRemaining:null,disabledZones:arenaState.disabledZones||[],sessionMins:arenaState.sessionMins||75})}
       onPause={()=>{
