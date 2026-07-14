@@ -15,6 +15,7 @@ import { AugmentedStation } from "./components/views/AugmentedStation.jsx";
 import { LoginView } from "./components/views/LoginView.jsx";
 import { LiveLoginView } from "./components/views/LiveLoginView.jsx";
 import { PlayerView } from "./components/views/PlayerView.jsx";
+import { KioskView } from "./components/views/KioskView.jsx";
 
 // ================================================================
 // PURINSTINCT ARENA v3  –  75 min  |  Dynamic rosters  |  5 tiers
@@ -38,7 +39,13 @@ export default function PurInstinctApp(){
   const [winnersPublished,setWinnersPublished]=useState(false);
   const [rosterCodes,setRosterCodes]=useState({});
   const [pendingSessions,setPendingSessions]=useState([]);
-  const [view,setView]=useState({type:"login"});
+  // Borne fixe: ?kiosk=1 (option &zone=X pour verrouiller une borne à une seule
+  // zone) bascule directement en mode kiosque, sans passer par l'écran PIN.
+  const [view,setView]=useState(()=>{
+    const p=new URLSearchParams(window.location.search);
+    if(p.get("kiosk")) return {type:"kiosk",zone:p.get("zone")||null};
+    return {type:"login"};
+  });
   const [liveMode,setLiveMode]=useState(false);
   const [fbReady,setFbReady]=useState(false);
   const [lang,setLang]=useState("fr");
@@ -225,6 +232,14 @@ export default function PurInstinctApp(){
     if(queues[zone]&&queues[zone].includes(id)) return;
     if(!force&&inQueues.length>=2) return;
     syncZoneQueue(zone,[...queues[zone],id]);
+  };
+
+  // Borne kiosque: inscription (ou joueur déjà connu) + entrée directe dans la
+  // file de la zone choisie, en un seul geste. force=true comme pour l'ajout
+  // manuel côté StationView — la borne agit comme un responsable de plateau.
+  const kioskRegister=(zone,name,gender,existingId,onDone)=>{
+    if(existingId){ addToQueue(existingId,zone,true); onDone(); return; }
+    addPlayerToSession(name,gender,(newId)=>{ addToQueue(newId,zone,true); onDone(); },activeRosterId);
   };
 
   const updatePlayer=(updated)=>syncOnePlayer(updated);
@@ -474,6 +489,13 @@ export default function PurInstinctApp(){
         setAugState(testAug);
         setView({type:"testLogin"});
       }}/>
+  );
+
+  else if(view.type==="kiosk") content=(
+    <KioskView players={players.filter(p=>(p.groupId||"main")===activeRosterId)}
+      disabledZones={arenaState.disabledZones||[]}
+      lockedZone={view.zone}
+      onRegister={kioskRegister}/>
   );
 
   else if(view.type==="liveLogin") content=(
