@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, createContext, useContext } f
 import html2canvas from "html2canvas";
 import confetti from "canvas-confetti";
 import QRCode from "qrcode";
-import { db, fbRef, set, onValue, off, update, toFb, fromFb, queuesToFb, queuesFromFb } from "./firebase.js";
+import { db, fbRef, set, onValue, off, update, toFb, fromFb, queuesToFb, queuesFromFb, fbUpdate, ensureAuth, allocPlayerId } from "./firebase.js";
 
 // ================================================================
 // PURINSTINCT ARENA v3  –  75 min  |  Dynamic rosters  |  5 tiers
@@ -1805,7 +1805,7 @@ function LangFooter(){
 // ----------------------------------------------------------------
 // MODE SELECT VIEW  (entry screen — Live or Test)
 // ----------------------------------------------------------------
-const MODE_PIN="1111";
+const MODE_PIN=import.meta.env.VITE_MODE_PIN||"1111";
 function ModeSelectView({onLive,onTest}){
   const t=useT();
   const [mode,setMode]=useState(null); // null | "live" | "test"
@@ -2402,8 +2402,8 @@ function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
 // ----------------------------------------------------------------
 // LIVE LOGIN VIEW
 // ----------------------------------------------------------------
-const ADMIN_PIN="1111";
-const STATION_PIN="2222";
+const ADMIN_PIN=import.meta.env.VITE_ADMIN_PIN||"1111";
+const STATION_PIN=import.meta.env.VITE_STATION_PIN||"2222";
 
 function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCodes,onAddPlayer,onRequestSolo}){
   // Détecter le code de session dans l'URL (?session= ou ?code=)
@@ -5546,8 +5546,12 @@ export default function PurInstinctApp(){
 
   // ── Firebase sync ──────────────────────────────────────────────
   useEffect(()=>{
-    const stateRef=fbRef("state");
-    const unsub=onValue(stateRef,(snap)=>{
+    let stateRef=null;
+    let cancelled=false;
+    ensureAuth().then(()=>{
+    if(cancelled) return;
+    stateRef=fbRef("state");
+    onValue(stateRef,(snap)=>{
       const data=snap.val();
       if(!data){
         // Première connexion — initialiser Firebase avec les données par défaut
@@ -5592,27 +5596,33 @@ export default function PurInstinctApp(){
 
       setFbReady(true);
     });
+    });
 
-    return()=>off(stateRef);
+    return()=>{cancelled=true;if(stateRef)off(stateRef);};
   },[]);
 
   // ── Helpers écriture Firebase ───────────────────────────────────
   const fbSet=(path,value)=>set(fbRef("state/"+path),value);
 
+  // ⚠️ RÉSERVÉS aux opérations globales volontaires (reset, activation de
+  // session). Ne jamais les utiliser dans le flux de jeu: ils réécrivent
+  // des blocs entiers et écrasent les écritures concurrentes des plateaux.
   const syncPlayers=(newPlayers)=>{setPlayers(newPlayers);fbSet("players",toFb(newPlayers));};
   const syncQueues=(newQueues)=>{setQueues(newQueues);fbSet("queues",queuesToFb(newQueues));};
   const syncGames=(newGames)=>{setActiveGames(newGames);fbSet("activeGames",newGames);};
   const syncArena=(newArena)=>{setArenaState(newArena);fbSet("arenaState",newArena);};
 
-  useEffect(()=>{
-    const iv=setInterval(()=>{
-      if(!liveModeRef.current&&fbReady){
-        const refilled=refillQueues(playersRef.current,queuesFromFb(queuesToFb(gamesRef.current?{}:{})),gamesRef.current);
-        // Refill silencieux — pas de réécriture si rien n'a changé
-      }
-    },8000);
-    return()=>clearInterval(iv);
-  },[fbReady]);
+  // ── Écritures granulaires (anti-collision multi-plateaux) ──────
+  // Une seule file, un seul joueur: chaque action n'écrit que son chemin.
+  const syncZoneQueue=(zone,arr)=>{
+    setQueues(q=>({...q,[zone]:arr}));
+    fbUpdate({["state/queues/"+zone]:(arr&&arr.length>0)?arr:null});
+  };
+  const syncOnePlayer=(p)=>{
+    setPlayers(ps=>ps.map(px=>px.id===p.id?p:px));
+    fbUpdate({["state/players/"+p.id]:p});
+  };
+
 
   // --- Roster management ---
   const activateRoster=(idx)=>{
@@ -5653,8 +5663,11 @@ export default function PurInstinctApp(){
     const newR={id:"r"+Date.now(),name:"Nouvelle liste",entries:[]};
     const a=[...rosters,newR];setRosters(a);syncExtraRosters(a);
   };
-  const addPlayerToSession=(name,gender,callback,groupId="main")=>{
-    const newId=players.length>0?Math.max(...players.map(p=>p.id))+1:1;
+  const addPlayerToSession=async(name,gender,callback,groupId="main")=>{
+    // ID alloué par transaction Firebase: deux inscriptions simultanées
+    // (deux bornes, deux mobiles) ne peuvent plus obtenir le même numéro.
+    const localMax=players.length>0?Math.max(...players.map(p=>Number(p.id)||0)):0;
+    const newId=await allocPlayerId(localMax);
     const newPlayer={id:newId,number:newId,name,gender:gender||"M",globalPoints:0,
       zoneScores:{purinstinct:50,speed:50,handAgility:50,footAgility:50,generalAgility:50,iq:50},
       zoneStreaks:{purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0},
@@ -5662,7 +5675,8 @@ export default function PurInstinctApp(){
       groupId,
       age:"",email:"",instagram:"",tiktok:"",snapchat:"",
       photoConsent:false,videoConsent:false,profilePhoto:null,highlights:[]};
-    syncPlayers([...players,newPlayer]);
+    setPlayers(ps=>[...ps,newPlayer]);
+    fbUpdate({["state/players/"+newId]:newPlayer});
     if(callback) callback(newId);
   };
 
@@ -5674,7 +5688,7 @@ export default function PurInstinctApp(){
     const existing=queues[zone]||[];
     const toAdd=shuffled.filter(p=>!existing.includes(p.id)&&!isPlaying(p.id));
     const newQ=[...existing,...toAdd.map(p=>p.id)];
-    syncQueues({...queues,[zone]:newQ});
+    syncZoneQueue(zone,newQ);
   };
 
   const addToQueue=(id,zone,force=false)=>{
@@ -5683,12 +5697,10 @@ export default function PurInstinctApp(){
     if(playingAt) return;
     if(queues[zone]&&queues[zone].includes(id)) return;
     if(!force&&inQueues.length>=2) return;
-    syncQueues({...queues,[zone]:[...queues[zone],id]});
+    syncZoneQueue(zone,[...queues[zone],id]);
   };
 
-  const updatePlayer=(updated)=>{
-    syncPlayers(players.map(px=>px.id===updated.id?updated:px));
-  };
+  const updatePlayer=(updated)=>syncOnePlayer(updated);
   const resetAllPoints=()=>{
     syncPlayers(players.map(p=>({...p,globalPoints:0,zonesPlayed:[],zoneScores:{}})));
   };
@@ -5699,21 +5711,24 @@ export default function PurInstinctApp(){
     syncPlayers(players.map(p=>({...p,surveyRanking:null})));
   };
   const addComment=(playerId,playerName,playerNumber,text)=>{
-    const id="c"+Date.now();
+    const id="c"+Date.now()+"_"+Math.floor(Math.random()*1000);
     const newComment={id,playerId,playerName,playerNumber,text,ts:Date.now()};
-    const obj={};
-    comments.forEach(c=>{obj[c.id]=c;});
-    obj[id]=newComment;
-    fbSet("comments",obj);
+    fbUpdate({["state/comments/"+id]:newComment});
   };
   const clearComments=()=>{fbSet("comments",null);setComments([]);};
   const removePlayer=(id)=>{
-    syncPlayers(players.filter(p=>p.id!==id));
     const newQ={};ZK.forEach(zk=>{newQ[zk]=(queues[zk]||[]).filter(x=>x!==id&&x!==String(id));});
-    syncQueues(newQ);
+    setPlayers(ps=>ps.filter(p=>p.id!==id));
+    setQueues(newQ);
+    const writes={["state/players/"+id]:null};
+    ZK.forEach(zk=>{
+      if((queues[zk]||[]).length!==newQ[zk].length)
+        writes["state/queues/"+zk]=newQ[zk].length>0?newQ[zk]:null;
+    });
+    fbUpdate(writes);
   };
-  const removeFromQueue=(id,zone)=>syncQueues({...queues,[zone]:queues[zone].filter(x=>x!==id)});
-  const reorderQueue=(zone,newQ)=>syncQueues({...queues,[zone]:newQ});
+  const removeFromQueue=(id,zone)=>syncZoneQueue(zone,queues[zone].filter(x=>x!==id));
+  const reorderQueue=(zone,newQ)=>syncZoneQueue(zone,newQ);
 
   // --- Team generation ---
   const generateTeams=(zone,param,force=false)=>{
@@ -5780,8 +5795,12 @@ export default function PurInstinctApp(){
       gameData={type:"team",teamA,teamB};
     }
 
-    syncQueues({...queues,[zone]:newQ});
-    syncGames({...activeGames,[zone]:gameData});
+    setQueues(q=>({...q,[zone]:newQ}));
+    setActiveGames(g=>({...g,[zone]:gameData}));
+    fbUpdate({
+      ["state/queues/"+zone]:newQ.length>0?newQ:null,
+      ["state/activeGames/"+zone]:gameData
+    });
   };
 
   // --- Cancel game: remettre les joueurs en tête de file dans le même ordre ---
@@ -5794,12 +5813,11 @@ export default function PurInstinctApp(){
     // Remettre en tête de file dans le même ordre
     const existing=(queues[zone]||[]).filter(id=>!inGame.includes(id));
     const newQ=[...inGame,...existing];
-    const newGames={...activeGames,[zone]:null};
-    setQueues({...queues,[zone]:newQ});
-    setActiveGames(newGames);
-    update(fbRef("state"),{
-      queues:queuesToFb({...queues,[zone]:newQ}),
-      activeGames:newGames
+    setQueues(q=>({...q,[zone]:newQ}));
+    setActiveGames(g=>({...g,[zone]:null}));
+    fbUpdate({
+      ["state/queues/"+zone]:newQ.length>0?newQ:null,
+      ["state/activeGames/"+zone]:null
     });
   };
 
@@ -5807,6 +5825,9 @@ export default function PurInstinctApp(){
   const submitResult=(zone,winner,secondId=null)=>{
     const game=activeGames[zone];
     if(!game) return;
+    const inGame=game.type==="team"
+      ?[...(game.teamA||[]),...(game.teamB||[])]
+      :(game.participants||[]);
     let updated;
     if(game.type==="team"){
       updated=computeTeamResult(players,game.teamA||[],game.teamB||[],winner,zone);
@@ -5819,37 +5840,48 @@ export default function PurInstinctApp(){
     setPlayers(updated);
     setActiveGames(newGames);
     setQueues(refilled);
-    // Écriture atomique unique pour éviter les race conditions du listener Firebase
-    update(fbRef("state"),{
-      players:toFb(updated),
-      activeGames:newGames,
-      queues:queuesToFb(refilled)
+    // Écriture granulaire atomique: SEULS les joueurs du match, le match
+    // de cette zone, et les files réellement modifiées sont écrits.
+    // Deux plateaux peuvent soumettre en même temps sans s'écraser.
+    const writes={["state/activeGames/"+zone]:null};
+    const inSet=new Set(inGame.map(Number));
+    updated.forEach(p=>{
+      if(inSet.has(Number(p.id))) writes["state/players/"+p.id]=p;
     });
+    ZK.forEach(zk=>{
+      const before=queues[zk]||[],after=refilled[zk]||[];
+      if(before.length!==after.length||before.some((v,i)=>v!==after[i]))
+        writes["state/queues/"+zk]=after.length>0?after:null;
+    });
+    fbUpdate(writes);
   };
 
   // --- Remove player from active game ---
   const removeFromGame=(zone,playerId)=>{
     const game=activeGames[zone];
     if(!game) return;
-    const baseQ={...queues,[zone]:[...queues[zone],playerId]};
+    const applyZone=(newQ,newGame)=>{
+      setQueues(q=>({...q,[zone]:newQ}));
+      setActiveGames(g=>({...g,[zone]:newGame}));
+      fbUpdate({
+        ["state/queues/"+zone]:newQ.length>0?newQ:null,
+        ["state/activeGames/"+zone]:newGame
+      });
+    };
     if(game.type==="team"){
       const newA=(game.teamA||[]).filter(id=>id!==playerId);
       const newB=(game.teamB||[]).filter(id=>id!==playerId);
       if(newA.length+newB.length<ZONES[zone].minP){
-        syncQueues({...baseQ,[zone]:[...queues[zone],...(game.teamA||[]),...(game.teamB||[])]});
-        syncGames({...activeGames,[zone]:null});
+        applyZone([...queues[zone],...(game.teamA||[]),...(game.teamB||[])],null);
       } else {
-        syncQueues(baseQ);
-        syncGames({...activeGames,[zone]:{...game,teamA:newA,teamB:newB}});
+        applyZone([...queues[zone],playerId],{...game,teamA:newA,teamB:newB});
       }
     } else {
       const newP=(game.participants||[]).filter(id=>id!==playerId);
       if(newP.length<ZONES[zone].minP){
-        syncQueues({...baseQ,[zone]:[...queues[zone],...(game.participants||[])]});
-        syncGames({...activeGames,[zone]:null});
+        applyZone([...queues[zone],...(game.participants||[])],null);
       } else {
-        syncQueues(baseQ);
-        syncGames({...activeGames,[zone]:{...game,participants:newP}});
+        applyZone([...queues[zone],playerId],{...game,participants:newP});
       }
     }
   };
@@ -5863,16 +5895,22 @@ export default function PurInstinctApp(){
     if(!nextId) return;
     const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
     const newQ=queues[zone].filter(id=>id!==nextId);
+    const applyZone=(newGame)=>{
+      setQueues(q=>({...q,[zone]:newQ}));
+      setActiveGames(g=>({...g,[zone]:newGame}));
+      fbUpdate({
+        ["state/queues/"+zone]:newQ.length>0?newQ:null,
+        ["state/activeGames/"+zone]:newGame
+      });
+    };
     if(game.type==="team"){
       let newA=[...(game.teamA||[])],newB=[...(game.teamB||[])];
       if(newA.length<=newB.length) newA.push(nextId); else newB.push(nextId);
-      syncQueues({...queues,[zone]:newQ});
-      syncGames({...activeGames,[zone]:{...game,teamA:newA,teamB:newB}});
+      applyZone({...game,teamA:newA,teamB:newB});
     } else {
       let newP=[...(game.participants||[]),nextId];
       if(game.type==="sprint") newP=newP.sort((a,b)=>((pMap[a]?.zoneScores||{}).speed||50)-((pMap[b]?.zoneScores||{}).speed||50));
-      syncQueues({...queues,[zone]:newQ});
-      syncGames({...activeGames,[zone]:{...game,participants:newP}});
+      applyZone({...game,participants:newP});
     }
   };
 
@@ -5924,12 +5962,8 @@ export default function PurInstinctApp(){
             if(callback) callback(newId);
             const newSession={id:soloGroupId,name,gender,playerId:newId,groupId:soloGroupId,
               createdAt:new Date().toLocaleTimeString("fr-CA",{hour:"2-digit",minute:"2-digit"}),status:"pending"};
-            setPendingSessions(prev=>{
-              const updated=[...prev,newSession];
-              const obj={};updated.forEach(s=>{obj[s.id]=s;});
-              fbSet("pendingSessions",obj);
-              return updated;
-            });
+            setPendingSessions(prev=>[...prev,newSession]);
+            fbUpdate({["state/pendingSessions/"+newSession.id]:newSession});
           },soloGroupId);
         }}
         onLogin={(t,id)=>setView({type:t,id})}
@@ -6040,7 +6074,6 @@ export default function PurInstinctApp(){
         const updatedPending=pendingSession
           ?pendingSessions.filter(x=>x.id!==pendingSession.id)
           :pendingSessions;
-        const pendingObj={};updatedPending.forEach(s=>{pendingObj[s.id]=s;});
         // 3. Ajouter aux files si des joueurs sont trouvés
         const byGroup=players.filter(p=>p.groupId===groupId);
         const byPlayerId=pendingSession?.playerId?players.filter(p=>Number(p.id)===Number(pendingSession.playerId)):[];
@@ -6056,12 +6089,18 @@ export default function PurInstinctApp(){
         if(newRoster) setRosters(nextRosters);
         setPendingSessions(updatedPending);
         if(groupP.length>0) setQueues(newQ);
-        // 5. Écriture Firebase atomique synchrone
-        update(fbRef("state"),{
-          pendingSessions:pendingObj,
-          extraRosters:Object.keys(extraObj).length>0?extraObj:null,
-          ...(groupP.length>0?{queues:queuesToFb(newQ)}:{})
-        });
+        // 5. Écriture granulaire atomique: seules les files modifiées,
+        // la session retirée et les rosters extra sont écrits.
+        const writes={};
+        writes["state/extraRosters"]=Object.keys(extraObj).length>0?extraObj:null;
+        if(pendingSession) writes["state/pendingSessions/"+pendingSession.id]=null;
+        if(groupP.length>0){
+          ZK.forEach(zk=>{
+            if((queues[zk]||[]).length!==newQ[zk].length)
+              writes["state/queues/"+zk]=newQ[zk].length>0?newQ[zk]:null;
+          });
+        }
+        fbUpdate(writes);
       }}
       onLogout={()=>{setWinnersPublished(false);fbSet("winnersPublished",false);isTestMode?testHome():setView({type:"adminHome"});}}
       onActivateRoster={activateRoster}
@@ -6078,20 +6117,16 @@ export default function PurInstinctApp(){
       rosterCodes={rosterCodes} onUpdateCodes={(codes)=>{setRosterCodes(codes);fbSet("rosterCodes",codes);}}
       pendingSessions={pendingSessions}
       onDismissPending={(id)=>{
-        const updated=pendingSessions.filter(x=>x.id!==id);
-        setPendingSessions(updated);
-        const obj={};updated.forEach(s=>{obj[s.id]=s;});
-        fbSet("pendingSessions",obj);
+        setPendingSessions(pendingSessions.filter(x=>x.id!==id));
+        fbUpdate({["state/pendingSessions/"+id]:null});
       }}
       onPromotePending={(s,code)=>{
         const newRoster={id:s.id,name:s.name+" (solo)",entries:[{name:s.name,gender:s.gender}]};
         setRosters(r=>[...r,newRoster]);
         const newCodes={...rosterCodes,[s.id]:code};
         setRosterCodes(newCodes);fbSet("rosterCodes",newCodes);
-        const updated=pendingSessions.filter(x=>x.id!==s.id);
-        setPendingSessions(updated);
-        const obj={};updated.forEach(ps=>{obj[ps.id]=ps;});
-        fbSet("pendingSessions",obj);
+        setPendingSessions(pendingSessions.filter(x=>x.id!==s.id));
+        fbUpdate({["state/pendingSessions/"+s.id]:null});
       }}
       winnersPublished={winnersPublished}
       onPublishWinners={()=>{setWinnersPublished(true);fbSet("winnersPublished",true);}}

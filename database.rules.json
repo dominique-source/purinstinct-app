@@ -1,0 +1,19 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "state": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+
+      "meta": {
+        "lastPlayerId": { ".validate": "newData.isNumber()" }
+      },
+
+      "winnersPublished": { ".validate": "newData.isBoolean()" },
+      "liveMode":         { ".validate": "newData.isBoolean()" },
+      "activeRosterId":   { ".validate": "newData.isString()" }
+    }
+  }
+}
