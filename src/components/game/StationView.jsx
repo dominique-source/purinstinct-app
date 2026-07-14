@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FONTS } from "../../config/fonts.js";
 import { ZONES } from "../../config/zones.js";
 import { useZn, useT } from "../../hooks/useLang.js";
@@ -26,6 +26,18 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
   const [flash,setFlash]=useState(null);
   const [confirmShortGame,setConfirmShortGame]=useState(false);
   const [highlightId,setHighlightId]=useState(null);
+  // Résultat déclaré mais pas encore écrit: {args:[...], label}. Tant qu'il est
+  // non-null, onResult n'a PAS été appelé — rien n'est écrit dans Firebase.
+  const [pending,setPending]=useState(null);
+  const [undoLeft,setUndoLeft]=useState(0);
+  // onResult change d'identité à chaque render (arrow inline dans App.jsx). Le
+  // garder dans une ref permet au timer de commit de toujours appeler la
+  // dernière version SANS remettre l'effet (et donc le compte à rebours) à zéro.
+  const onResultRef=useRef(onResult);
+  useEffect(()=>{onResultRef.current=onResult;},[onResult]);
+  // Armé au moment du commit, consommé une seule fois quand activeGame
+  // redevient null: garantit une auto-génération par match, pas par render.
+  const autoGenArmedRef=useRef(false);
 
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
   const qPlayers=queue.map(id=>pMap[id]).filter(Boolean);
@@ -35,6 +47,35 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
   const hasIdeal=qPlayers.length>=idealCount;
   // Remettre à false à chaque changement du nombre de joueurs en file
   useEffect(()=>{setConfirmShortGame(false);},[qPlayers.length]);
+
+  // Fenêtre d'annulation de 10s. On ne fait AUCUN setState synchrone dans le
+  // corps de l'effet (undoLeft est initialisé dans startPending); le tick et le
+  // commit passent par le callback de l'intervalle.
+  useEffect(()=>{
+    if(!pending) return;
+    const deadline=Date.now()+10000;
+    const iv=setInterval(()=>{
+      const left=Math.max(0,Math.ceil((deadline-Date.now())/1000));
+      setUndoLeft(left);
+      if(left<=0){
+        clearInterval(iv);
+        autoGenArmedRef.current=true; // arme l'auto-génération pour ce commit
+        onResultRef.current(...pending.args);
+        setPending(null);
+      }
+    },200);
+    return ()=>clearInterval(iv);
+  },[pending]);
+
+  // Auto-génération du prochain match une fois le résultat committé et
+  // activeGame redevenu null via le round-trip Firebase. Le flag ref garantit
+  // un seul déclenchement par commit même si l'effet re-tourne.
+  useEffect(()=>{
+    if(activeGame||!autoGenArmedRef.current) return;
+    autoGenArmedRef.current=false;
+    if(canGen&&(hasIdeal||zone==="speed"))
+      onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):null);
+  },[activeGame,canGen,hasIdeal,zone,sprintSize,qPlayers.length,onGenerate]);
   const validSprintSizes=[4,10,15,20,25,30,40,50].filter(s=>s<=qPlayers.length);
   const sprintLine=[...qPlayers].sort((a,b)=>((a.zoneScores||{}).speed||50)-((b.zoneScores||{}).speed||50));
 
@@ -72,15 +113,24 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
     onReorderQ(z2,q);
   };
 
+  // Ne PAS appeler onResult ici: on diffère l'écriture jusqu'à expiration de la
+  // fenêtre d'annulation. Feedback immédiat: vibration + flash + bannière.
+  const startPending=(args,label)=>{
+    if(navigator.vibrate) navigator.vibrate(40);
+    handleFlashResult(label);
+    setUndoLeft(10);
+    setPending({args,label});
+  };
   const handleWinner=(id,secondId=null)=>{
+    if(pending) return;
     const p=pMap[id];
-    if(p) handleFlashResult(p.name.split(" ")[0]+" GAGNE!");
-    onResult(id,secondId);
+    startPending([id,secondId],(p?p.name.split(" ")[0]:"?")+" GAGNE!");
   };
   const handleTeamResult=(winner)=>{
-    handleFlashResult("EQUIPE "+winner+" GAGNE!");
-    onResult(winner);
+    if(pending) return;
+    startPending([winner],"EQUIPE "+winner+" GAGNE!");
   };
+  const cancelPending=()=>{ setPending(null); }; // onResult jamais appelé → rien écrit
 
 
 
@@ -111,6 +161,35 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
           <div className="anim-pop" style={{borderRadius:24,padding:"28px 44px",textAlign:"center",background:z.bg,border:"2px solid "+z.color,boxShadow:"0 0 60px "+z.color+"40"}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:40,color:"#fff"}}>{flash}</div>
             <div style={{fontSize:18,marginTop:4,color:z.color}}>🎉</div>
+          </div>
+        </div>
+      )}
+
+      {/* Bannière d'annulation façon Gmail — résultat déclaré, en attente */}
+      {pending&&(
+        <div style={{position:"fixed",left:0,right:0,bottom:0,zIndex:60,
+          padding:"12px 16px calc(env(safe-area-inset-bottom) + 12px)",
+          display:"flex",justifyContent:"center",pointerEvents:"none"}}>
+          <div style={{pointerEvents:"auto",display:"flex",alignItems:"center",gap:14,
+            width:"100%",maxWidth:560,background:z.bg,border:"1px solid "+z.color,
+            borderRadius:16,padding:"12px 14px 12px 16px",boxShadow:"0 10px 40px rgba(0,0,0,.6)"}}>
+            <div style={{width:44,height:44,flexShrink:0,borderRadius:"50%",
+              display:"flex",alignItems:"center",justifyContent:"center",
+              background:z.color+"22",border:"2px solid "+z.color,
+              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:z.color}}>
+              {undoLeft}
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+                color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pending.label}</div>
+              <div style={{fontSize:11,color:z.color}}>{t.resultIn} {undoLeft}s…</div>
+            </div>
+            <button onClick={cancelPending}
+              style={{flexShrink:0,minHeight:44,padding:"10px 20px",borderRadius:12,cursor:"pointer",
+                border:"2px solid "+z.color,background:"transparent",color:"#fff",
+                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,letterSpacing:1}}>
+              ↺ {t.undoBtn}
+            </button>
           </div>
         </div>
       )}
@@ -209,23 +288,24 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
             {/* ACTIVE GAME */}
             {activeGame?(
               <div>
-                {onCancelGame&&<button onClick={()=>{if(window.confirm(t.returnToQueueConfirm))onCancelGame(zone);}}
+                {onCancelGame&&<button onClick={()=>{if(!pending&&window.confirm(t.returnToQueueConfirm))onCancelGame(zone);}}
                   style={{...S.btn(),width:"100%",padding:"8px",fontSize:12,marginBottom:10,
-                    border:"1px solid #374151",color:"#9ca3af",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                    border:"1px solid #374151",color:"#9ca3af",display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+                    opacity:pending?0.4:1,pointerEvents:pending?"none":"auto"}}>
                   {t.returnToQueue}
                 </button>}
                 {z.gameStyle==="sprint"?(
-                <SprintGameView game={activeGame} players={players} zone={zone}
+                <SprintGameView game={activeGame} players={players} zone={zone} locked={!!pending}
                   onWinner={handleWinner}
                   onRemove={(id)=>onRemoveFromGame(zone,id)}
                   onReplace={()=>onReplaceInGame(zone)}/>
               ):z.gameStyle==="team"?(
-                <TeamGameView game={activeGame} players={players} zone={zone}
+                <TeamGameView game={activeGame} players={players} zone={zone} locked={!!pending}
                   onResult={handleTeamResult}
                   onRemove={(id)=>onRemoveFromGame(zone,id)}
                   onReplace={()=>onReplaceInGame(zone)}/>
               ):(
-                <IndividualGameView game={activeGame} players={players} zone={zone}
+                <IndividualGameView game={activeGame} players={players} zone={zone} locked={!!pending}
                   onWinner={handleWinner}
                   onRemove={(id)=>onRemoveFromGame(zone,id)}
                   onReplace={()=>onReplaceInGame(zone)}/>
@@ -298,8 +378,10 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
                         </div>
                       )}
                       {(hasIdeal||zone==="speed")&&(
+                        // Secondaire: en flux normal l'auto-génération prend le relais,
+                        // ce bouton ne sert qu'aux cas limites (1er match, edge cases).
                         <button onClick={()=>onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):null)}
-                          style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:z.color,color:"#000"}}>
+                          style={{padding:"9px 22px",borderRadius:10,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,background:"transparent",border:"1.5px solid "+z.color,color:z.color}}>
                           {zone==="speed"?t.launchRace+" ("+(sprintSize==="tous"?qPlayers.length:sprintSize)+")":t.generateTeams}
                         </button>
                       )}

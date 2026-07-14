@@ -3,7 +3,7 @@ import { useT } from "../../hooks/useLang.js";
 import { S } from "../shared/styles.js";
 import { Bib } from "../shared/Bib.jsx";
 
-export function IndividualGameView({game,players,zone,onWinner,onRemove,onReplace}){
+export function IndividualGameView({game,players,zone,onWinner,onRemove,onReplace,locked}){
   const t=useT();
   const z=ZONES[zone];
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
@@ -53,10 +53,10 @@ export function IndividualGameView({game,players,zone,onWinner,onRemove,onReplac
         {t.substitute}
       </button>
       <div style={{...S.label(),textAlign:"center",marginBottom:10}}>{t.whichWonIQ}</div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,opacity:locked?0.4:1,pointerEvents:locked?"none":"auto"}}>
         {pList.map(p=>(
-          <button key={p.id} onClick={()=>onWinner(p.id)}
-            style={{flex:"1 1 45%",padding:"14px 10px",borderRadius:12,border:"2px solid "+z.color,cursor:"pointer",
+          <button key={p.id} onClick={()=>!locked&&onWinner(p.id)}
+            style={{flex:"1 1 45%",minHeight:64,padding:"14px 10px",borderRadius:12,border:"2px solid "+z.color,cursor:"pointer",
               background:z.color,color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
               boxShadow:"0 3px 12px "+z.color+"40"}}>
             #{p.number} {p.name.split(" ")[0]}

@@ -5,7 +5,7 @@ import { S } from "../shared/styles.js";
 import { Bib } from "../shared/Bib.jsx";
 import { TierBadge } from "../shared/TierBadge.jsx";
 
-export function SprintGameView({game,players,zone,onWinner,onRemove,onReplace}){
+export function SprintGameView({game,players,zone,onWinner,onRemove,onReplace,locked}){
   const t=useT();
   const z=ZONES[zone];
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
@@ -75,18 +75,19 @@ export function SprintGameView({game,players,zone,onWinner,onRemove,onReplace}){
       <div style={{...S.label(),textAlign:"center",marginBottom:8}}>
         {!selectedFirst?"🥇 Sélectionner le gagnant":"🥈 Sélectionner le 2e place (optionnel)"}
       </div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10,opacity:locked?0.4:1,pointerEvents:locked?"none":"auto"}}>
         {pList.filter(p=>p.id!==selectedSecond).map(p=>{
           const tier=getSprintTier((p.zoneScores||{}).speed||50);
           const t=TIERS[tier];
           const isFirst=selectedFirst===p.id;
           return(
             <button key={p.id} onClick={()=>{
+              if(locked) return;
               if(!selectedFirst){setSelectedFirst(p.id);}
               else if(p.id===selectedFirst){setSelectedFirst(null);setSelectedSecond(null);}
               else{setSelectedSecond(p.id===selectedSecond?null:p.id);}
             }}
-              style={{flex:"1 1 45%",padding:"12px 10px",borderRadius:12,border:"2px solid "+(isFirst?"#84cc16":selectedFirst?"#ca8a0460":"transparent"),cursor:"pointer",
+              style={{flex:"1 1 45%",minHeight:64,padding:"12px 10px",borderRadius:12,border:"2px solid "+(isFirst?"#84cc16":selectedFirst?"#ca8a0460":"transparent"),cursor:"pointer",
                 background:isFirst?"#84cc16":selectedFirst?t.color+"90":t.color,
                 color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
                 boxShadow:"0 3px 12px "+t.color+"40"}}>
@@ -98,14 +99,14 @@ export function SprintGameView({game,players,zone,onWinner,onRemove,onReplace}){
 
       {/* Confirmer */}
       {selectedFirst&&(
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={handleConfirm}
-            style={{flex:1,padding:"14px",borderRadius:12,border:"none",cursor:"pointer",
+        <div style={{display:"flex",gap:8,opacity:locked?0.4:1,pointerEvents:locked?"none":"auto"}}>
+          <button onClick={()=>!locked&&handleConfirm()}
+            style={{flex:1,minHeight:64,padding:"14px",borderRadius:12,border:"none",cursor:"pointer",
               background:"#84cc16",color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16}}>
             ✓ Confirmer{selectedSecond?" (1er + 2e)":" (1er seulement)"}
           </button>
           <button onClick={()=>{setSelectedFirst(null);setSelectedSecond(null);}}
-            style={{padding:"14px 16px",borderRadius:12,border:"1px solid #374151",cursor:"pointer",
+            style={{minHeight:64,padding:"14px 16px",borderRadius:12,border:"1px solid #374151",cursor:"pointer",
               background:"#111827",color:"#6b7280",fontSize:13}}>
             ✕
           </button>

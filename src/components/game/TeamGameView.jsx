@@ -4,7 +4,7 @@ import { teamAvg } from "../../lib/game-logic.js";
 import { S } from "../shared/styles.js";
 import { Bib } from "../shared/Bib.jsx";
 
-export function TeamGameView({game,players,zone,onResult,onRemove,onReplace}){
+export function TeamGameView({game,players,zone,onResult,onRemove,onReplace,locked}){
   const t=useT();
   const z=ZONES[zone];
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
@@ -68,11 +68,11 @@ export function TeamGameView({game,players,zone,onResult,onRemove,onReplace}){
         {t.substitute}
       </button>
       <div style={{...S.label(),textAlign:"center",marginBottom:8}}>{t.declareWinner}</div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        <button onClick={()=>onResult("A")} style={{padding:"18px 10px",borderRadius:14,border:"none",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:z.color,color:"#000",boxShadow:"0 4px 18px "+z.color+"40"}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,opacity:locked?0.4:1,pointerEvents:locked?"none":"auto"}}>
+        <button onClick={()=>!locked&&onResult("A")} style={{minHeight:64,padding:"18px 10px",borderRadius:14,border:"none",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:z.color,color:"#000",boxShadow:"0 4px 18px "+z.color+"40"}}>
           {t.teamA}
         </button>
-        <button onClick={()=>onResult("B")} style={{padding:"18px 10px",borderRadius:14,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:"#0d0f1a",color:"#fff",border:"2px solid "+z.color}}>
+        <button onClick={()=>!locked&&onResult("B")} style={{minHeight:64,padding:"18px 10px",borderRadius:14,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:"#0d0f1a",color:"#fff",border:"2px solid "+z.color}}>
           {t.teamB}
         </button>
       </div>
