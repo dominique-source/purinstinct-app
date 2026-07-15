@@ -24,7 +24,7 @@ export function SprintGameView({game,players,zone,onWinner,onRemove,onReplace,lo
     <div>
       <div style={{...S.row(),justifyContent:"space-between",marginBottom:12}}>
         <div style={{...S.label()}}>{t.raceInProgress} - {pList.length} {t.coureurs}</div>
-        <div className="pulse-lime" style={{...S.tag("#dc2626")}}>{t.live}</div>
+        <div style={S.liveTag()}><span className="pulse-lime" style={S.liveDot("#dc2626",6)}/>{t.live}</div>
       </div>
 
       {/* Sprint handicap legend */}
@@ -87,10 +87,9 @@ export function SprintGameView({game,players,zone,onWinner,onRemove,onReplace,lo
               else if(p.id===selectedFirst){setSelectedFirst(null);setSelectedSecond(null);}
               else{setSelectedSecond(p.id===selectedSecond?null:p.id);}
             }}
-              style={{flex:"1 1 45%",minHeight:64,padding:"12px 10px",borderRadius:12,border:"2px solid "+(isFirst?"#84cc16":selectedFirst?"#ca8a0460":"transparent"),cursor:"pointer",
+              style={{flex:"1 1 45%",minHeight:64,padding:"12px 10px",clipPath:S.clip(10),border:"2px solid "+(isFirst?"#84cc16":selectedFirst?"#ca8a0460":"transparent"),cursor:"pointer",
                 background:isFirst?"#84cc16":selectedFirst?t.color+"90":t.color,
-                color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
-                boxShadow:"0 3px 12px "+t.color+"40"}}>
+                color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:16}}>
               {isFirst?"🥇 ":""}#{p.number} {p.name.split(" ")[0]}
             </button>
           );
@@ -101,8 +100,8 @@ export function SprintGameView({game,players,zone,onWinner,onRemove,onReplace,lo
       {selectedFirst&&(
         <div style={{display:"flex",gap:8,opacity:locked?0.4:1,pointerEvents:locked?"none":"auto"}}>
           <button onClick={()=>!locked&&handleConfirm()}
-            style={{flex:1,minHeight:64,padding:"14px",borderRadius:12,border:"none",cursor:"pointer",
-              background:"#84cc16",color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16}}>
+            style={{flex:1,minHeight:64,padding:"14px",clipPath:S.clip(10),border:"none",cursor:"pointer",
+              background:"#84cc16",color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:16}}>
             ✓ Confirmer{selectedSecond?" (1er + 2e)":" (1er seulement)"}
           </button>
           <button onClick={()=>{setSelectedFirst(null);setSelectedSecond(null);}}

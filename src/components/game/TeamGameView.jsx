@@ -23,7 +23,7 @@ export function TeamGameView({game,players,zone,onResult,onRemove,onReplace,lock
     <div>
       <div style={{...S.row(),justifyContent:"space-between",marginBottom:10}}>
         <div style={{...S.label()}}>{t.matchInProgress}</div>
-        <div className="pulse-lime" style={{...S.tag("#dc2626")}}>LIVE</div>
+        <div style={S.liveTag()}><span className="pulse-lime" style={S.liveDot("#dc2626",6)}/>LIVE</div>
       </div>
       {favored&&(
         <div style={{marginBottom:10,padding:"7px 12px",borderRadius:10,fontSize:12,fontWeight:600,textAlign:"center",background:"#fbbf2412",color:"#fbbf24",border:"1px solid #fbbf2425"}}>
@@ -36,7 +36,7 @@ export function TeamGameView({game,players,zone,onResult,onRemove,onReplace,lock
           return(
             <div key={team} style={{borderRadius:14,padding:10,background:"#0d0f1a",border:"1px solid "+z.border}}>
               <div style={{...S.row(),justifyContent:"space-between",marginBottom:8}}>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,color:z.color}}>EQUIPE {team}</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:13,color:z.color}}>EQUIPE {team}</div>
                 <div style={{display:"flex",alignItems:"center",gap:4}}>
                   {favored===team&&<span style={{color:"#fbbf24",fontSize:11}}>⚠</span>}
                   <div style={{fontSize:10,padding:"2px 5px",borderRadius:5,background:"#1f2937",color:"#9ca3af"}}>moy.{avg}</div>
@@ -69,10 +69,10 @@ export function TeamGameView({game,players,zone,onResult,onRemove,onReplace,lock
       </button>
       <div style={{...S.label(),textAlign:"center",marginBottom:8}}>{t.declareWinner}</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,opacity:locked?0.4:1,pointerEvents:locked?"none":"auto"}}>
-        <button onClick={()=>!locked&&onResult("A")} style={{minHeight:64,padding:"18px 10px",borderRadius:14,border:"none",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:z.color,color:"#000",boxShadow:"0 4px 18px "+z.color+"40"}}>
+        <button onClick={()=>!locked&&onResult("A")} style={{minHeight:64,padding:"18px 10px",clipPath:S.clip(12),border:"none",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:20,background:z.color,color:"#000"}}>
           {t.teamA}
         </button>
-        <button onClick={()=>!locked&&onResult("B")} style={{minHeight:64,padding:"18px 10px",borderRadius:14,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,background:"#0d0f1a",color:"#fff",border:"2px solid "+z.color}}>
+        <button onClick={()=>!locked&&onResult("B")} style={{minHeight:64,padding:"18px 10px",clipPath:S.clip(12),cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:20,background:"#0d0f1a",color:"#fff",border:"2px solid "+z.color}}>
           {t.teamB}
         </button>
       </div>

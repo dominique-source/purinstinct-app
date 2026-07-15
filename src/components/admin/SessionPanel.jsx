@@ -87,13 +87,13 @@ export function SessionPanel({rosters,players,allPlayers,activeRosterId,onActiva
           if(!activeCode&&!activeRoster) return null;
           return(
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
-              background:"#0d1508",borderRadius:12,padding:"10px 14px",marginBottom:12,
+              background:"#0d1508",clipPath:S.clip(10),padding:"10px 14px",marginBottom:12,
               border:"1px solid #84cc1640"}}>
               <div>
                 <div style={{fontSize:10,color:"#4b5563",letterSpacing:2,textTransform:"uppercase",marginBottom:2}}>Code de la partie</div>
                 {activeCode
-                  ?<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:36,
-                      color:"#84cc16",letterSpacing:8,lineHeight:1}}>{activeCode}</div>
+                  ?<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:36,
+                      color:"#84cc16",letterSpacing:8,lineHeight:1,textShadow:"0 0 24px #84cc1640"}}>{activeCode}</div>
                   :<div style={{fontSize:12,color:"#4b5563"}}>Aucun code — générer dans les listes</div>}
               </div>
               {activeCode&&activeRoster&&(

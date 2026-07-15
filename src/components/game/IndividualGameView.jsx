@@ -21,7 +21,7 @@ export function IndividualGameView({game,players,zone,onWinner,onRemove,onReplac
     <div>
       <div style={{...S.row(),justifyContent:"space-between",marginBottom:12}}>
         <div style={{...S.label()}}>{zone==="iq"?t.iqInProgress:t.duelInProgress} - {pList.length} {t.totalPlayers}</div>
-        <div className="pulse-lime" style={{...S.tag("#dc2626")}}>LIVE</div>
+        <div style={S.liveTag()}><span className="pulse-lime" style={S.liveDot("#dc2626",6)}/>LIVE</div>
       </div>
       {favoredId&&(
         <div style={{marginBottom:12,padding:"8px 12px",borderRadius:10,fontSize:12,fontWeight:600,textAlign:"center",background:"#fbbf2412",color:"#fbbf24",border:"1px solid #fbbf2425"}}>
@@ -56,9 +56,8 @@ export function IndividualGameView({game,players,zone,onWinner,onRemove,onReplac
       <div style={{display:"flex",flexWrap:"wrap",gap:8,opacity:locked?0.4:1,pointerEvents:locked?"none":"auto"}}>
         {pList.map(p=>(
           <button key={p.id} onClick={()=>!locked&&onWinner(p.id)}
-            style={{flex:"1 1 45%",minHeight:64,padding:"14px 10px",borderRadius:12,border:"2px solid "+z.color,cursor:"pointer",
-              background:z.color,color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
-              boxShadow:"0 3px 12px "+z.color+"40"}}>
+            style={{flex:"1 1 45%",minHeight:64,padding:"14px 10px",clipPath:S.clip(10),border:"2px solid "+z.color,cursor:"pointer",
+              background:z.color,color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:16}}>
             #{p.number} {p.name.split(" ")[0]}
           </button>
         ))}

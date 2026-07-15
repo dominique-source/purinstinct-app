@@ -90,7 +90,7 @@ export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onA
             <button onClick={()=>set("profilePhoto",null)}
               style={{fontSize:10,color:"#6b7280",background:"none",border:"none",cursor:"pointer"}}>Retirer</button>
           )}
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:26,
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:26,
             color:"#84cc16",lineHeight:1}}>#{player.number}</div>
         </div>
         <div style={{flex:1,display:"flex",flexDirection:"column",gap:8}}>

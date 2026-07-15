@@ -15,8 +15,8 @@ export function AugmentedLanding({augState,onSelect,onBack}){
         <button onClick={onBack} style={{...S.backBtn,marginBottom:16}}>🏠 Home</button>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
           color:AUG_COLOR,letterSpacing:4,textTransform:"uppercase",marginBottom:4}}>Moment Factory</div>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:36,
-          color:"#fff",letterSpacing:-1,lineHeight:1}}>AUGMENTED GAMES</div>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:36,
+          color:"#fff",letterSpacing:-1,lineHeight:1,textShadow:"0 0 32px "+AUG_COLOR+"40"}}>AUGMENTED GAMES</div>
         <div style={{color:"#6b7280",fontSize:12,marginTop:6}}>Choisissez un jeu pour ouvrir sa file</div>
       </div>
       {/* 4×2 game grid */}

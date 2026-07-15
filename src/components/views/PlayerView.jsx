@@ -318,14 +318,14 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                   justifyContent:"center",padding:"16px 16px 16px 8px"}}>
                   <div style={{fontSize:10,color:"#4b5563",letterSpacing:3,
                     textTransform:"uppercase",fontWeight:700,marginBottom:2}}>Score</div>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
-                    fontSize:62,color:"#84cc16",lineHeight:1,letterSpacing:-2}}>
-                    {player.globalPoints}
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",
+                    fontSize:62,color:"#84cc16",lineHeight:1,letterSpacing:-2,textShadow:"0 0 32px #84cc1640"}}>
+                    {hubPts}
                   </div>
                   <div style={{fontSize:10,color:"#4b5563",letterSpacing:3,
                     textTransform:"uppercase",fontWeight:700,marginTop:10,marginBottom:2}}>Rang</div>
                   <div style={{display:"flex",alignItems:"baseline",gap:4}}>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",
                       fontSize:38,color:"#fff",lineHeight:1}}>#{rank}</div>
                     <div style={{fontSize:10,color:"#4b5563"}}>/ {players.length}</div>
                   </div>

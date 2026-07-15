@@ -62,7 +62,7 @@ export function AugmentedStation({gameId,gameState,onUpdate,onBack}){
           <div>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
               fontSize:10,color:AUG_COLOR,letterSpacing:3}}>MOMENT FACTORY</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",
               fontSize:26,color:"#fff",lineHeight:1}}>{game[lang].toUpperCase()}</div>
           </div>
         </div>

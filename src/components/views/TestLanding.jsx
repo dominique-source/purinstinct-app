@@ -1,6 +1,7 @@
 import { FONTS } from "../../config/fonts.js";
 import { ZONES, ZONE_VIGNETTES, AUGMENTED_ZONE } from "../../config/zones.js";
 import { useZn } from "../../hooks/useLang.js";
+import { S } from "../shared/styles.js";
 import { LangFooter } from "../shared/LangFooter.jsx";
 
 export function TestLanding({onEnter}){
@@ -12,7 +13,8 @@ export function TestLanding({onEnter}){
       <style>{FONTS}</style>
       {/* Logo */}
       <div className="anim-pop" style={{textAlign:"center",marginBottom:32}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:60,letterSpacing:-2,lineHeight:1}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:60,letterSpacing:-2,lineHeight:1,
+          textShadow:"0 0 40px #84cc1630"}}>
           <span style={{color:"#84cc16"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
         </div>
         <div style={{color:"#84cc16",fontSize:11,letterSpacing:3,textTransform:"uppercase",marginTop:4,fontWeight:700}}>
@@ -60,10 +62,10 @@ export function TestLanding({onEnter}){
 
       {/* Enter admin button */}
       <button onClick={()=>onEnter(null)}
-        style={{marginTop:24,padding:"12px 32px",borderRadius:14,
+        style={{marginTop:24,padding:"12px 32px",clipPath:S.clip(10),
           border:"1px solid #84cc1650",background:"#111a05",
           color:"#84cc16",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
-          fontWeight:900,fontSize:16,letterSpacing:1}}>
+          fontWeight:900,fontStyle:"italic",fontSize:16,letterSpacing:1}}>
         🛡️ ADMIN DASHBOARD
       </button>
       <LangFooter/>
