@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FONTS } from "../../config/fonts.js";
 import { useT } from "../../hooks/useLang.js";
 import { LangFooter } from "../shared/LangFooter.jsx";
+import { S } from "../shared/styles.js";
 import { MODE_PIN } from "../../config/pins.js";
 
 export function ModeSelectView({onLive,onTest}){
@@ -29,11 +30,16 @@ export function ModeSelectView({onLive,onTest}){
       <style>{FONTS}</style>
       {/* Logo */}
       <div className="anim-pop" style={{textAlign:"center",marginBottom:48}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:72,letterSpacing:-2,lineHeight:1}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:72,letterSpacing:-2,lineHeight:1,
+          textShadow:"0 0 40px #84cc1630"}}>
           <span style={{color:"#84cc16"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
         </div>
-        <div style={{color:"#84cc16",fontSize:13,letterSpacing:3,textTransform:"uppercase",marginTop:6,fontWeight:700}}>
-          PurInstinct Games
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginTop:8}}>
+          <span style={{width:28,height:2,background:"#84cc16",transform:"skewX(-20deg)"}}/>
+          <span style={{color:"#84cc16",fontSize:13,letterSpacing:3,textTransform:"uppercase",fontWeight:700}}>
+            PurInstinct Games
+          </span>
+          <span style={{width:28,height:2,background:"#84cc16",transform:"skewX(-20deg)"}}/>
         </div>
       </div>
 
@@ -41,9 +47,10 @@ export function ModeSelectView({onLive,onTest}){
         /* Mode selection */
         <div className="anim-up" style={{width:"100%",maxWidth:340,display:"flex",flexDirection:"column",gap:14}}>
           <button onClick={()=>setMode("live")}
-            style={{width:"100%",padding:"22px 20px",borderRadius:20,border:"2px solid #84cc1650",
+            style={{width:"100%",padding:"22px 20px",border:"2px solid #84cc1650",
+              clipPath:S.clip(14),filter:"drop-shadow(0 0 14px #84cc1630)",
               background:"#111a05",color:"#84cc16",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
-              fontWeight:900,fontSize:22,letterSpacing:1,display:"flex",alignItems:"center",gap:14}}
+              fontWeight:900,fontStyle:"italic",fontSize:22,letterSpacing:1,display:"flex",alignItems:"center",gap:14}}
             onMouseEnter={e=>{e.currentTarget.style.background="#84cc16";e.currentTarget.style.color="#000";}}
             onMouseLeave={e=>{e.currentTarget.style.background="#111a05";e.currentTarget.style.color="#84cc16";}}>
             <span style={{fontSize:28}}>⚡</span>
@@ -55,9 +62,10 @@ export function ModeSelectView({onLive,onTest}){
             </div>
           </button>
           <button onClick={()=>setMode("test")}
-            style={{width:"100%",padding:"22px 20px",borderRadius:20,border:"2px solid #3b82f650",
+            style={{width:"100%",padding:"22px 20px",border:"2px solid #3b82f650",
+              clipPath:S.clip(14),
               background:"#080f1f",color:"#3b82f6",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
-              fontWeight:900,fontSize:22,letterSpacing:1,display:"flex",alignItems:"center",gap:14}}
+              fontWeight:900,fontStyle:"italic",fontSize:22,letterSpacing:1,display:"flex",alignItems:"center",gap:14}}
             onMouseEnter={e=>{e.currentTarget.style.background="#3b82f6";e.currentTarget.style.color="#000";}}
             onMouseLeave={e=>{e.currentTarget.style.background="#080f1f";e.currentTarget.style.color="#3b82f6";}}>
             <span style={{fontSize:28}}>🧪</span>
@@ -72,7 +80,7 @@ export function ModeSelectView({onLive,onTest}){
       ):(
         /* PIN entry */
         <div className="anim-up" style={{width:"100%",maxWidth:300,textAlign:"center"}}>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:20,
             color:mode==="live"?"#84cc16":"#3b82f6",letterSpacing:2,marginBottom:6}}>
             {mode==="live"?"⚡ LIVE MODE":"🧪 TEST MODE"}
           </div>

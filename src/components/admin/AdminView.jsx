@@ -90,7 +90,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
       <div style={{position:"sticky",top:0,zIndex:10,paddingTop:"calc(env(safe-area-inset-top) + 16px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",background:"#06070f",borderBottom:"1px solid #111827"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
           <div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:"#fff"}}>ADMIN</div>
+            <div style={{...S.display(18),color:"#fff"}}>ADMIN</div>
             <div style={{fontSize:11,color:"#4b5563"}}>{eligible.length} eligible{eligible.length!==1?"s":""} / {sorted.length} joueurs</div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -103,7 +103,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                 style={{background:"#111827",color:"#d1d5db",border:"1px solid #374151",borderRadius:8,padding:"3px 6px",fontSize:11,cursor:"pointer"}}>
                 {[30,45,60,75,90,120].map(m=><option key={m} value={m}>{m} min</option>)}
               </select>
-              <div className={arenaState.active?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:timerColor,lineHeight:1}}>{timer}</div>
+              <div className={arenaState.active?"pulse-lime":""} style={{...S.display(22),color:timerColor}}>{timer}</div>
               <div style={{fontSize:9,color:"#4b5563"}}>{arenaState.active?t.statusActive:arenaState.paused?t.statusPaused:arenaState.ended?t.statusEnded:t.statusWaiting}</div>
             </div>
             {!arenaState.active&&!arenaState.paused&&<button onClick={()=>onStart(sessionMins)} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12}}>{t.start}</button>}
@@ -138,7 +138,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
           return(
           <div className="anim-up" style={{display:"flex",flexDirection:"column",gap:12}}>
             {/* Contrôles globaux — regroupés ici pour piloter l'arène sans changer d'onglet */}
-            <div style={{...S.card(),display:"flex",flexWrap:"wrap",alignItems:"center",gap:8}}>
+            <div style={{...S.heroCard(),display:"flex",flexWrap:"wrap",alignItems:"center",gap:8,padding:14}}>
               <div style={{...S.label(),marginRight:"auto"}}>Contrôle arène</div>
               {arenaState.active&&<button onClick={onPause} style={{...S.btn("#f97316"),padding:"6px 14px",fontSize:12,color:"#000"}}>⏸ Pause</button>}
               {arenaState.paused&&<button onClick={onResume} style={{...S.btn("#84cc16"),padding:"6px 14px",fontSize:12,color:"#000"}}>▶ Reprendre</button>}
@@ -170,7 +170,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                       <div style={{...S.row(),gap:8,minWidth:0}}>
                         <span style={{fontSize:20,flexShrink:0}}>{z.icon}</span>
                         <div style={{color:"#fff",fontWeight:700,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{zl.name}</div>
-                        {stagnant&&<span className="pulse-lime" style={{width:9,height:9,borderRadius:"50%",background:"#f59e0b",flexShrink:0}}/>}
+                        {stagnant&&<span className="pulse-lime" style={S.liveDot("#f59e0b")}/>}
                       </div>
                       <button onClick={()=>onToggleZone(zk)}
                         style={{padding:"4px 10px",borderRadius:20,cursor:"pointer",fontSize:10,fontWeight:700,flexShrink:0,
@@ -182,7 +182,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                     {/* Partie en cours + file */}
                     <div style={{...S.row(),justifyContent:"space-between",gap:8}}>
                       {game
-                        ?<div className="pulse-lime" style={{...S.tag("#dc2626")}}>⚡ {allInGame} en partie</div>
+                        ?<div style={S.liveTag()}><span className="pulse-lime" style={S.liveDot("#dc2626",6)}/>⚡ {allInGame} en partie</div>
                         :<div style={{fontSize:12,color:"#4b5563"}}>Aucune partie</div>}
                       <div style={{...S.tag(z.color)}}>{q.length} en file</div>
                     </div>
@@ -297,7 +297,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                     <div style={{...S.card(),border:"1px solid "+z.border,marginBottom:10}}>
                       <div style={{...S.row(),justifyContent:"space-between",marginBottom:12}}>
                         <div style={{fontWeight:700,fontSize:13,color:"#fff"}}>Partie en cours</div>
-                        <div className="pulse-lime" style={{...S.tag("#dc2626")}}>LIVE</div>
+                        <div style={S.liveTag()}><span className="pulse-lime" style={S.liveDot("#dc2626",6)}/>LIVE</div>
                       </div>
                       {solo.length>0?(
                         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
@@ -399,7 +399,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                         </div>
                         <div style={{display:"flex",gap:6,alignItems:"center"}}>
                           {!isDisabled&&<div style={{...S.tag(z.color)}}>{q.length} en file</div>}
-                          {!isDisabled&&game&&<div className="pulse-lime" style={{...S.tag("#dc2626")}}>{allInGame} LIVE</div>}
+                          {!isDisabled&&game&&<div style={S.liveTag()}><span className="pulse-lime" style={S.liveDot("#dc2626",6)}/>{allInGame} LIVE</div>}
                           {!isDisabled&&<span style={{color:"#4b5563",fontSize:16}}>›</span>}
                         </div>
                       </div>
@@ -444,7 +444,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                       </div>
                       <div style={{display:"flex",gap:6,alignItems:"center"}}>
                         {qLen>0&&<div style={{padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:600,background:AUG_COLOR+"18",color:AUG_COLOR}}>{qLen} en file</div>}
-                        {hasMatch&&<div className="pulse-lime" style={{padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:600,background:"#dc262618",color:"#dc2626"}}>LIVE</div>}
+                        {hasMatch&&<div style={S.liveTag()}><span className="pulse-lime" style={S.liveDot("#dc2626",6)}/>LIVE</div>}
                         <span style={{color:"#4b5563",fontSize:16}}>›</span>
                       </div>
                     </div>

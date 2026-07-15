@@ -2,6 +2,27 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { FONTS } from "../../config/fonts.js";
 import { ZONES, ZK } from "../../config/zones.js";
 import { useZn } from "../../hooks/useLang.js";
+import { S } from "../shared/styles.js";
+import { useCountUp } from "../../hooks/useCountUp.js";
+
+// Ligne du classement kiosque — composant séparé pour que useCountUp anime chaque score
+function KioskRow({p,i}){
+  const pts=useCountUp(p.globalPoints);
+  const top=i===0;
+  return(
+    <div className="anim-up" style={{display:"flex",alignItems:"center",gap:14,
+      padding:"10px 16px",background:top?"#1a2e05":"#0d0f1a",
+      border:"1px solid "+(top?"#84cc16":"#1f2937"),
+      clipPath:top?S.clip(12):undefined,borderRadius:top?0:12,
+      filter:top?"drop-shadow(0 0 12px #84cc1640)":"none",
+      backgroundImage:top?"repeating-linear-gradient(0deg, transparent 0 3px, #84cc1608 3px 4px)":"none"}}>
+      <div style={{...S.display(22),color:top?"#84cc16":"#4b5563",width:32,textAlign:"center",flexShrink:0}}>{i+1}</div>
+      <div style={{flex:1,minWidth:0,color:"#fff",fontWeight:700,fontSize:16,overflow:"hidden",
+        textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
+      <div style={{...S.display(20),color:top?"#84cc16":"#9ca3af"}}>{pts} pts</div>
+    </div>
+  );
+}
 
 const IDLE_RESET_MS = 25000; // retour auto à l'écran d'accueil après inactivité
 const CONFIRM_MS = 3000;     // durée d'affichage de l'écran de confirmation
@@ -88,28 +109,21 @@ export function KioskView({players,disabledZones,lockedZone,onRegister}){
       {mode==="idle"&&(
         <div onClick={wake} style={{minHeight:"100vh",display:"flex",flexDirection:"column",
           alignItems:"center",justifyContent:"center",padding:32,cursor:"pointer"}}>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:44,letterSpacing:-1,marginBottom:4}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:44,letterSpacing:-1,marginBottom:6,
+            textShadow:"0 0 30px #84cc1630"}}>
             <span style={{color:"#84cc16"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
           </div>
-          <div style={{color:"#84cc16",fontSize:11,letterSpacing:3,textTransform:"uppercase",fontWeight:700,marginBottom:32}}>
-            Classement en direct
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:32}}>
+            <span className="pulse-lime" style={S.liveDot("#84cc16",8)}/>
+            <span style={{color:"#84cc16",fontSize:11,letterSpacing:3,textTransform:"uppercase",fontWeight:700}}>
+              Classement en direct
+            </span>
           </div>
           <div style={{width:"100%",maxWidth:480,display:"flex",flexDirection:"column",gap:6}}>
             {sorted.length===0&&(
               <div style={{textAlign:"center",color:"#4b5563",fontSize:14,padding:20}}>En attente des premiers joueurs…</div>
             )}
-            {sorted.map((p,i)=>(
-              <div key={p.id} className="anim-up" style={{display:"flex",alignItems:"center",gap:14,
-                padding:"10px 16px",borderRadius:12,background:i===0?"#1a2e05":"#0d0f1a",
-                border:"1px solid "+(i===0?"#84cc16":"#1f2937")}}>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
-                  color:i===0?"#84cc16":"#4b5563",width:32,textAlign:"center",flexShrink:0}}>{i+1}</div>
-                <div style={{flex:1,minWidth:0,color:"#fff",fontWeight:700,fontSize:16,overflow:"hidden",
-                  textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,
-                  color:i===0?"#84cc16":"#9ca3af"}}>{p.globalPoints} pts</div>
-              </div>
-            ))}
+            {sorted.map((p,i)=><KioskRow key={p.id} p={p} i={i}/>)}
           </div>
           <div className="pulse-lime" style={{marginTop:40,color:"#84cc16",fontSize:13,fontWeight:700,
             letterSpacing:1,textTransform:"uppercase"}}>

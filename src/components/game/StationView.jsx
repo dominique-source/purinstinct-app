@@ -158,8 +158,10 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
 
       {flash&&(
         <div style={{position:"fixed",inset:0,zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
-          <div className="anim-pop" style={{borderRadius:24,padding:"28px 44px",textAlign:"center",background:z.bg,border:"2px solid "+z.color,boxShadow:"0 0 60px "+z.color+"40"}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:40,color:"#fff"}}>{flash}</div>
+          <div className="anim-pop" style={{padding:"28px 44px",textAlign:"center",background:z.bg,border:"2px solid "+z.color,
+            clipPath:S.clip(18),filter:"drop-shadow(0 0 30px "+z.color+"66)",
+            backgroundImage:`repeating-linear-gradient(0deg, transparent 0 3px, ${z.color}08 3px 4px)`}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:40,letterSpacing:.5,color:"#fff"}}>{flash}</div>
             <div style={{fontSize:18,marginTop:4,color:z.color}}>🎉</div>
           </div>
         </div>
@@ -172,7 +174,8 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
           display:"flex",justifyContent:"center",pointerEvents:"none"}}>
           <div style={{pointerEvents:"auto",display:"flex",alignItems:"center",gap:14,
             width:"100%",maxWidth:560,background:z.bg,border:"1px solid "+z.color,
-            borderRadius:16,padding:"12px 14px 12px 16px",boxShadow:"0 10px 40px rgba(0,0,0,.6)"}}>
+            clipPath:S.clip(12),padding:"12px 14px 12px 16px",
+            filter:"drop-shadow(0 10px 24px rgba(0,0,0,.6)) drop-shadow(0 0 12px "+z.color+"40)"}}>
             <div style={{width:44,height:44,flexShrink:0,borderRadius:"50%",
               display:"flex",alignItems:"center",justifyContent:"center",
               background:z.color+"22",border:"2px solid "+z.color,
@@ -180,7 +183,7 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
               {undoLeft}
             </div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:18,
                 color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pending.label}</div>
               <div style={{fontSize:11,color:z.color}}>{t.resultIn} {undoLeft}s…</div>
             </div>
