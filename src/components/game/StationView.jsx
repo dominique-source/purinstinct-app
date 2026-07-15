@@ -449,6 +449,7 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
         )}
       </div>
     </div>
-    <LangFooter/>
+    {/* Masqué pendant la fenêtre d'annulation: le sélecteur fixe passait par-dessus le bandeau */}
+    {!pending&&<LangFooter/>}
   </>);
 }
