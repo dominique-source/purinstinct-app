@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { fbRef, set, onValue, off, toFb, fromFb, queuesToFb, queuesFromFb, fbUpdate, ensureAuth, allocPlayerId } from "./firebase.js";
 import { ZONES, ZK, AUG_GAMES, zn } from "./config/zones.js";
+import { FONTS } from "./config/fonts.js";
+import { S } from "./components/shared/styles.js";
 import { INITIAL_ROSTERS } from "./config/rosters.js";
 import { T } from "./config/translations.js";
 import { LangContext } from "./hooks/useLang.js";
@@ -555,9 +557,9 @@ export default function PurInstinctApp(){
   else if(view.type==="adminHome") content=(
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=DM+Sans:wght@400;600;700&display=swap');`}</style>
+      <style>{FONTS}</style>
       <div style={{textAlign:"center",marginBottom:32}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#fff",letterSpacing:2}}>🛡️ ADMIN</div>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:28,color:"#fff",letterSpacing:2}}>🛡️ ADMIN</div>
         <div style={{fontSize:12,color:"#4b5563",marginTop:4}}>{T[lang].adminCentre}</div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,width:"100%",maxWidth:360}}>
@@ -568,7 +570,7 @@ export default function PurInstinctApp(){
           {icon:null,label:T[lang].disconnectShort,sub:T[lang].disconnectSub,color:"#ef4444",isLogout:true,action:()=>isTestMode?testHome():setView({type:"liveLogin"})},
         ].map(({icon,label,sub,color,action,isLogout})=>(
           <button key={label} onClick={action}
-            style={{padding:"24px 16px",borderRadius:20,border:"1px solid "+color+"30",
+            style={{padding:"24px 16px",border:"1px solid "+color+"30",clipPath:S.clip(14),
               background:"#0d0f1a",cursor:"pointer",textAlign:"center",
               display:"flex",flexDirection:"column",alignItems:"center",gap:8,
               transition:"all .15s"}}
@@ -579,7 +581,7 @@ export default function PurInstinctApp(){
                   <div style={{position:"absolute",width:"70%",height:3,background:"#ef4444",borderRadius:2,transform:"rotate(45deg)"}}/>
                 </div>
               :<div style={{fontSize:36}}>{icon}</div>}
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#fff",lineHeight:1.2}}>{label}</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:16,color:"#fff",lineHeight:1.2}}>{label}</div>
             <div style={{fontSize:11,color:"#4b5563"}}>{sub}</div>
           </button>
         ))}
@@ -719,10 +721,10 @@ export default function PurInstinctApp(){
   else if(view.type==="stationPick") content=(
     <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=DM+Sans:wght@400;600;700&display=swap');`}</style>
+      <style>{FONTS}</style>
       <div style={{width:"100%",maxWidth:380}}>
         <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#fff"}}>{T[lang].chooseStation}</div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:22,color:"#fff"}}>{T[lang].chooseStation}</div>
           {(rosterCodes||{})[activeRosterId]&&<div style={{fontSize:12,color:"#4b5563",marginTop:4}}>
             {(rosters.find(r=>r.id===activeRosterId)||{name:"Session Standard"}).name}
             <span style={{color:"#84cc16",fontWeight:700,letterSpacing:3,marginLeft:8}}>{(rosterCodes||{})[activeRosterId]}</span>
@@ -734,11 +736,11 @@ export default function PurInstinctApp(){
             const isOff=(arenaState.disabledZones||[]).includes(zk);
             return(
               <button key={zk} onClick={()=>setView({type:"station",id:zk,fromPlayerId:view.fromPlayerId})}
-                style={{padding:"14px 16px",borderRadius:14,border:"1px solid "+(isOff?"#ef444440":z.border),
+                style={{padding:"14px 16px",border:"1px solid "+(isOff?"#ef444440":z.border),clipPath:S.clip(10),
                   background:isOff?"#1a0a0a":z.bg,color:isOff?"#ef4444":z.color,cursor:"pointer",
                   display:"flex",alignItems:"center",gap:12,opacity:isOff?0.7:1}}>
                 <span style={{fontSize:22}}>{z.icon}</span>
-                <span style={{fontWeight:700,fontSize:14,flex:1,textAlign:"left"}}>{zl.name}</span>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:16,letterSpacing:.5,flex:1,textAlign:"left"}}>{zl.name}</span>
                 {isOff&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,
                   background:"#ef444420",color:"#ef4444",border:"1px solid #ef444440"}}>{T[lang].stationDisabled}</span>}
               </button>

@@ -162,8 +162,13 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                 const ref=last||arenaState.startTime;
                 const stagnant=arenaState.active&&!isDisabled&&hasPlayers&&!!ref&&(now-ref)>STAGNATION_THRESHOLD_MS;
                 const borderCol=isDisabled?"#1f2937":stagnant?"#f59e0b":z.border;
+                // Match en cours = carte héros (coins coupés + rim aux couleurs de la zone);
+                // l'alerte de stagnation garde priorité visuelle (bordure ambre, carte standard)
+                const base=game&&!isDisabled&&!stagnant
+                  ?{...S.heroCard(z.color),padding:14}
+                  :{...S.card(),border:"1px solid "+borderCol};
                 return(
-                  <div key={zk} style={{...S.card(),border:"1px solid "+borderCol,opacity:isDisabled?0.5:1,
+                  <div key={zk} style={{...base,opacity:isDisabled?0.5:1,
                     display:"flex",flexDirection:"column",gap:10}}>
                     {/* En-tête zone + toggle activation */}
                     <div style={{...S.row(),justifyContent:"space-between"}}>

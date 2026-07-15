@@ -128,11 +128,16 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
 
   const Header=()=>(
     <div style={{textAlign:"center",marginBottom:28}}>
-      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:64,letterSpacing:-2,lineHeight:1}}>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:64,letterSpacing:-2,lineHeight:1,
+        textShadow:"0 0 40px #84cc1630"}}>
         <span style={{color:"#84cc16"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
       </div>
-      <div style={{color:"#84cc16",fontSize:12,letterSpacing:3,textTransform:"uppercase",marginTop:4,fontWeight:700}}>
-        PurInstinct Games
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginTop:6}}>
+        <span style={{width:24,height:2,background:"#84cc16",transform:"skewX(-20deg)"}}/>
+        <span style={{color:"#84cc16",fontSize:12,letterSpacing:3,textTransform:"uppercase",fontWeight:700}}>
+          PurInstinct Games
+        </span>
+        <span style={{width:24,height:2,background:"#84cc16",transform:"skewX(-20deg)"}}/>
       </div>
     </div>
   );
@@ -276,7 +281,7 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
           </button>}
           {sessionCode&&<div style={{textAlign:"center",marginBottom:20}}>
             <div style={{fontSize:11,color:"#4b5563",letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Code de session</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:52,color:"#84cc16",letterSpacing:6,lineHeight:1}}>{sessionCode}</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:52,color:"#84cc16",letterSpacing:6,lineHeight:1,textShadow:"0 0 30px #84cc1640"}}>{sessionCode}</div>
           </div>}
           <div style={{...S.card(),border:"1px solid #84cc1640",marginBottom:16}}>
             <div style={{fontSize:13,color:"#84cc16",fontWeight:700,marginBottom:12,textAlign:"center"}}>👤 Qui êtes-vous ?</div>

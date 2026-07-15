@@ -16,6 +16,7 @@ import { BASE_URL } from "../../config/constants.js";
 import { PlayerDossier } from "../admin/PlayerDossier.jsx";
 import { LangFooter } from "../shared/LangFooter.jsx";
 import { useArenaTimer } from "../../hooks/useArenaTimer.js";
+import { useCountUp } from "../../hooks/useCountUp.js";
 import { PlayerRulesView } from "./PlayerRulesView.jsx";
 
 export function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaState,rosterCodes,sessionRosterId,winnersPublished,onJoin,onLeave,onLogout,onUpdatePlayer,onBecomeStation,onAddComment}){
@@ -39,6 +40,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
   const playerCardRef=useRef(null);
   const confettiFiredRef=useRef(false);
   const leaderHighlightRef=useRef(null);
+  const hubPts=useCountUp(player?.globalPoints||0); // avant le early-return: règle des hooks
   if(!player) return null;
 
   const savePlayerCard=async()=>{
@@ -83,7 +85,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
         <Bib n={player.number} size="lg"/>
         <div style={{fontWeight:700,color:"#fff",fontSize:18,marginTop:8}}>{player.name}</div>
         <div style={{...S.row(),gap:8,justifyContent:"center",marginTop:4}}>
-          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#84cc16"}}>{player.globalPoints} pts</span>
+          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:28,color:"#84cc16",textShadow:"0 0 24px #84cc1640"}}>{hubPts} pts</span>
           <span style={{fontSize:12,color:"#4b5563"}}>Rang #{rank}</span>
         </div>
         {arenaState&&<div style={{marginTop:6}}>
@@ -122,14 +124,14 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
             action:onLogout},
         ].map(({icon,label,sub,color,action,isStats,isInvite,isLogout})=>(
           <button key={label} onClick={action}
-            style={{padding:"20px 12px",borderRadius:18,border:"1px solid "+color+"30",
+            style={{padding:"20px 12px",border:"1px solid "+color+"30",clipPath:S.clip(12),
               background:"#0d0f1a",cursor:"pointer",textAlign:"center",
               display:"flex",flexDirection:"column",alignItems:"center",gap:6}}
             onMouseEnter={e=>{e.currentTarget.style.background=color+"15";e.currentTarget.style.borderColor=color+"80";}}
             onMouseLeave={e=>{e.currentTarget.style.background="#0d0f1a";e.currentTarget.style.borderColor=color+"30";}}>
             {isStats&&(
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:32,color:"#84cc16",lineHeight:1}}>
-                {player.globalPoints}
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:32,color:"#84cc16",lineHeight:1}}>
+                {hubPts}
               </div>
             )}
             {isInvite&&(
@@ -141,7 +143,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
               </div>
             )}
             {!isStats&&!isInvite&&!isLogout&&<div style={{fontSize:30}}>{icon}</div>}
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,color:"#fff",lineHeight:1.2}}>{label}</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:15,color:"#fff",lineHeight:1.2}}>{label}</div>
             <div style={{fontSize:10,color:"#4b5563"}}>{sub}</div>
           </button>
         ))}
