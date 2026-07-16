@@ -11,13 +11,13 @@ export function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
   const [tab,setTab]=useState("roles");
   return(<>
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
-      padding:"40px 16px",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
+      padding:"40px 16px",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
       <div className="anim-pop" style={{marginBottom:32,textAlign:"center"}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:72,letterSpacing:-2,lineHeight:1}}>
-          <span style={{color:"#84cc16"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
+          <span style={{color:"#B8E020"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
         </div>
-        <div style={{color:"#84cc16",fontSize:13,letterSpacing:3,textTransform:"uppercase",marginTop:4,fontWeight:700}}>
+        <div style={{color:"#B8E020",fontSize:13,letterSpacing:3,textTransform:"uppercase",marginTop:4,fontWeight:700}}>
           PurInstinct Games
         </div>
         <div style={{color:"#4b5563",fontSize:11,letterSpacing:2,textTransform:"uppercase",marginTop:4,fontWeight:600}}>
@@ -29,7 +29,7 @@ export function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
         {[["roles",t.rolesTab],["players",t.playersTab],["station","📍 Responsable"]].map(([t,l])=>(
           <button key={t} onClick={()=>setTab(t)} style={{
             padding:"8px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",cursor:"pointer",
-            background:tab===t?"#84cc16":"transparent",color:tab===t?"#000":"#6b7280"}}>
+            background:tab===t?"#B8E020":"transparent",color:tab===t?"#000":"#6b7280"}}>
             {l}
           </button>
         ))}
@@ -80,7 +80,7 @@ export function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
             {players.map(p=>{
               const inQ=Object.values(queues||{}).some(q=>Array.isArray(q)&&q.includes(p.id));
               const genderColor=p.gender==="F"?"#ec4899":"#3b82f6";
-              const statusColor=inQ?"#f97316":"#84cc16";
+              const statusColor=inQ?"#f97316":"#B8E020";
               return(
                 <button key={p.id} onClick={()=>onLogin("player",p.id)} style={{
                   aspectRatio:"1",borderRadius:14,
@@ -127,13 +127,13 @@ export function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
       <div style={{marginTop:32,paddingTop:24,borderTop:"1px solid #1f2937",width:"100%",maxWidth:420,textAlign:"center"}}>
         <div style={{fontSize:11,color:"#374151",marginBottom:10,letterSpacing:1,textTransform:"uppercase"}}>Prêt pour une vraie session ?</div>
         <button onClick={onGoLive}
-          style={{width:"100%",padding:"14px",borderRadius:16,border:"2px solid #84cc16",
+          style={{width:"100%",padding:"14px",borderRadius:16,border:"2px solid #B8E020",
             background:"linear-gradient(135deg,#111a05,#0d0f1a)",
-            color:"#84cc16",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
+            color:"#B8E020",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
             fontWeight:900,fontSize:18,letterSpacing:1,
-            boxShadow:"0 0 20px #84cc1620"}}
-          onMouseEnter={e=>{e.currentTarget.style.background="#84cc16";e.currentTarget.style.color="#000";}}
-          onMouseLeave={e=>{e.currentTarget.style.background="linear-gradient(135deg,#111a05,#0d0f1a)";e.currentTarget.style.color="#84cc16";}}>
+            boxShadow:"0 0 20px #B8E02020"}}
+          onMouseEnter={e=>{e.currentTarget.style.background="#B8E020";e.currentTarget.style.color="#000";}}
+          onMouseLeave={e=>{e.currentTarget.style.background="linear-gradient(135deg,#111a05,#0d0f1a)";e.currentTarget.style.color="#B8E020";}}>
           ⚡ Passer en mode LIVE
         </button>
         <div style={{fontSize:10,color:"#374151",marginTop:8}}>Expérience joueur simplifiée · Accès sécurisé par PIN</div>

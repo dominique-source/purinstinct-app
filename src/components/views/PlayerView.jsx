@@ -76,7 +76,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
 
   // ── HUB PAGE ──
   if(showHub) return(
-    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
       paddingTop:"calc(env(safe-area-inset-top) + 24px)",paddingBottom:24,paddingLeft:24,paddingRight:24}}>
       <style>{FONTS}</style>
@@ -85,12 +85,12 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
         <Bib n={player.number} size="lg"/>
         <div style={{fontWeight:700,color:"#fff",fontSize:18,marginTop:8}}>{player.name}</div>
         <div style={{...S.row(),gap:8,justifyContent:"center",marginTop:4}}>
-          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:28,color:"#84cc16",textShadow:"0 0 24px #84cc1640"}}>{hubPts} pts</span>
+          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:28,color:"#B8E020",textShadow:"0 0 24px #B8E02040"}}>{hubPts} pts</span>
           <span style={{fontSize:12,color:"#4b5563"}}>Rang #{rank}</span>
         </div>
         {arenaState&&<div style={{marginTop:6}}>
           <span className={arenaStatus==="active"?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
-            color:arenaStatus==="active"?"#84cc16":arenaStatus==="paused"?"#f97316":"#374151"}}>
+            color:arenaStatus==="active"?"#B8E020":arenaStatus==="paused"?"#f97316":"#374151"}}>
             {arenaTimer} {arenaStatus==="active"?t.statusActive:arenaStatus==="paused"?t.statusPaused:""}
           </span>
         </div>}
@@ -98,7 +98,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
       {/* Grille 2x3 */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,width:"100%",maxWidth:360}}>
         {[
-          {icon:null,label:"Mes stats",sub:"Score · Zones · Historique",color:"#84cc16",isStats:true,
+          {icon:null,label:"Mes stats",sub:"Score · Zones · Historique",color:"#B8E020",isStats:true,
             action:()=>{setShowHub(false);setTab("stats");}},
           {icon:"📖",label:"Règlements",sub:"Comment jouer",color:"#3b82f6",
             action:()=>{setShowHub(false);setTab("rules");}},
@@ -108,7 +108,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
               if(code){
                 if(!sessionQR){
                   const url=BASE_URL+"?code="+code;
-                  const dataUrl=await QRCode.toDataURL(url,{width:240,margin:2,color:{dark:"#ffffff",light:"#06070f"}});
+                  const dataUrl=await QRCode.toDataURL(url,{width:240,margin:2,color:{dark:"#ffffff",light:"#0A0A0A"}});
                   setSessionQR(dataUrl);
                 }
                 setShowQR(true);
@@ -130,7 +130,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
             onMouseEnter={e=>{e.currentTarget.style.background=color+"15";e.currentTarget.style.borderColor=color+"80";}}
             onMouseLeave={e=>{e.currentTarget.style.background="#0d0f1a";e.currentTarget.style.borderColor=color+"30";}}>
             {isStats&&(
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:32,color:"#84cc16",lineHeight:1}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:32,color:"#B8E020",lineHeight:1}}>
                 {hubPts}
               </div>
             )}
@@ -152,11 +152,11 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
       {showQR&&sessionQR&&(
         <div onClick={()=>setShowQR(false)} style={{position:"fixed",inset:0,zIndex:100,background:"rgba(0,0,0,.88)",
           display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <div style={{background:"#06070f",borderRadius:20,padding:24,border:"2px solid #a855f7",textAlign:"center"}}
+          <div style={{background:"#0A0A0A",borderRadius:20,padding:24,border:"2px solid #a855f7",textAlign:"center"}}
             onClick={e=>e.stopPropagation()}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:"#fff",marginBottom:4}}>Inviter un ami</div>
             <div style={{fontSize:13,color:"#4b5563",marginBottom:16}}>
-              Code : <span style={{color:"#84cc16",fontWeight:700,letterSpacing:4}}>{rosterCodes&&sessionRosterId?rosterCodes[sessionRosterId]:""}</span>
+              Code : <span style={{color:"#B8E020",fontWeight:700,letterSpacing:4}}>{rosterCodes&&sessionRosterId?rosterCodes[sessionRosterId]:""}</span>
             </div>
             <img src={sessionQR} alt="QR" style={{width:200,height:200,borderRadius:12,display:"block",margin:"0 auto"}}/>
             <button onClick={()=>setShowQR(false)} style={{marginTop:16,...S.btn(),padding:"8px 24px",fontSize:13}}>Fermer</button>
@@ -168,7 +168,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
 
   // ── Vue "Se mettre en file" ──
   if(tab==="queue") return(
-    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
       <div style={{paddingTop:"calc(env(safe-area-inset-top) + 16px)",padding:"calc(env(safe-area-inset-top) + 16px) 16px 16px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
@@ -242,9 +242,9 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
   );
 
   return(<>
-    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
-      <div style={{position:"sticky",top:0,zIndex:10,paddingTop:"calc(env(safe-area-inset-top) + 16px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",background:"#06070f",borderBottom:"1px solid #111827"}}>
+      <div style={{position:"sticky",top:0,zIndex:10,paddingTop:"calc(env(safe-area-inset-top) + 16px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",background:"#0A0A0A",borderBottom:"1px solid #111827"}}>
         <div style={{...S.row(),justifyContent:"space-between",marginBottom:8}}>
           <div style={{...S.row(),gap:10}}>
             <Bib n={player.number} size="lg"/>
@@ -257,10 +257,10 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             {arenaState&&arenaStatus!=="waiting"&&<div style={{textAlign:"center"}}>
               <div className={arenaStatus==="active"?"pulse-lime":""} style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-                color:arenaStatus==="active"?"#84cc16":arenaStatus==="paused"?"#f97316":"#dc2626",lineHeight:1}}>{arenaTimer}</div>
+                color:arenaStatus==="active"?"#B8E020":arenaStatus==="paused"?"#f97316":"#dc2626",lineHeight:1}}>{arenaTimer}</div>
             </div>}
             <div style={{textAlign:"right"}}>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:36,color:"#84cc16",lineHeight:1}}>{player.globalPoints}</div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:36,color:"#B8E020",lineHeight:1}}>{player.globalPoints}</div>
               <div style={{fontSize:10,color:"#6b7280"}}>#{rank}</div>
             </div>
             <button onClick={()=>setShowHub(true)} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>⌂</button>
@@ -277,7 +277,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
             {[["stats",t.myStats],["leaderboard",t.myRank],["rules",t.myRules],["profil",t.myProfile]].map(([t,l])=>(
               <button key={t} onClick={()=>setTab(t)} style={{
                 flex:1,padding:"6px 4px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
-                background:tab===t?"#84cc16":"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
+                background:tab===t?"#B8E020":"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
                 {l}
               </button>
             ))}
@@ -319,7 +319,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                   <div style={{fontSize:10,color:"#4b5563",letterSpacing:3,
                     textTransform:"uppercase",fontWeight:700,marginBottom:2}}>Score</div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",
-                    fontSize:62,color:"#84cc16",lineHeight:1,letterSpacing:-2,textShadow:"0 0 32px #84cc1640"}}>
+                    fontSize:62,color:"#B8E020",lineHeight:1,letterSpacing:-2,textShadow:"0 0 32px #B8E02040"}}>
                     {hubPts}
                   </div>
                   <div style={{fontSize:10,color:"#4b5563",letterSpacing:3,
@@ -343,7 +343,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                       <button key={i} onClick={()=>setSkinIdx(i)} style={{
                         width:skinIdx===i?30:22,height:skinIdx===i?30:22,
                         borderRadius:"50%",background:c,border:"none",cursor:"pointer",
-                        border:skinIdx===i?"3px solid #84cc16":"2px solid #374151",
+                        border:skinIdx===i?"3px solid #B8E020":"2px solid #374151",
                         transition:"all .2s",outline:"none"
                       }}/>
                     ))}
@@ -358,7 +358,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                       <button key={i} onClick={()=>setHairIdx(i)} style={{
                         width:hairIdx===i?28:20,height:hairIdx===i?28:20,
                         borderRadius:"50%",background:c,border:"none",cursor:"pointer",
-                        border:hairIdx===i?"3px solid #84cc16":"2px solid #374151",
+                        border:hairIdx===i?"3px solid #B8E020":"2px solid #374151",
                         transition:"all .2s",outline:"none"
                       }}/>
                     ))}
@@ -372,8 +372,8 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                     {MORPHO_LABELS.map((label,i)=>(
                       <button key={i} onClick={()=>setMorphology(i)} style={{
                         flex:1,padding:"5px 2px",borderRadius:8,cursor:"pointer",
-                        background:morphology===i?"#84cc16":"#1a1f2e",
-                        color:morphology===i?"#06070f":"#6b7280",
+                        background:morphology===i?"#B8E020":"#1a1f2e",
+                        color:morphology===i?"#0A0A0A":"#6b7280",
                         fontSize:10,fontWeight:700,border:"none",
                         fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:0.5
                       }}>{label}</button>
@@ -388,7 +388,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
               <div className="anim-pop" style={{borderRadius:14,padding:12,marginBottom:14,
                 display:"flex",alignItems:"center",gap:12,
                 background:player.lastResult.isWin?"#0d1508":"#1a0606",
-                border:"1px solid "+(player.lastResult.isWin?"#84cc1630":"#dc262630")}}>
+                border:"1px solid "+(player.lastResult.isWin?"#B8E02030":"#dc262630")}}>
                 <div style={{fontSize:22}}>{player.lastResult.isWin?"🎉":"😤"}</div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:10,color:"#4b5563",textTransform:"uppercase",letterSpacing:2,fontWeight:600,marginBottom:2}}>{t.lastActivity}</div>
@@ -396,7 +396,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                     {ZONES[player.lastResult.zone].icon} {zn(player.lastResult.zone).name}
                     {player.lastResult.bonus?" 🔥":""}
                   </div>
-                  <div style={{fontSize:12,marginTop:1,color:player.lastResult.isWin?"#84cc16":"#dc2626",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>
+                  <div style={{fontSize:12,marginTop:1,color:player.lastResult.isWin?"#B8E020":"#dc2626",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>
                     {player.lastResult.isWin?t.victory:t.defeat}{" "}
                     <span style={{fontSize:18}}>{player.lastResult.delta>0?"+"+player.lastResult.delta:player.lastResult.delta} pts</span>
                     {player.lastResult.newStreak>=2&&<span style={{fontSize:11,color:"#f97316",marginLeft:6}}>Serie {player.lastResult.newStreak} 🔥</span>}
@@ -410,8 +410,8 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
               <div style={{...S.label(),marginBottom:10}}>Statistiques</div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
                 {[
-                  [player.globalPoints,"Pts globaux","#84cc16"],
-                  [(player.zonesPlayed||[]).length+"/"+activeZones.length,"Zones","#84cc16"],
+                  [player.globalPoints,"Pts globaux","#B8E020"],
+                  [(player.zonesPlayed||[]).length+"/"+activeZones.length,"Zones","#B8E020"],
                   [(player.history||[]).filter(h=>h.isWin).length,"Victoires","#22c55e"],
                   [(player.history||[]).filter(h=>!h.isWin&&!h.isSecond).length,"Défaites","#ef4444"]
                 ].map(([v,lbl,c],i)=>(
@@ -428,9 +428,9 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
               <div style={{fontSize:12,color:"#6b7280"}}>Files d'attente actives</div>
               <div style={{...S.row(),gap:6}}>
                 <div style={{display:"flex",gap:3}}>
-                  {[0,1].map(i=><div key={i} style={{width:14,height:14,borderRadius:3,background:i<inQueues.length?"#84cc16":"#1f2937"}}/>)}
+                  {[0,1].map(i=><div key={i} style={{width:14,height:14,borderRadius:3,background:i<inQueues.length?"#B8E020":"#1f2937"}}/>)}
                 </div>
-                <div style={{fontSize:13,fontWeight:700,color:inQueues.length>=2?"#f97316":"#84cc16"}}>{inQueues.length}/2</div>
+                <div style={{fontSize:13,fontWeight:700,color:inQueues.length>=2?"#f97316":"#B8E020"}}>{inQueues.length}/2</div>
               </div>
             </div>
 
@@ -499,7 +499,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                           <span style={{fontSize:12,color:"#6b7280"}}>{zoneHistory.length} partie{zoneHistory.length>1?"s":""}</span>
                         </div>
                         <div style={{fontSize:12,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,
-                          color:zoneHistory.reduce((s,h)=>s+h.delta,0)>=0?"#84cc16":"#ef4444"}}>
+                          color:zoneHistory.reduce((s,h)=>s+h.delta,0)>=0?"#B8E020":"#ef4444"}}>
                           Total: {zoneHistory.reduce((s,h)=>s+h.delta,0)>0?"+":""}{zoneHistory.reduce((s,h)=>s+h.delta,0)} pts
                         </div>
                       </div>
@@ -526,9 +526,9 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
 
             {/* ELIGIBILITY BANNER */}
             <div style={{padding:12,borderRadius:12,marginBottom:16,textAlign:"center",fontSize:12,
-              background:elig?"#0d1508":"#0d0f1a",border:"1px solid "+(elig?"#84cc1630":"#374151")}}>
+              background:elig?"#0d1508":"#0d0f1a",border:"1px solid "+(elig?"#B8E02030":"#374151")}}>
               {elig
-                ?<span style={{color:"#84cc16",fontWeight:700}}>{t.allZonesDone}</span>
+                ?<span style={{color:"#B8E020",fontWeight:700}}>{t.allZonesDone}</span>
                 :<div>
                   <div style={{color:"#6b7280",marginBottom:6}}>Zones manquantes pour etre eligible:</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center"}}>
@@ -549,27 +549,27 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                 <div style={{...S.card(),marginBottom:14,textAlign:"center"}}>
                   <div style={{...S.label(),marginBottom:8}}>Code de la partie</div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:48,
-                    color:"#84cc16",letterSpacing:12,lineHeight:1,marginBottom:12}}>{code}</div>
+                    color:"#B8E020",letterSpacing:12,lineHeight:1,marginBottom:12}}>{code}</div>
                   <button onClick={async()=>{
                     if(!sessionQR){
                       const url=BASE_URL+"?code="+code;
-                      const dataUrl=await QRCode.toDataURL(url,{width:240,margin:2,color:{dark:"#ffffff",light:"#06070f"}});
+                      const dataUrl=await QRCode.toDataURL(url,{width:240,margin:2,color:{dark:"#ffffff",light:"#0A0A0A"}});
                       setSessionQR(dataUrl);
                     }
                     setShowQR(true);
-                  }} style={{...S.btn("#84cc16"),padding:"10px 24px",fontSize:14,fontWeight:700}}>
+                  }} style={{...S.btn("#B8E020"),padding:"10px 24px",fontSize:14,fontWeight:700}}>
                     📲 Voir le QR code
                   </button>
                   {showQR&&sessionQR&&(
                     <div onClick={()=>setShowQR(false)} style={{
                       position:"fixed",inset:0,zIndex:100,background:"rgba(0,0,0,.85)",
                       display:"flex",alignItems:"center",justifyContent:"center"}}>
-                      <div style={{background:"#06070f",borderRadius:20,padding:24,border:"2px solid #84cc16",textAlign:"center"}}
+                      <div style={{background:"#0A0A0A",borderRadius:20,padding:24,border:"2px solid #B8E020",textAlign:"center"}}
                         onClick={e=>e.stopPropagation()}>
                         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:"#fff",marginBottom:4}}>
                           Scannez pour rejoindre
                         </div>
-                        <div style={{fontSize:13,color:"#4b5563",marginBottom:16}}>Code : <span style={{color:"#84cc16",fontWeight:700,letterSpacing:4}}>{code}</span></div>
+                        <div style={{fontSize:13,color:"#4b5563",marginBottom:16}}>Code : <span style={{color:"#B8E020",fontWeight:700,letterSpacing:4}}>{code}</span></div>
                         <img src={sessionQR} alt="QR" style={{width:220,height:220,borderRadius:12,display:"block",margin:"0 auto"}}/>
                         <button onClick={()=>setShowQR(false)}
                           style={{marginTop:16,...S.btn(),padding:"8px 24px",fontSize:13}}>Fermer</button>
@@ -609,7 +609,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                         onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                         <Bib n={p.number} size="sm"/>
                         <span style={{color:"#fff",fontSize:13,flex:1}}>{p.name}</span>
-                        <span style={{color:"#84cc16",fontSize:12,fontWeight:700}}>#{sorted.indexOf(p)+1}</span>
+                        <span style={{color:"#B8E020",fontSize:12,fontWeight:700}}>#{sorted.indexOf(p)+1}</span>
                       </div>
                     ))}
                   </div>
@@ -659,7 +659,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
             confettiFiredRef.current=true;
             setShowCongrats(true);
             const fire=(opts)=>confetti({particleCount:80,spread:70,origin:{y:0.6},...opts});
-            setTimeout(()=>fire({colors:["#84cc16","#ca8a04","#fff","#6366f1"]}),100);
+            setTimeout(()=>fire({colors:["#B8E020","#ca8a04","#fff","#6366f1"]}),100);
             setTimeout(()=>fire({angle:60,origin:{x:0,y:0.7}}),350);
             setTimeout(()=>fire({angle:120,origin:{x:1,y:0.7}}),550);
             setTimeout(()=>setShowCongrats(false),3200);
@@ -672,7 +672,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
               background:"rgba(0,0,0,.85)",gap:16,pointerEvents:"none"}}>
               <div style={{fontSize:72,lineHeight:1}}>🎉</div>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:42,
-                color:"#84cc16",textAlign:"center",letterSpacing:2}}>FÉLICITATIONS !</div>
+                color:"#B8E020",textAlign:"center",letterSpacing:2}}>FÉLICITATIONS !</div>
               <div style={{color:"#fff",fontWeight:700,fontSize:22,textAlign:"center"}}>{player.name}</div>
               <div style={{color:"#ca8a04",fontSize:14,fontWeight:600,textAlign:"center",lineHeight:2,padding:"0 20px"}}>
                 {(()=>{
@@ -695,13 +695,13 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
               <div style={{position:"fixed",inset:0,zIndex:60,background:"rgba(0,0,0,.95)",
                 display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
                 <div ref={playerCardRef} onClick={savePlayerCard} style={{width:"100%",maxWidth:380,borderRadius:24,
-                  background:"#0a0c14",border:"2px solid "+(accent||"#84cc16"),padding:28,
+                  background:"#0a0c14",border:"2px solid "+(accent||"#B8E020"),padding:28,
                   position:"relative",overflow:"hidden",cursor:"pointer",
-                  boxShadow:"0 0 60px "+(accent||"#84cc16")+"40"}}>
+                  boxShadow:"0 0 60px "+(accent||"#B8E020")+"40"}}>
                   <div style={{position:"absolute",top:0,left:0,right:0,height:4,
-                    background:`linear-gradient(90deg,${accent||"#84cc16"},${accent||"#84cc16"}88)`}}/>
+                    background:`linear-gradient(90deg,${accent||"#B8E020"},${accent||"#B8E020"}88)`}}/>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:10,
-                    color:(accent||"#84cc16")+"80",letterSpacing:3,marginBottom:16,textAlign:"center",marginTop:8}}>
+                    color:(accent||"#B8E020")+"80",letterSpacing:3,marginBottom:16,textAlign:"center",marginTop:8}}>
                     PURINSTINCT GAMES · {today}
                   </div>
                   {children}
@@ -726,16 +726,16 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                   <div style={{fontSize:52,lineHeight:1,marginBottom:8}}>🥇</div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,color:"#ca8a04",letterSpacing:3,marginBottom:6}}>GAGNANT</div>
                   <div style={{color:"#fff",fontWeight:700,fontSize:26,marginBottom:4}}>{overall.name}</div>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:48,color:"#84cc16",lineHeight:1}}>{overall.globalPoints}</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:48,color:"#B8E020",lineHeight:1}}>{overall.globalPoints}</div>
                   <div style={{fontSize:12,color:"#4b5563",marginTop:2}}>points globaux</div>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:12}}>
                   {activeZK.map(zk=>{
                     const played=(overall.zonesPlayed||[]).includes(zk);
                     return(<div key={zk} style={{borderRadius:10,padding:"8px 6px",textAlign:"center",
-                      background:played?"#1a2e05":"#111827",border:"1px solid "+(played?"#84cc1650":"#1f2937")}}>
+                      background:played?"#1a2e05":"#111827",border:"1px solid "+(played?"#B8E02050":"#1f2937")}}>
                       <div style={{fontSize:18}}>{zoneIcons[zk]}</div>
-                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:played?"#84cc16":"#374151"}}>{(overall.zoneScores||{})[zk]||50}</div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:played?"#B8E020":"#374151"}}>{(overall.zoneScores||{})[zk]||50}</div>
                       <div style={{fontSize:9,color:played?"#6b7280":"#1f2937",marginTop:1}}>{zoneNames[zk].split(" ")[0]}</div>
                     </div>);
                   })}
@@ -754,9 +754,9 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                 {top5.map((p,i)=>(
                   <div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:12,marginBottom:6,
                     background:i===0?"#1a1a2e":i===1?"#12121e":i===2?"#111118":"#0d0f1a",
-                    border:"1px solid "+(p.id===playerId?"#84cc1650":i===0?"#6366f140":"#1f2937")}}>
+                    border:"1px solid "+(p.id===playerId?"#B8E02050":i===0?"#6366f140":"#1f2937")}}>
                     <span style={{fontSize:20,width:28,textAlign:"center"}}>{medals[i]}</span>
-                    <span style={{color:p.id===playerId?"#84cc16":"#fff",fontWeight:700,fontSize:15,flex:1}}>{p.name}{p.id===playerId?" 👈":""}</span>
+                    <span style={{color:p.id===playerId?"#B8E020":"#fff",fontWeight:700,fontSize:15,flex:1}}>{p.name}{p.id===playerId?" 👈":""}</span>
                     <div style={{textAlign:"right"}}>
                       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
                         color:i===0?"#ca8a04":i===1?"#9ca3af":i===2?"#b45309":"#6b7280"}}>{p.globalPoints}</div>
@@ -773,7 +773,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                   <div style={{fontSize:56,lineHeight:1,marginBottom:10}}>{zoneIcons[zk]}</div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,color:z.color,letterSpacing:3,marginBottom:4}}>CHAMPION</div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:z.color,marginBottom:16}}>{zoneNames[zk].toUpperCase()}</div>
-                  <div style={{color:champ.id===playerId?"#84cc16":"#fff",fontWeight:700,fontSize:28,marginBottom:8}}>{champ.name}{champ.id===playerId?" 👈":""}</div>
+                  <div style={{color:champ.id===playerId?"#B8E020":"#fff",fontWeight:700,fontSize:28,marginBottom:8}}>{champ.name}{champ.id===playerId?" 👈":""}</div>
                   <div style={{display:"inline-block",padding:"12px 24px",borderRadius:16,background:z.color+"20",border:"2px solid "+z.color+"60"}}>
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:52,color:z.color,lineHeight:1}}>{cham(p.zoneScores||{})[zk]||50}</div>
                     <div style={{fontSize:11,color:z.color+"80",marginTop:2}}>score de zone</div>
@@ -789,12 +789,12 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
 
           // Liste cliquable
           const ClickCard=({accent,onClick,children})=>(
-            <div onClick={onClick} style={{borderRadius:16,background:"#0d0f1a",border:"2px solid "+(accent||"#84cc16"),
+            <div onClick={onClick} style={{borderRadius:16,background:"#0d0f1a",border:"2px solid "+(accent||"#B8E020"),
               padding:20,marginBottom:12,position:"relative",overflow:"hidden",cursor:"pointer"}}
               onMouseEnter={e=>{e.currentTarget.style.background="#111827";}}
               onMouseLeave={e=>{e.currentTarget.style.background="#0d0f1a";}}>
-              <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:accent||"#84cc16"}}/>
-              <div style={{position:"absolute",top:12,right:14,fontSize:16,color:(accent||"#84cc16")+"60"}}>↗</div>
+              <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:accent||"#B8E020"}}/>
+              <div style={{position:"absolute",top:12,right:14,fontSize:16,color:(accent||"#B8E020")+"60"}}>↗</div>
               {children}
             </div>
           );
@@ -811,7 +811,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:10,color:"#ca8a04",fontWeight:700,letterSpacing:2,marginBottom:2}}>GAGNANT</div>
                       <div style={{color:"#fff",fontWeight:700,fontSize:18,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{overall.name}{overall.id===playerId?" 👈":""}</div>
-                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:24,color:"#84cc16"}}>{overall.globalPoints} pts</div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:24,color:"#B8E020"}}>{overall.globalPoints} pts</div>
                     </div>
                   </div>
                 </ClickCard>
@@ -826,8 +826,8 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                   {top5.slice(0,3).map((p,i)=>(
                     <div key={p.id} style={{...S.row(),gap:8,padding:"3px 0"}}>
                       <span style={{fontSize:14,width:20}}>{medals[i]}</span>
-                      <span style={{color:p.id===playerId?"#84cc16":"#e5e7eb",fontSize:13,flex:1}}>{p.name}{p.id===playerId?" 👈":""}</span>
-                      <span style={{color:"#84cc16",fontWeight:700,fontSize:13}}>{p.globalPoints}</span>
+                      <span style={{color:p.id===playerId?"#B8E020":"#e5e7eb",fontSize:13,flex:1}}>{p.name}{p.id===playerId?" 👈":""}</span>
+                      <span style={{color:"#B8E020",fontWeight:700,fontSize:13}}>{p.globalPoints}</span>
                     </div>
                   ))}
                 </ClickCard>
@@ -841,7 +841,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
                       <span style={{fontSize:28,flexShrink:0}}>{zoneIcons[zk]}</span>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:10,color:z.color,fontWeight:700,letterSpacing:2,marginBottom:2}}>CHAMPION {zoneNames[zk].toUpperCase()}</div>
-                        <div style={{color:champ.id===playerId?"#84cc16":"#fff",fontWeight:700,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        <div style={{color:champ.id===playerId?"#B8E020":"#fff",fontWeight:700,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                           {champ.name}{champ.id===playerId?" 👈":""}
                         </div>
                         <div style={{...S.row(),gap:6,marginTop:2}}>

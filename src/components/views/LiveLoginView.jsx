@@ -99,8 +99,8 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
       <div style={{display:"flex",justifyContent:"center",gap:12,marginBottom:20}}>
         {Array.from({length:maxLen}).map((_,i)=>(
           <div key={i} style={{width:18,height:18,borderRadius:"50%",
-            background:i<value.length?"#84cc16":"#1f2937",
-            border:"2px solid "+(i<value.length?"#84cc16":"#374151")}}/>
+            background:i<value.length?"#B8E020":"#1f2937",
+            border:"2px solid "+(i<value.length?"#B8E020":"#374151")}}/>
         ))}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,maxWidth:260,margin:"0 auto"}}>
@@ -129,22 +129,22 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
   const Header=()=>(
     <div style={{textAlign:"center",marginBottom:28}}>
       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:64,letterSpacing:-2,lineHeight:1,
-        textShadow:"0 0 40px #84cc1630"}}>
-        <span style={{color:"#84cc16"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
+        textShadow:"0 0 40px #B8E02030"}}>
+        <span style={{color:"#B8E020"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
       </div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginTop:6}}>
-        <span style={{width:24,height:2,background:"#84cc16",transform:"skewX(-20deg)"}}/>
-        <span style={{color:"#84cc16",fontSize:12,letterSpacing:3,textTransform:"uppercase",fontWeight:700}}>
+        <span style={{width:24,height:2,background:"#B8E020",transform:"skewX(-20deg)"}}/>
+        <span style={{color:"#B8E020",fontSize:12,letterSpacing:3,textTransform:"uppercase",fontWeight:700}}>
           PurInstinct Games
         </span>
-        <span style={{width:24,height:2,background:"#84cc16",transform:"skewX(-20deg)"}}/>
+        <span style={{width:24,height:2,background:"#B8E020",transform:"skewX(-20deg)"}}/>
       </div>
     </div>
   );
 
   return(<>
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
-      justifyContent:"center",padding:"32px 16px",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
+      justifyContent:"center",padding:"32px 16px",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
       {onGoTest&&<button onClick={()=>setTestUnavailable(true)}
         style={{position:"fixed",bottom:16,right:16,fontSize:10,color:"#374151",
@@ -187,7 +187,7 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
             <button onClick={()=>{setScreen("admin");setPin("");setPinError(false);}}
               style={{padding:"8px 16px",borderRadius:10,border:"1px solid #374151",background:"#111827",
                 color:"#6b7280",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",gap:6}}
-              onMouseEnter={e=>e.currentTarget.style.borderColor="#84cc16"}
+              onMouseEnter={e=>e.currentTarget.style.borderColor="#B8E020"}
               onMouseLeave={e=>e.currentTarget.style.borderColor="#374151"}>
               🛡️ Admin
             </button>
@@ -217,13 +217,13 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
               <div style={{color:"#fff",fontWeight:700,fontSize:20,marginBottom:8}}>
                 Demande envoyée !
               </div>
-              <div style={{color:"#84cc16",fontWeight:700,fontSize:16,marginBottom:12}}>{newName}</div>
+              <div style={{color:"#B8E020",fontWeight:700,fontSize:16,marginBottom:12}}>{newName}</div>
               <div style={{color:"#6b7280",fontSize:13,lineHeight:1.6,marginBottom:24}}>
                 Votre session est en attente.<br/>
                 L'administrateur va créer votre session<br/>
                 et vous fournir un code ou un QR code.
               </div>
-              <div style={{...S.card(),border:"1px solid #84cc1630",textAlign:"left"}}>
+              <div style={{...S.card(),border:"1px solid #B8E02030",textAlign:"left"}}>
                 <div style={{fontSize:11,color:"#4b5563",marginBottom:6}}>EN ATTENTE DE VALIDATION</div>
                 <div style={{color:"#fff",fontWeight:600}}>{newName}</div>
                 <div style={{color:"#6b7280",fontSize:12}}>{newGender==="F"?"Femme":"Homme"}</div>
@@ -244,15 +244,15 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
                   autoFocus
                   style={{width:"100%",padding:"14px 16px",borderRadius:14,border:"2px solid #374151",
                     background:"#111827",color:"#fff",fontSize:16,outline:"none",boxSizing:"border-box"}}
-                  onFocus={e=>e.target.style.borderColor="#84cc16"}
+                  onFocus={e=>e.target.style.borderColor="#B8E020"}
                   onBlur={e=>e.target.style.borderColor="#374151"}/>
                 <div style={{display:"flex",gap:8}}>
                   {[["M","👨 Homme"],["F","👩 Femme"]].map(([v,l])=>(
                     <button key={v} onClick={()=>setNewGender(v)}
                       style={{flex:1,padding:"12px",borderRadius:12,
-                        border:"2px solid "+(newGender===v?"#84cc16":"#374151"),
+                        border:"2px solid "+(newGender===v?"#B8E020":"#374151"),
                         background:newGender===v?"#1a2e05":"#111827",
-                        color:newGender===v?"#84cc16":"#6b7280",
+                        color:newGender===v?"#B8E020":"#6b7280",
                         cursor:"pointer",fontWeight:600,fontSize:14}}>
                       {l}
                     </button>
@@ -260,7 +260,7 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
                 </div>
                 <button onClick={handleCreateSolo} disabled={!newName.trim()}
                   style={{padding:"14px",borderRadius:14,border:"none",cursor:newName.trim()?"pointer":"not-allowed",
-                    background:newName.trim()?"#84cc16":"#1f2937",
+                    background:newName.trim()?"#B8E020":"#1f2937",
                     color:newName.trim()?"#000":"#4b5563",
                     fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
                     opacity:newName.trim()?1:0.5}}>
@@ -281,10 +281,10 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
           </button>}
           {sessionCode&&<div style={{textAlign:"center",marginBottom:20}}>
             <div style={{fontSize:11,color:"#4b5563",letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Code de session</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:52,color:"#84cc16",letterSpacing:6,lineHeight:1,textShadow:"0 0 30px #84cc1640"}}>{sessionCode}</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:52,color:"#B8E020",letterSpacing:6,lineHeight:1,textShadow:"0 0 30px #B8E02040"}}>{sessionCode}</div>
           </div>}
-          <div style={{...S.card(),border:"1px solid #84cc1640",marginBottom:16}}>
-            <div style={{fontSize:13,color:"#84cc16",fontWeight:700,marginBottom:12,textAlign:"center"}}>👤 Qui êtes-vous ?</div>
+          <div style={{...S.card(),border:"1px solid #B8E02040",marginBottom:16}}>
+            <div style={{fontSize:13,color:"#B8E020",fontWeight:700,marginBottom:12,textAlign:"center"}}>👤 Qui êtes-vous ?</div>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Entrez votre nom ou numéro..." autoFocus
               style={{width:"100%",padding:"12px 14px",borderRadius:12,border:"1px solid #374151",
                 background:"#111827",color:"#fff",fontSize:16,outline:"none",boxSizing:"border-box",marginBottom:search.trim()?10:0}}/>
@@ -297,7 +297,7 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
                     onMouseEnter={e=>e.currentTarget.style.background="#1f2937"}
                     onMouseLeave={e=>e.currentTarget.style.background="#0d0f1a"}>
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
-                      color:"#84cc16",width:32,textAlign:"center",flexShrink:0}}>#{p.number}</div>
+                      color:"#B8E020",width:32,textAlign:"center",flexShrink:0}}>#{p.number}</div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{color:"#fff",fontWeight:600,fontSize:14}}>{p.name}</div>
                       <div style={{color:"#4b5563",fontSize:11,marginTop:1}}>{p.globalPoints} pts · {(p.zonesPlayed||[]).length}/6 zones</div>
@@ -320,9 +320,9 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
                     {[["M","👨 Homme"],["F","👩 Femme"]].map(([v,l])=>(
                       <button key={v} onClick={()=>setNewGender(v)}
                         style={{flex:1,padding:"8px",borderRadius:10,
-                          border:"2px solid "+(newGender===v?"#84cc16":"#374151"),
+                          border:"2px solid "+(newGender===v?"#B8E020":"#374151"),
                           background:newGender===v?"#1a2e05":"#111827",
-                          color:newGender===v?"#84cc16":"#6b7280",
+                          color:newGender===v?"#B8E020":"#6b7280",
                           cursor:"pointer",fontWeight:600,fontSize:12}}>
                         {l}
                       </button>
@@ -330,7 +330,7 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
                   </div>
                   <button onClick={()=>{setNewName(search);handleAddToGroupWithName(search);}}
                     style={{width:"100%",padding:"10px",borderRadius:10,border:"none",cursor:"pointer",
-                      background:"#84cc16",color:"#000",fontFamily:"'Barlow Condensed',sans-serif",
+                      background:"#B8E020",color:"#000",fontFamily:"'Barlow Condensed',sans-serif",
                       fontWeight:900,fontSize:15}}>
                     + Rejoindre comme "{search}"
                   </button>

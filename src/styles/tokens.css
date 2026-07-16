@@ -1,0 +1,142 @@
+/* ============================================================
+   PURINSTINCT — DESIGN TOKENS (single source of truth)
+   Broadcast / arena design language. Consumed by base.css,
+   the ui/ primitives, and (via tokens.js bridge) inline styles.
+   ============================================================ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---- Brand + environment -------------------------------- */
+  --pi-bg:            #0A0A0A;   /* near-black arena base       */
+  --pi-bg-sunken:     #060606;   /* deepest wells (behind cards)*/
+  --pi-surface-1:     #121316;   /* primary card surface        */
+  --pi-surface-2:     #191A1F;   /* raised: inputs, nested cards*/
+  --pi-surface-3:     #202127;   /* hover / active surface      */
+
+  --pi-line:          #26272E;   /* hairline border             */
+  --pi-line-strong:   #383A42;   /* emphasized border           */
+
+  /* ---- Signature accent ----------------------------------- */
+  --pi-lime:          #B8E020;   /* neon brand accent           */
+  --pi-lime-hover:    #C6EC42;
+  --pi-lime-press:    #A2C915;
+  --pi-lime-ink:      #0A0A0A;   /* text on lime fills          */
+  --pi-lime-wash:     rgba(184,224,32,0.10);
+  --pi-lime-line:     rgba(184,224,32,0.32);
+  --pi-lime-glow:     rgba(184,224,32,0.30);
+
+  /* ---- Typography colors ---------------------------------- */
+  --pi-text:          #FFFFFF;   /* primary                     */
+  --pi-text-2:        #A6A8B0;   /* secondary                   */
+  --pi-text-3:        #6C6E78;   /* muted / metadata            */
+  --pi-text-4:        #45474F;   /* faint / disabled            */
+
+  /* ---- Status (non-color-only: always pair with icon/text) - */
+  --pi-live:          #FF3B30;   /* live / recording red        */
+  --pi-live-wash:     rgba(255,59,48,0.12);
+  --pi-danger:        #FF453A;
+  --pi-danger-deep:   #E0362C;
+  --pi-danger-wash:   rgba(255,69,58,0.12);
+  --pi-warn:          #FFB020;
+  --pi-warn-wash:     rgba(255,176,32,0.12);
+  --pi-ok:            #34D058;
+  --pi-ok-wash:       rgba(52,208,88,0.12);
+  --pi-info:          #5AC8FA;
+
+  /* ---- Type families -------------------------------------- */
+  --pi-font-display:  'Barlow Condensed', system-ui, sans-serif;
+  --pi-font-body:     'DM Sans', system-ui, sans-serif;
+  --pi-num:           'DM Sans', system-ui, sans-serif;
+
+  /* ---- Type scale (deliberate, 8 named steps) ------------- */
+  --pi-fs-display:    clamp(48px, 9vw, 84px);  /* hero scores   */
+  --pi-fs-score:      clamp(32px, 6vw, 56px);  /* live scores   */
+  --pi-fs-title:      clamp(26px, 4vw, 34px);  /* page title    */
+  --pi-fs-section:    20px;                     /* section head  */
+  --pi-fs-card:       15px;                     /* card title    */
+  --pi-fs-body:       14px;                     /* body          */
+  --pi-fs-label:      11px;                     /* uppercase lbl */
+  --pi-fs-meta:       10px;                     /* metadata      */
+
+  --pi-fw-regular:    400;
+  --pi-fw-medium:     500;
+  --pi-fw-semibold:   600;
+  --pi-fw-bold:       700;
+  --pi-fw-black:      900;
+
+  --pi-lh-tight:      1.0;
+  --pi-lh-snug:       1.2;
+  --pi-lh-body:       1.5;
+  --pi-tracking-cap:  0.14em;   /* uppercase labels             */
+  --pi-tracking-tight:-0.01em;  /* display                      */
+
+  /* ---- Spacing (4-based) ---------------------------------- */
+  --pi-s0:  2px;
+  --pi-s1:  4px;
+  --pi-s2:  8px;
+  --pi-s3:  12px;
+  --pi-s4:  16px;
+  --pi-s5:  20px;
+  --pi-s6:  24px;
+  --pi-s8:  32px;
+  --pi-s10: 40px;
+  --pi-s12: 48px;
+  --pi-s16: 64px;
+
+  /* ---- Radii (restrained: sharp geometry) ----------------- */
+  --pi-r-xs:  4px;
+  --pi-r-sm:  6px;
+  --pi-r-md:  10px;
+  --pi-r-lg:  14px;
+  --pi-r-pill: 999px;
+
+  /* Signature cut-corner (broadcast lower-third) */
+  --pi-cut:   12px;
+
+  /* ---- Borders -------------------------------------------- */
+  --pi-bw:    1px;
+  --pi-bw-strong: 2px;
+
+  /* ---- Shadows / glow ------------------------------------- */
+  --pi-shadow-card:  0 8px 24px rgba(0,0,0,0.55);
+  --pi-shadow-float: 0 16px 48px rgba(0,0,0,0.65);
+  --pi-shadow-pop:   0 4px 16px rgba(0,0,0,0.5);
+  --pi-glow-lime:    0 0 24px var(--pi-lime-glow);
+
+  /* ---- Control heights (touch-first) ---------------------- */
+  --pi-ctrl-sm:  36px;
+  --pi-ctrl-md:  44px;   /* min touch target                   */
+  --pi-ctrl-lg:  56px;
+  --pi-ctrl-xl:  64px;   /* primary live actions               */
+
+  /* ---- Layout widths -------------------------------------- */
+  --pi-w-narrow:  440px;   /* auth / focused flows             */
+  --pi-w-content: 720px;   /* single-column screens            */
+  --pi-w-wide:    1280px;  /* dashboards                       */
+  --pi-gutter:    16px;
+
+  /* ---- Z-index ladder ------------------------------------- */
+  --pi-z-base:    0;
+  --pi-z-sticky:  100;
+  --pi-z-nav:     200;
+  --pi-z-drawer:  300;
+  --pi-z-overlay: 400;
+  --pi-z-modal:   500;
+  --pi-z-toast:   600;
+  --pi-z-max:     900;
+
+  /* ---- Motion --------------------------------------------- */
+  --pi-dur-fast:   120ms;
+  --pi-dur-base:   200ms;
+  --pi-dur-slow:   320ms;
+  --pi-ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+  --pi-ease-in:    cubic-bezier(0.4, 0, 1, 1);
+  --pi-ease-spring:cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Breakpoints (reference — used in media queries throughout):
+   mobile   <  600px
+   tablet   >= 600px
+   desktop  >= 1024px
+   wide     >= 1440px  */

@@ -8,16 +8,16 @@ export function TestLanding({onEnter}){
   const zn=useZn();
   const DISPLAY_ZK=["purinstinct","handAgility","footAgility","generalAgility","iq","speed","augmented"];
   return(
-    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 16px 80px"}}>
       <style>{FONTS}</style>
       {/* Logo */}
       <div className="anim-pop" style={{textAlign:"center",marginBottom:32}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:60,letterSpacing:-2,lineHeight:1,
-          textShadow:"0 0 40px #84cc1630"}}>
-          <span style={{color:"#84cc16"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
+          textShadow:"0 0 40px #B8E02030"}}>
+          <span style={{color:"#B8E020"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
         </div>
-        <div style={{color:"#84cc16",fontSize:11,letterSpacing:3,textTransform:"uppercase",marginTop:4,fontWeight:700}}>
+        <div style={{color:"#B8E020",fontSize:11,letterSpacing:3,textTransform:"uppercase",marginTop:4,fontWeight:700}}>
           🧪 TEST MODE
         </div>
       </div>
@@ -63,8 +63,8 @@ export function TestLanding({onEnter}){
       {/* Enter admin button */}
       <button onClick={()=>onEnter(null)}
         style={{marginTop:24,padding:"12px 32px",clipPath:S.clip(10),
-          border:"1px solid #84cc1650",background:"#111a05",
-          color:"#84cc16",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
+          border:"1px solid #B8E02050",background:"#111a05",
+          color:"#B8E020",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",
           fontWeight:900,fontStyle:"italic",fontSize:16,letterSpacing:1}}>
         🛡️ ADMIN DASHBOARD
       </button>

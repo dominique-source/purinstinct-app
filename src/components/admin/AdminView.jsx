@@ -60,7 +60,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
   const sorted=[...players].sort((a,b)=>b.globalPoints-a.globalPoints);
   const eligible=sorted.filter(p=>(p.zonesPlayed||[]).length===6);
   const winner=arenaState.ended&&eligible.length>0?eligible[0]:null;
-  const timerColor=arenaState.active?"#84cc16":arenaState.paused?"#f97316":arenaState.ended?"#dc2626":"#374151";
+  const timerColor=arenaState.active?"#B8E020":arenaState.paused?"#f97316":arenaState.ended?"#dc2626":"#374151";
 
   if(dossierPlayer) return(
     <PlayerDossier player={dossierPlayer}
@@ -69,25 +69,25 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
   );
 
   return(<>
-    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
 
       {winner&&(
         <div style={{position:"fixed",inset:0,zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",
           padding:16,background:"rgba(0,0,0,.85)",backdropFilter:"blur(10px)"}}>
           <div className="anim-pop" style={{borderRadius:24,padding:32,textAlign:"center",maxWidth:320,width:"100%",
-            background:"#0d1508",border:"2px solid #84cc16",boxShadow:"0 0 80px #84cc1630"}}>
+            background:"#0d1508",border:"2px solid #B8E020",boxShadow:"0 0 80px #B8E02030"}}>
             <div style={{fontSize:56,marginBottom:12}}>🏆</div>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#fff",marginBottom:4}}>{t.champion}</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:52,color:"#84cc16"}}>#{winner.number}</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:52,color:"#B8E020"}}>#{winner.number}</div>
             <div style={{fontSize:18,fontWeight:700,color:"#fff",margin:"4px 0"}}>{winner.name}</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:40,color:"#84cc16",marginBottom:16}}>{winner.globalPoints} pts</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:40,color:"#B8E020",marginBottom:16}}>{winner.globalPoints} pts</div>
             <div style={{display:"flex",justifyContent:"center",gap:4}}>{ZK.map(zk=><ZonePip key={zk} zone={zk} played={true}/>)}</div>
           </div>
         </div>
       )}
 
-      <div style={{position:"sticky",top:0,zIndex:10,paddingTop:"calc(env(safe-area-inset-top) + 16px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",background:"#06070f",borderBottom:"1px solid #111827"}}>
+      <div style={{position:"sticky",top:0,zIndex:10,paddingTop:"calc(env(safe-area-inset-top) + 16px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",background:"#0A0A0A",borderBottom:"1px solid #111827"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
           <div>
             <div style={{...S.display(18),color:"#fff"}}>ADMIN</div>
@@ -106,12 +106,12 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
               <div className={arenaState.active?"pulse-lime":""} style={{...S.display(22),color:timerColor}}>{timer}</div>
               <div style={{fontSize:9,color:"#4b5563"}}>{arenaState.active?t.statusActive:arenaState.paused?t.statusPaused:arenaState.ended?t.statusEnded:t.statusWaiting}</div>
             </div>
-            {!arenaState.active&&!arenaState.paused&&<button onClick={()=>onStart(sessionMins)} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12}}>{t.start}</button>}
+            {!arenaState.active&&!arenaState.paused&&<button onClick={()=>onStart(sessionMins)} style={{...S.btn("#B8E020"),padding:"6px 12px",fontSize:12}}>{t.start}</button>}
             {arenaState.active&&<button onClick={onPause} style={{...S.btn("#f97316"),padding:"6px 12px",fontSize:12,color:"#000",fontWeight:700}}>⏸ Pause</button>}
-            {arenaState.paused&&<button onClick={onResume} style={{...S.btn("#84cc16"),padding:"6px 12px",fontSize:12,color:"#000",fontWeight:700}}>▶ Reprendre</button>}
+            {arenaState.paused&&<button onClick={onResume} style={{...S.btn("#B8E020"),padding:"6px 12px",fontSize:12,color:"#000",fontWeight:700}}>▶ Reprendre</button>}
             {(arenaState.active||arenaState.paused)&&<button onClick={onEnd} style={{...S.btn("#dc2626"),padding:"6px 12px",fontSize:12,color:"#fff"}}>■ Terminer</button>}
             <button onClick={onGoStation} title="Mode responsable de plateau"
-              style={{padding:8,borderRadius:10,background:"#111827",color:"#84cc16",border:"1px solid #84cc1640",cursor:"pointer",fontSize:15}}>📍</button>
+              style={{padding:8,borderRadius:10,background:"#111827",color:"#B8E020",border:"1px solid #B8E02040",cursor:"pointer",fontSize:15}}>📍</button>
             <button onClick={onLogout} style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>×</button>
           </div>
         </div>
@@ -119,7 +119,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
           {[["cockpit","🎛 Cockpit"],["leaderboard",t.tabLeader],["stations",t.tabStations],["players",t.tabPlayers],["session",t.tabSession],["survey",t.tabSurvey],["comments",t.tabComments],["winners",t.tabWinners]].map(([t,l])=>(
             <button key={t} onClick={()=>{setTab(t);setSelectedStation(null);}} style={{
               padding:"6px 10px",borderRadius:8,fontSize:11,fontWeight:600,border:"none",cursor:"pointer",
-              background:tab===t?"#84cc16":"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
+              background:tab===t?"#B8E020":"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
               {l}
             </button>
           ))}
@@ -141,10 +141,10 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
             <div style={{...S.heroCard(),display:"flex",flexWrap:"wrap",alignItems:"center",gap:8,padding:14}}>
               <div style={{...S.label(),marginRight:"auto"}}>Contrôle arène</div>
               {arenaState.active&&<button onClick={onPause} style={{...S.btn("#f97316"),padding:"6px 14px",fontSize:12,color:"#000"}}>⏸ Pause</button>}
-              {arenaState.paused&&<button onClick={onResume} style={{...S.btn("#84cc16"),padding:"6px 14px",fontSize:12,color:"#000"}}>▶ Reprendre</button>}
+              {arenaState.paused&&<button onClick={onResume} style={{...S.btn("#B8E020"),padding:"6px 14px",fontSize:12,color:"#000"}}>▶ Reprendre</button>}
               {(arenaState.active||arenaState.paused)&&<button onClick={onEnd} style={{...S.btn("#dc2626"),padding:"6px 14px",fontSize:12,color:"#fff"}}>■ Terminer</button>}
               <button onClick={winnersPublished?onUnpublishWinners:onPublishWinners}
-                style={{...S.btn(winnersPublished?"#374151":"#84cc16"),padding:"6px 14px",fontSize:12,color:winnersPublished?"#9ca3af":"#000"}}>
+                style={{...S.btn(winnersPublished?"#374151":"#B8E020"),padding:"6px 14px",fontSize:12,color:winnersPublished?"#9ca3af":"#000"}}>
                 {winnersPublished?t.unpublish:t.publish}
               </button>
             </div>
@@ -179,8 +179,8 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                       </div>
                       <button onClick={()=>onToggleZone(zk)}
                         style={{padding:"4px 10px",borderRadius:20,cursor:"pointer",fontSize:10,fontWeight:700,flexShrink:0,
-                          background:isDisabled?"#ef444420":"#84cc1620",color:isDisabled?"#ef4444":"#84cc16",
-                          border:"1px solid "+(isDisabled?"#ef444440":"#84cc1640")}}>
+                          background:isDisabled?"#ef444420":"#B8E02020",color:isDisabled?"#ef4444":"#B8E020",
+                          border:"1px solid "+(isDisabled?"#ef444440":"#B8E02040")}}>
                         {isDisabled?"⏸ OFF":"● ON"}
                       </button>
                     </div>
@@ -207,7 +207,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
           <div className="anim-up">
             <div style={{...S.row(),justifyContent:"space-between",marginBottom:12}}>
               <div style={{...S.label()}}>{t.realtimeRank}</div>
-              <div style={{fontSize:11,color:"#4b5563"}}><span style={{color:"#84cc16"}}>✓</span> = 6/6 {t.eligible}</div>
+              <div style={{fontSize:11,color:"#4b5563"}}><span style={{color:"#B8E020"}}>✓</span> = 6/6 {t.eligible}</div>
             </div>
             {/* Barre de recherche */}
             <div style={{position:"relative",marginBottom:10}}>
@@ -233,7 +233,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                         onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                         <Bib n={p.number} size="sm"/>
                         <span style={{color:"#fff",fontSize:13,flex:1}}>{p.name}</span>
-                        <span style={{color:"#84cc16",fontSize:12,fontWeight:700}}>#{sorted.indexOf(p)+1}</span>
+                        <span style={{color:"#B8E020",fontSize:12,fontWeight:700}}>#{sorted.indexOf(p)+1}</span>
                       </div>
                     ))}
                   </div>
@@ -414,11 +414,11 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                       style={{position:"absolute",top:"50%",right:12,transform:"translateY(-50%)",
                         padding:"5px 12px",borderRadius:20,border:"none",cursor:"pointer",
                         fontSize:10,fontWeight:700,zIndex:3,
-                        background:isDisabled?"#ef444420":"#84cc1620",
-                        color:isDisabled?"#ef4444":"#84cc16",
-                        border:"1px solid "+(isDisabled?"#ef444440":"#84cc1640")}}
-                      onMouseEnter={e=>{e.currentTarget.style.background=isDisabled?"#ef444430":"#84cc1630";}}
-                      onMouseLeave={e=>{e.currentTarget.style.background=isDisabled?"#ef444420":"#84cc1620";}}>
+                        background:isDisabled?"#ef444420":"#B8E02020",
+                        color:isDisabled?"#ef4444":"#B8E020",
+                        border:"1px solid "+(isDisabled?"#ef444440":"#B8E02040")}}
+                      onMouseEnter={e=>{e.currentTarget.style.background=isDisabled?"#ef444430":"#B8E02030";}}
+                      onMouseLeave={e=>{e.currentTarget.style.background=isDisabled?"#ef444420":"#B8E02020";}}>
                       {isDisabled?"⏸ OFF":"● ON"}
                     </button>
                   </div>
@@ -435,11 +435,11 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                   const qLen=gs.queue.length;
                   const hasMatch=!!gs.activeMatch;
                   return(
-                    <div key={game.id} style={{borderRadius:16,padding:14,background:"#0d0f1a",border:"1px solid "+(hasMatch?"#84cc1640":AUG_COLOR+"40"),
+                    <div key={game.id} style={{borderRadius:16,padding:14,background:"#0d0f1a",border:"1px solid "+(hasMatch?"#B8E02040":AUG_COLOR+"40"),
                       marginBottom:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}
                       onClick={()=>setSelectedAugGame(game.id)}
                       onMouseEnter={e=>e.currentTarget.style.borderColor=AUG_COLOR}
-                      onMouseLeave={e=>e.currentTarget.style.borderColor=hasMatch?"#84cc1640":AUG_COLOR+"40"}>
+                      onMouseLeave={e=>e.currentTarget.style.borderColor=hasMatch?"#B8E02040":AUG_COLOR+"40"}>
                       <div style={{display:"flex",alignItems:"center",gap:10}}>
                         <div style={{width:32,height:32,borderRadius:8,overflow:"hidden",flexShrink:0,border:"1px solid "+AUG_COLOR+"40"}}>
                           <img src={game.img} alt={game.fr} style={{width:"100%",height:"100%",objectFit:"cover"}}
@@ -505,9 +505,9 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                   </div>
 
                   {activeMatch?(
-                    <div style={{borderRadius:16,padding:14,background:"#0d0f1a",border:"2px solid #84cc16",marginBottom:10}}>
+                    <div style={{borderRadius:16,padding:14,background:"#0d0f1a",border:"2px solid #B8E020",marginBottom:10}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                        <div style={{fontWeight:700,fontSize:13,color:"#84cc16"}}>⚡ {activeMatch.format.toUpperCase()} EN COURS</div>
+                        <div style={{fontWeight:700,fontSize:13,color:"#B8E020"}}>⚡ {activeMatch.format.toUpperCase()} EN COURS</div>
                         <button onClick={cancelMatch} style={{fontSize:11,color:"#6b7280",background:"none",border:"none",cursor:"pointer"}}>↩ Annuler</button>
                       </div>
                       <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:8,alignItems:"center",marginBottom:12}}>
@@ -573,7 +573,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
             <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:12,padding:"10px 12px",borderRadius:10,background:"#0d0f1a",border:"1px solid #1f2937"}}>
               <div style={{...S.label(),width:"100%",marginBottom:4}}>Legende</div>
               <div style={{...S.row(),gap:5,fontSize:12,color:"#6b7280"}}><div style={{width:8,height:8,borderRadius:"50%",background:"#22c55e",flexShrink:0}}/>Libre</div>
-              <div style={{...S.row(),gap:5,fontSize:12,color:"#6b7280"}}><div style={{width:8,height:8,borderRadius:"50%",background:"#84cc16",flexShrink:0}}/>En file (1 ou 2)</div>
+              <div style={{...S.row(),gap:5,fontSize:12,color:"#6b7280"}}><div style={{width:8,height:8,borderRadius:"50%",background:"#B8E020",flexShrink:0}}/>En file (1 ou 2)</div>
               <div style={{...S.row(),gap:5,fontSize:12,color:"#6b7280"}}><div style={{width:8,height:8,borderRadius:"50%",background:"#fbbf24",flexShrink:0}}/>En partie</div>
               <div style={{fontSize:12,color:"#6b7280"}}>| Boutons <strong style={{color:"#fff"}}>+ Zone</strong> = ajouter a cette file</div>
               <div style={{fontSize:12,color:"#6b7280"}}>| Bouton <strong style={{color:"#ef4444"}}>Retirer</strong> = sortir de la file</div>
@@ -585,18 +585,18 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
               {players.map(p=>{
                 const {inQueues,playingAt}=getStatus(p.id,queues,activeGames);
                 const canAdd=!playingAt&&inQueues.length<2;
-                const statusDot = playingAt?"#fbbf24":inQueues.length>0?"#84cc16":"#374151";
+                const statusDot = playingAt?"#fbbf24":inQueues.length>0?"#B8E020":"#374151";
                 const statusText = playingAt
                   ?("⚡ En partie · "+zn(playingAt).name)
                   :inQueues.length>0
                     ?("En file · "+inQueues.map(z=>zn(z).sn).join(" + "))
                     :"Libre";
-                const statusColor = playingAt?"#fbbf24":inQueues.length>0?"#84cc16":"#4b5563";
+                const statusColor = playingAt?"#fbbf24":inQueues.length>0?"#B8E020":"#4b5563";
                 const zonesNotIn=ZK.filter(zk=>!inQueues.includes(zk));
 
                 return(
                   <div key={p.id} style={{borderRadius:12,background:"#0d0f1a",overflow:"hidden",
-                    border:"1px solid "+(playingAt?"#fbbf2430":inQueues.length>0?"#84cc1630":"#1f2937")}}>
+                    border:"1px solid "+(playingAt?"#fbbf2430":inQueues.length>0?"#B8E02030":"#1f2937")}}>
 
                     {/* Top row: identity + status + points + dossier link — full row is clickable */}
                     <div style={{...S.row(),padding:"9px 12px",gap:10}}>
@@ -606,7 +606,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                         <div style={{color:"#fff",fontWeight:600,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
                         <div style={{fontSize:11,marginTop:1,fontWeight:600,color:statusColor}}>{statusText}</div>
                       </div>
-                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#84cc16",flexShrink:0}}>{p.globalPoints} pts</div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#B8E020",flexShrink:0}}>{p.globalPoints} pts</div>
                       <button onClick={(e)=>{e.stopPropagation();openDossier(p.id);}}
                         style={{...S.btn("#1f2937"),padding:"4px 8px",fontSize:11,flexShrink:0}}>Profil</button>
                       <button onClick={(e)=>{e.stopPropagation();if(window.confirm("Supprimer "+p.name+" de la session ?"))onRemovePlayer&&onRemovePlayer(p.id);}}
@@ -727,7 +727,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                   <div key={c.id} style={{borderRadius:12,background:"#0d0f1a",border:"1px solid #1f2937",padding:"12px 14px"}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
-                        color:"#84cc16",background:"#111a05",border:"1px solid #84cc1640",
+                        color:"#B8E020",background:"#111a05",border:"1px solid #B8E02040",
                         borderRadius:8,padding:"2px 8px",flexShrink:0}}>#{c.playerNumber}</div>
                       <div style={{fontWeight:700,color:"#fff",fontSize:13}}>{c.playerName}</div>
                       <div style={{marginLeft:"auto",fontSize:10,color:"#374151"}}>
@@ -758,7 +758,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
           return(
             <div style={{padding:"0 0 16px"}}>
               <div style={{marginBottom:16,padding:"12px 16px",borderRadius:12,background:"#0d0f1a",border:"1px solid #1f2937",display:"flex",alignItems:"center",gap:12}}>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:32,color:"#84cc16"}}>{total}</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:32,color:"#B8E020"}}>{total}</div>
                 <div style={{fontSize:12,color:"#6b7280",flex:1}}>réponse{total!==1?"s":""} sur {players.length} joueur{players.length!==1?"s":""}</div>
                 {total>0&&onResetAllSurveys&&<button onClick={()=>{if(window.confirm("Effacer tous les sondages ?")) onResetAllSurveys();}}
                   style={{padding:"6px 12px",borderRadius:8,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,flexShrink:0}}>
@@ -839,15 +839,15 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                 display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
                 {/* Carte visuelle — capturée par html2canvas */}
                 <div ref={cardRef} onClick={saveImage} style={{width:"100%",maxWidth:380,borderRadius:24,
-                  background:"#0a0c14",border:"2px solid "+(accent||"#84cc16"),padding:28,
+                  background:"#0a0c14",border:"2px solid "+(accent||"#B8E020"),padding:28,
                   position:"relative",overflow:"hidden",cursor:"pointer",
-                  boxShadow:"0 0 60px "+(accent||"#84cc16")+"40"}}>
+                  boxShadow:"0 0 60px "+(accent||"#B8E020")+"40"}}>
                   {/* Barre couleur top */}
                   <div style={{position:"absolute",top:0,left:0,right:0,height:4,
-                    background:`linear-gradient(90deg, ${accent||"#84cc16"}, ${accent||"#84cc16"}88)`}}/>
+                    background:`linear-gradient(90deg, ${accent||"#B8E020"}, ${accent||"#B8E020"}88)`}}/>
                   {/* Logo texte */}
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:10,
-                    color:(accent||"#84cc16")+"80",letterSpacing:3,marginBottom:16,textAlign:"center",marginTop:8}}>
+                    color:(accent||"#B8E020")+"80",letterSpacing:3,marginBottom:16,textAlign:"center",marginTop:8}}>
                     PURINSTINCT GAMES · {today}
                   </div>
                   {children}
@@ -879,7 +879,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                       color:"#ca8a04",letterSpacing:3,marginBottom:6}}>GAGNANT</div>
                     <div style={{color:"#fff",fontWeight:700,fontSize:26,marginBottom:4}}>{overall.name}</div>
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:48,
-                      color:"#84cc16",lineHeight:1}}>{overall.globalPoints}</div>
+                      color:"#B8E020",lineHeight:1}}>{overall.globalPoints}</div>
                     <div style={{fontSize:12,color:"#4b5563",marginTop:2}}>points globaux</div>
                   </div>
                   {/* Zones */}
@@ -889,10 +889,10 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                       return(
                         <div key={zk} style={{borderRadius:10,padding:"8px 6px",textAlign:"center",
                           background:played?"#1a2e05":"#111827",
-                          border:"1px solid "+(played?"#84cc1650":"#1f2937")}}>
+                          border:"1px solid "+(played?"#B8E02050":"#1f2937")}}>
                           <div style={{fontSize:18}}>{zoneIcons[zk]}</div>
                           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
-                            color:played?"#84cc16":"#374151"}}>{(overall.zoneScores||{})[zk]||50}</div>
+                            color:played?"#B8E020":"#374151"}}>{(overall.zoneScores||{})[zk]||50}</div>
                           <div style={{fontSize:9,color:played?"#6b7280":"#1f2937",marginTop:1}}>{zoneNames[zk].split(" ")[0]}</div>
                         </div>
                       );
@@ -982,12 +982,12 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
 
           // ── Liste des cartes ────────────────────────────────────────
           const ClickCard=({accent,onClick,children})=>(
-            <div onClick={onClick} style={{borderRadius:16,background:"#0d0f1a",border:"2px solid "+(accent||"#84cc16"),
+            <div onClick={onClick} style={{borderRadius:16,background:"#0d0f1a",border:"2px solid "+(accent||"#B8E020"),
               padding:20,marginBottom:12,position:"relative",overflow:"hidden",cursor:"pointer"}}
-              onMouseEnter={e=>{e.currentTarget.style.background="#111827";e.currentTarget.style.boxShadow="0 0 20px "+(accent||"#84cc16")+"20";}}
+              onMouseEnter={e=>{e.currentTarget.style.background="#111827";e.currentTarget.style.boxShadow="0 0 20px "+(accent||"#B8E020")+"20";}}
               onMouseLeave={e=>{e.currentTarget.style.background="#0d0f1a";e.currentTarget.style.boxShadow="none";}}>
-              <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:accent||"#84cc16"}}/>
-              <div style={{position:"absolute",top:12,right:14,fontSize:16,color:(accent||"#84cc16")+"60"}}>↗</div>
+              <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:accent||"#B8E020"}}/>
+              <div style={{position:"absolute",top:12,right:14,fontSize:16,color:(accent||"#B8E020")+"60"}}>↗</div>
               {children}
             </div>
           );
@@ -995,7 +995,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
           return(
             <div className="anim-up">
               {/* Bouton publier */}
-              <div style={{...S.card(),marginBottom:16,border:"1px solid "+(winnersPublished?"#84cc1640":"#374151"),
+              <div style={{...S.card(),marginBottom:16,border:"1px solid "+(winnersPublished?"#B8E02040":"#374151"),
                 display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
                 <div>
                   <div style={{color:"#fff",fontWeight:700,fontSize:13}}>
@@ -1006,7 +1006,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                   </div>
                 </div>
                 <button onClick={winnersPublished?onUnpublishWinners:onPublishWinners}
-                  style={{...S.btn(winnersPublished?"#374151":"#84cc16"),padding:"8px 16px",fontSize:12,
+                  style={{...S.btn(winnersPublished?"#374151":"#B8E020"),padding:"8px 16px",fontSize:12,
                     color:winnersPublished?"#9ca3af":"#000",flexShrink:0}}>
                   {winnersPublished?t.unpublish:t.publish}
                 </button>
@@ -1024,7 +1024,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,
                         color:"#ca8a04",letterSpacing:2,marginBottom:2}}>GAGNANT PURINSTINCT GAMES</div>
                       <div style={{color:"#fff",fontWeight:700,fontSize:17,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{overall.name}</div>
-                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#84cc16"}}>{overall.globalPoints} pts</div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#B8E020"}}>{overall.globalPoints} pts</div>
                     </div>
                   </div>
                 </ClickCard>
@@ -1042,7 +1042,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
                     <div key={p.id} style={{...S.row(),gap:8,padding:"3px 0"}}>
                       <span style={{fontSize:14,width:20}}>{medals[i]}</span>
                       <span style={{color:"#e5e7eb",fontSize:13,flex:1}}>{p.name}</span>
-                      <span style={{color:"#84cc16",fontWeight:700,fontSize:13}}>{p.globalPoints}</span>
+                      <span style={{color:"#B8E020",fontWeight:700,fontSize:13}}>{p.globalPoints}</span>
                     </div>
                   ))}
                   {top5.length>3&&<div style={{fontSize:11,color:"#4b5563",marginTop:4}}>+{top5.length-3} autres…</div>}

@@ -12,14 +12,14 @@ function KioskRow({p,i}){
   return(
     <div className="anim-up" style={{display:"flex",alignItems:"center",gap:14,
       padding:"10px 16px",background:top?"#1a2e05":"#0d0f1a",
-      border:"1px solid "+(top?"#84cc16":"#1f2937"),
+      border:"1px solid "+(top?"#B8E020":"#1f2937"),
       clipPath:top?S.clip(12):undefined,borderRadius:top?0:12,
-      filter:top?"drop-shadow(0 0 12px #84cc1640)":"none",
-      backgroundImage:top?"repeating-linear-gradient(0deg, transparent 0 3px, #84cc1608 3px 4px)":"none"}}>
-      <div style={{...S.display(22),color:top?"#84cc16":"#4b5563",width:32,textAlign:"center",flexShrink:0}}>{i+1}</div>
+      filter:top?"drop-shadow(0 0 12px #B8E02040)":"none",
+      backgroundImage:top?"repeating-linear-gradient(0deg, transparent 0 3px, #B8E02008 3px 4px)":"none"}}>
+      <div style={{...S.display(22),color:top?"#B8E020":"#4b5563",width:32,textAlign:"center",flexShrink:0}}>{i+1}</div>
       <div style={{flex:1,minWidth:0,color:"#fff",fontWeight:700,fontSize:16,overflow:"hidden",
         textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
-      <div style={{...S.display(20),color:top?"#84cc16":"#9ca3af"}}>{pts} pts</div>
+      <div style={{...S.display(20),color:top?"#B8E020":"#9ca3af"}}>{pts} pts</div>
     </div>
   );
 }
@@ -102,7 +102,7 @@ export function KioskView({players,disabledZones,lockedZone,onRegister}){
 
   return(
     <div ref={rootRef} onClick={bump} onKeyDown={bump} onContextMenu={e=>e.preventDefault()}
-      style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
+      style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
         touchAction:"manipulation",overscrollBehavior:"none",userSelect:"none"}}>
       <style>{FONTS}</style>
 
@@ -110,12 +110,12 @@ export function KioskView({players,disabledZones,lockedZone,onRegister}){
         <div onClick={wake} style={{minHeight:"100vh",display:"flex",flexDirection:"column",
           alignItems:"center",justifyContent:"center",padding:32,cursor:"pointer"}}>
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:44,letterSpacing:-1,marginBottom:6,
-            textShadow:"0 0 30px #84cc1630"}}>
-            <span style={{color:"#84cc16"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
+            textShadow:"0 0 30px #B8E02030"}}>
+            <span style={{color:"#B8E020"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:32}}>
-            <span className="pulse-lime" style={S.liveDot("#84cc16",8)}/>
-            <span style={{color:"#84cc16",fontSize:11,letterSpacing:3,textTransform:"uppercase",fontWeight:700}}>
+            <span className="pulse-lime" style={S.liveDot("#B8E020",8)}/>
+            <span style={{color:"#B8E020",fontSize:11,letterSpacing:3,textTransform:"uppercase",fontWeight:700}}>
               Classement en direct
             </span>
           </div>
@@ -125,7 +125,7 @@ export function KioskView({players,disabledZones,lockedZone,onRegister}){
             )}
             {sorted.map((p,i)=><KioskRow key={p.id} p={p} i={i}/>)}
           </div>
-          <div className="pulse-lime" style={{marginTop:40,color:"#84cc16",fontSize:13,fontWeight:700,
+          <div className="pulse-lime" style={{marginTop:40,color:"#B8E020",fontSize:13,fontWeight:700,
             letterSpacing:1,textTransform:"uppercase"}}>
             👆 Touchez l'écran pour vous inscrire
           </div>
@@ -174,7 +174,7 @@ export function KioskView({players,disabledZones,lockedZone,onRegister}){
               placeholder="Tapez votre nom…"
               style={{width:"100%",padding:"16px 18px",borderRadius:16,border:"2px solid #374151",
                 background:"#111827",color:"#fff",fontSize:18,outline:"none",boxSizing:"border-box",marginBottom:12}}
-              onFocus={e=>e.target.style.borderColor="#84cc16"}
+              onFocus={e=>e.target.style.borderColor="#B8E020"}
               onBlur={e=>e.target.style.borderColor="#374151"}/>
 
             {filtered.length>0&&(
@@ -184,7 +184,7 @@ export function KioskView({players,disabledZones,lockedZone,onRegister}){
                     style={{minHeight:56,display:"flex",alignItems:"center",gap:12,padding:"10px 14px",
                       borderRadius:12,border:"1px solid #1f2937",background:"#0d0f1a",cursor:"pointer",textAlign:"left"}}>
                     <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-                      color:"#84cc16",width:28,flexShrink:0,textAlign:"center"}}>#{p.number}</span>
+                      color:"#B8E020",width:28,flexShrink:0,textAlign:"center"}}>#{p.number}</span>
                     <span style={{color:"#fff",fontWeight:600,fontSize:15,flex:1}}>{p.name}</span>
                     <span style={{color:"#374151",fontSize:16}}>›</span>
                   </button>
@@ -198,16 +198,16 @@ export function KioskView({players,disabledZones,lockedZone,onRegister}){
                   {[["M","👨 Homme"],["F","👩 Femme"]].map(([v,l])=>(
                     <button key={v} onClick={()=>{bump();setGender(v);}}
                       style={{flex:1,minHeight:48,padding:"10px",borderRadius:12,
-                        border:"2px solid "+(gender===v?"#84cc16":"#374151"),
+                        border:"2px solid "+(gender===v?"#B8E020":"#374151"),
                         background:gender===v?"#1a2e05":"#111827",
-                        color:gender===v?"#84cc16":"#6b7280",cursor:"pointer",fontWeight:600,fontSize:13}}>
+                        color:gender===v?"#B8E020":"#6b7280",cursor:"pointer",fontWeight:600,fontSize:13}}>
                       {l}
                     </button>
                   ))}
                 </div>
                 <button onClick={()=>{bump();finish(search.trim());}}
                   style={{width:"100%",minHeight:56,padding:"14px",borderRadius:14,border:"none",cursor:"pointer",
-                    background:"#84cc16",color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18}}>
+                    background:"#B8E020",color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18}}>
                   ✓ Confirmer — {search.trim()}
                 </button>
               </div>
@@ -221,7 +221,7 @@ export function KioskView({players,disabledZones,lockedZone,onRegister}){
           justifyContent:"center",padding:24,textAlign:"center"}}>
           <div className="anim-pop" style={{fontSize:64,marginBottom:16}}>✅</div>
           <div style={{color:"#fff",fontWeight:700,fontSize:24,marginBottom:8}}>Bienvenue {confirmed.name} !</div>
-          <div style={{color:"#84cc16",fontSize:15,fontWeight:600}}>
+          <div style={{color:"#B8E020",fontSize:15,fontWeight:600}}>
             Vous êtes dans la file — {zn(confirmed.zone).name}
           </div>
         </div>

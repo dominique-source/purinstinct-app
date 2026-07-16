@@ -47,14 +47,14 @@ export function SprintGameView({game,players,zone,onWinner,onRemove,onReplace,lo
           return(
             <div key={p.id} style={{...S.row(),padding:"8px 10px",borderRadius:10,
               background:isFirst?"#1a2e05":isSecond?"#1a1400":"#0d0f1a",
-              border:"2px solid "+(isFirst?"#84cc16":isSecond?"#ca8a04":t.color+"40")}}>
+              border:"2px solid "+(isFirst?"#B8E020":isSecond?"#ca8a04":t.color+"40")}}>
               <div style={{width:24,height:24,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",
                 fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:12,
                 background:t.color+"22",color:t.color,flexShrink:0}}>{i+1}</div>
               <TierBadge score={(p.zoneScores||{}).speed||50}/>
               <Bib n={p.number} size="sm" color={t.color}/>
               <span style={{flex:1,color:"#fff",fontWeight:600,fontSize:13}}>{p.name}</span>
-              {isFirst&&<span style={{fontSize:11,color:"#84cc16",fontWeight:700}}>🥇 1er</span>}
+              {isFirst&&<span style={{fontSize:11,color:"#B8E020",fontWeight:700}}>🥇 1er</span>}
               {isSecond&&<span style={{fontSize:11,color:"#ca8a04",fontWeight:700}}>🥈 2e</span>}
               {streak>=2&&<span style={{fontSize:11,color:"#f97316"}}>🔥x{streak}</span>}
               <span style={{fontSize:11,color:t.color,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{(p.zoneScores||{}).speed||50}</span>
@@ -87,8 +87,8 @@ export function SprintGameView({game,players,zone,onWinner,onRemove,onReplace,lo
               else if(p.id===selectedFirst){setSelectedFirst(null);setSelectedSecond(null);}
               else{setSelectedSecond(p.id===selectedSecond?null:p.id);}
             }}
-              style={{flex:"1 1 45%",minHeight:64,padding:"12px 10px",clipPath:S.clip(10),border:"2px solid "+(isFirst?"#84cc16":selectedFirst?"#ca8a0460":"transparent"),cursor:"pointer",
-                background:isFirst?"#84cc16":selectedFirst?t.color+"90":t.color,
+              style={{flex:"1 1 45%",minHeight:64,padding:"12px 10px",clipPath:S.clip(10),border:"2px solid "+(isFirst?"#B8E020":selectedFirst?"#ca8a0460":"transparent"),cursor:"pointer",
+                background:isFirst?"#B8E020":selectedFirst?t.color+"90":t.color,
                 color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:16}}>
               {isFirst?"🥇 ":""}#{p.number} {p.name.split(" ")[0]}
             </button>
@@ -101,7 +101,7 @@ export function SprintGameView({game,players,zone,onWinner,onRemove,onReplace,lo
         <div style={{display:"flex",gap:8,opacity:locked?0.4:1,pointerEvents:locked?"none":"auto"}}>
           <button onClick={()=>!locked&&handleConfirm()}
             style={{flex:1,minHeight:64,padding:"14px",clipPath:S.clip(10),border:"none",cursor:"pointer",
-              background:"#84cc16",color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:16}}>
+              background:"#B8E020",color:"#000",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:16}}>
             ✓ Confirmer{selectedSecond?" (1er + 2e)":" (1er seulement)"}
           </button>
           <button onClick={()=>{setSelectedFirst(null);setSelectedSecond(null);}}

@@ -17,7 +17,7 @@ export function RulesCard({zone}){
     setSavingStory(true);
     try{
       const canvas=await html2canvas(storyRef.current,{
-        backgroundColor:"#06070f",scale:3,useCORS:true,logging:false,removeContainer:true
+        backgroundColor:"#0A0A0A",scale:3,useCORS:true,logging:false,removeContainer:true
       });
       const url=canvas.toDataURL("image/png");
       const a=document.createElement("a");
@@ -65,14 +65,14 @@ export function RulesCard({zone}){
         {/* Carte story (format 9:16) */}
         <div ref={storyRef} style={{
           width:320,height:568,borderRadius:24,overflow:"hidden",position:"relative",
-          background:"#06070f",display:"flex",flexDirection:"column",alignItems:"center",
+          background:"#0A0A0A",display:"flex",flexDirection:"column",alignItems:"center",
           justifyContent:"center",padding:32,flexShrink:0}}>
           {/* Fond coloré */}
           <div style={{position:"absolute",inset:0,background:`radial-gradient(ellipse at center, ${z.color}22 0%, transparent 70%)`}}/>
           {/* Logo */}
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
             color:"#fff",letterSpacing:3,marginBottom:24,opacity:.6,zIndex:1}}>
-            <span style={{color:"#84cc16"}}>PUR</span>INSTINCT
+            <span style={{color:"#B8E020"}}>PUR</span>INSTINCT
           </div>
           {/* Zone */}
           <div style={{fontSize:52,marginBottom:12,zIndex:1}}>{z.icon}</div>

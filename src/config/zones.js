@@ -1,5 +1,5 @@
 export const ZONES = {
-  purinstinct:{icon:"🏟️",color:"#84cc16",bg:"#111a05",border:"#84cc1640",winPts:10,lossPts:3,minP:12,maxP:12,teamSize:6,gameStyle:"team",
+  purinstinct:{icon:"🏟️",color:"#B8E020",bg:"#111a05",border:"#B8E02040",winPts:10,lossPts:3,minP:12,maxP:12,teamSize:6,gameStyle:"team",
     fr:{name:"PurInstinct",sn:"PurInstinct",sub:"Match 5 min - 2x6 joueurs",rules:["2 équipes de 6 joueurs, match de 5 minutes","Objectif : traverser un terrain avec un ballon à 3 vs 2 sans se faire toucher et sans échapper le ballon","L'équipe offensive a 16 secondes pour marquer","À chaque séquence, trois nouveaux joueurs offensifs et 2 nouveaux joueurs défensifs entrent en jeu","Chaque arrêt donne 1 retrait à la défensive — après 3 retraits, on change les équipes offensives et défensives de façon dynamique","Victoire: +10 pts  |  Défaite: -3 pts"]},
     en:{name:"PurInstinct",sn:"PurInstinct",sub:"5 min Match - 2x6 players",rules:["2 teams of 6 players, 5-minute match","Goal: cross the field with a ball 3 vs 2 without being tagged and without dropping the ball","The offensive team has 16 seconds to score","Each sequence, three new offensive and 2 new defensive players enter","Each stop gives 1 out to the defense — after 3 outs, offensive and defensive teams swap dynamically","Win: +10 pts  |  Loss: -3 pts"]}},
   speed:{icon:"⚡",color:"#f97316",bg:"#1c0800",border:"#f9731640",winPts:4,lossPts:2,minP:4,maxP:50,teamSize:null,gameStyle:"sprint",
@@ -38,7 +38,7 @@ export const QUEUE_MIN = { purinstinct:14, speed:14, handAgility:9, footAgility:
 
 export const TIERS = {
   1:{ label:"Niv.1", color:"#22c55e", pos:"Position 1 (avant)" },
-  2:{ label:"Niv.2", color:"#84cc16", pos:"Position 2" },
+  2:{ label:"Niv.2", color:"#B8E020", pos:"Position 2" },
   3:{ label:"Niv.3", color:"#eab308", pos:"Position 3 (milieu)" },
   4:{ label:"Niv.4", color:"#f97316", pos:"Position 4" },
   5:{ label:"Niv.5", color:"#ef4444", pos:"Position 5 (arriere)" }

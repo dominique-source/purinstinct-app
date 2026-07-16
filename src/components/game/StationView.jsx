@@ -135,7 +135,7 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
 
 
   if(disabled) return(
-    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,padding:24}}>
       <style>{FONTS}</style>
       <div style={{fontSize:56,opacity:0.3}}>{z.icon}</div>
@@ -147,13 +147,13 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
       </div>
       {sessionName&&<div style={{fontSize:11,color:"#374151",fontWeight:600}}>📋 {sessionName}</div>}
       <button onClick={onBack||onLogout} style={{marginTop:16,...S.btn(),padding:"8px 20px",fontSize:13}}>{t.backToStations}</button>
-      {onGoAdmin&&<button onClick={onGoAdmin} style={{marginTop:8,...S.btn("#84cc16"),padding:"8px 20px",fontSize:13,color:"#000"}}>{fromPlayerId?t.goPlayer:t.goAdmin}</button>}
+      {onGoAdmin&&<button onClick={onGoAdmin} style={{marginTop:8,...S.btn("#B8E020"),padding:"8px 20px",fontSize:13,color:"#000"}}>{fromPlayerId?t.goPlayer:t.goAdmin}</button>}
       <button onClick={onLogout} style={{marginTop:8,background:"none",border:"none",color:"#4b5563",fontSize:12,cursor:"pointer"}}>{t.disconnect}</button>
     </div>
   );
 
   return(<>
-    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
 
       {flash&&(
@@ -198,7 +198,7 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
       )}
 
       {/* Header */}
-      <div style={{position:"sticky",top:0,zIndex:10,paddingTop:"calc(env(safe-area-inset-top) + 16px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",background:"#06070f",borderBottom:"1px solid "+z.color+"25"}}>
+      <div style={{position:"sticky",top:0,zIndex:10,paddingTop:"calc(env(safe-area-inset-top) + 16px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",background:"#0A0A0A",borderBottom:"1px solid "+z.color+"25"}}>
         <div style={{...S.row(),justifyContent:"space-between",marginBottom:12}}>
           <div style={{...S.row()}}>
             <div style={{width:44,height:44,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,background:z.bg,border:"1px solid "+z.border}}>{z.icon}</div>
@@ -207,7 +207,7 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
               <div style={{color:z.color,fontSize:12,fontWeight:600}}>{z.minP} joueurs minimum</div>
               {sessionName&&<div style={{fontSize:10,color:"#4b5563",marginTop:2,fontWeight:600,display:"flex",gap:6,alignItems:"center"}}>
                 <span>📋 {sessionName}</span>
-                {sessionCode&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,color:"#84cc16",letterSpacing:2}}>{sessionCode}</span>}
+                {sessionCode&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,color:"#B8E020",letterSpacing:2}}>{sessionCode}</span>}
               </div>}
             </div>
           </div>
@@ -215,7 +215,7 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
             <div style={{...S.tag(z.color)}}>{qPlayers.length} en file</div>
             {arenaState&&<div style={{textAlign:"center",minWidth:52}}>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-                color:arenaStatus==="active"?"#84cc16":arenaStatus==="paused"?"#f97316":arenaStatus==="ended"?"#dc2626":"#374151",
+                color:arenaStatus==="active"?"#B8E020":arenaStatus==="paused"?"#f97316":arenaStatus==="ended"?"#dc2626":"#374151",
                 lineHeight:1}}>{arenaTimer}</div>
               <div style={{fontSize:9,color:"#4b5563"}}>
                 {arenaStatus==="active"?t.statusActive:arenaStatus==="paused"?t.statusPaused:arenaStatus==="ended"?t.statusEnded:t.statusWaiting}
@@ -239,8 +239,8 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
               👥 {t.participants} ({players.length})
             </button>
             {onGoAdmin&&<button onClick={onGoAdmin} title={fromPlayerId?t.returnAsPlayer:t.switchToAdmin}
-              style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:700,border:"1px solid #84cc1640",cursor:"pointer",
-                background:"#111827",color:"#84cc16"}}>
+              style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:700,border:"1px solid #B8E02040",cursor:"pointer",
+                background:"#111827",color:"#B8E020"}}>
               {fromPlayerId?t.goPlayer:t.goAdmin}
             </button>}
           </div>
@@ -251,7 +251,7 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
       {showRoster&&(
         <div style={{position:"fixed",inset:0,zIndex:50,background:"rgba(0,0,0,.88)",
           display:"flex",flexDirection:"column"}} onClick={()=>setShowRoster(false)}>
-          <div style={{background:"#06070f",paddingTop:"calc(env(safe-area-inset-top) + 16px)",
+          <div style={{background:"#0A0A0A",paddingTop:"calc(env(safe-area-inset-top) + 16px)",
             paddingBottom:12,paddingLeft:16,paddingRight:16,
             borderBottom:"1px solid #1f2937",display:"flex",alignItems:"center",justifyContent:"space-between"}}
             onClick={e=>e.stopPropagation()}>
@@ -260,7 +260,7 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
                 👥 Participants
               </div>
               <div style={{fontSize:11,color:"#4b5563"}}>
-                {sessionName}{sessionCode&&<span style={{color:"#84cc16",fontWeight:700,letterSpacing:2,marginLeft:8}}>{sessionCode}</span>} · {players.length} joueurs
+                {sessionName}{sessionCode&&<span style={{color:"#B8E020",fontWeight:700,letterSpacing:2,marginLeft:8}}>{sessionCode}</span>} · {players.length} joueurs
               </div>
             </div>
             <button onClick={()=>setShowRoster(false)}
@@ -272,7 +272,7 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
                 <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,
                   padding:"8px 12px",borderRadius:10,background:"#0d0f1a",border:"1px solid #1f2937"}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
-                    color:"#84cc16",width:32,flexShrink:0}}>#{p.number}</div>
+                    color:"#B8E020",width:32,flexShrink:0}}>#{p.number}</div>
                   <span style={{flex:1,color:"#fff",fontWeight:600,fontSize:14}}>{p.name}</span>
                   <span style={{fontSize:11,color:"#4b5563"}}>{p.gender==="F"?"F":"H"}</span>
                   <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"#6b7280"}}>{p.globalPoints} pts</span>
@@ -425,8 +425,8 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
                     <div style={{...S.label()}}>{t.queue} ({qPlayers.length})</div>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       {onFillQueue&&<button onClick={onFillQueue}
-                        style={{padding:"4px 10px",borderRadius:8,border:"1px solid #84cc1640",
-                          background:"#111827",color:"#84cc16",cursor:"pointer",fontSize:11,fontWeight:700}}>
+                        style={{padding:"4px 10px",borderRadius:8,border:"1px solid #B8E02040",
+                          background:"#111827",color:"#B8E020",cursor:"pointer",fontSize:11,fontWeight:700}}>
                         🔀 Remplir tout
                       </button>}
                       <div style={{fontSize:11,color:"#374151"}}>Min.{z.minP} · Max.{z.maxP}</div>

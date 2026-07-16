@@ -1,5 +1,5 @@
 export function Bib({n,size,color}){
-  const c=color||"#84cc16";
+  const c=color||"#B8E020";
   const dim=size==="sm"?24:size==="lg"?44:32;
   return(
     <div style={{width:dim,height:dim,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",

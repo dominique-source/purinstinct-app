@@ -72,13 +72,13 @@ export function SessionPanel({rosters,players,allPlayers,activeRosterId,onActiva
   return(
     <div className="anim-up">
       {/* Current session */}
-      <div style={{...S.card(),marginBottom:16,border:"1px solid #84cc1640"}}>
+      <div style={{...S.card(),marginBottom:16,border:"1px solid #B8E02040"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
           <div>
-            <div style={{color:"#84cc16",fontWeight:700,fontSize:14}}>{t.activeSession}</div>
+            <div style={{color:"#B8E020",fontWeight:700,fontSize:14}}>{t.activeSession}</div>
             <div style={{color:"#6b7280",fontSize:12,marginTop:2}}>{players.length} {t.playerCount}</div>
           </div>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#84cc16"}}>{players.length}</div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#B8E020"}}>{players.length}</div>
         </div>
         {/* Code + QR de la session active */}
         {(()=>{
@@ -88,17 +88,17 @@ export function SessionPanel({rosters,players,allPlayers,activeRosterId,onActiva
           return(
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
               background:"#0d1508",clipPath:S.clip(10),padding:"10px 14px",marginBottom:12,
-              border:"1px solid #84cc1640"}}>
+              border:"1px solid #B8E02040"}}>
               <div>
                 <div style={{fontSize:10,color:"#4b5563",letterSpacing:2,textTransform:"uppercase",marginBottom:2}}>Code de la partie</div>
                 {activeCode
                   ?<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:36,
-                      color:"#84cc16",letterSpacing:8,lineHeight:1,textShadow:"0 0 24px #84cc1640"}}>{activeCode}</div>
+                      color:"#B8E020",letterSpacing:8,lineHeight:1,textShadow:"0 0 24px #B8E02040"}}>{activeCode}</div>
                   :<div style={{fontSize:12,color:"#4b5563"}}>Aucun code — générer dans les listes</div>}
               </div>
               {activeCode&&activeRoster&&(
                 <button onClick={()=>generateQR(activeRoster)}
-                  style={{...S.btn("#84cc16"),padding:"8px 14px",fontSize:13,fontWeight:700}}>
+                  style={{...S.btn("#B8E020"),padding:"8px 14px",fontSize:13,fontWeight:700}}>
                   📲 QR
                 </button>
               )}
@@ -111,7 +111,7 @@ export function SessionPanel({rosters,players,allPlayers,activeRosterId,onActiva
             {[...players].sort((a,b)=>b.id-a.id).map(p=>(
               <div key={p.id} style={{...S.row(),gap:8,padding:"5px 10px",borderRadius:8,background:"#111827"}}>
                 <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
-                  color:"#84cc16",width:22,flexShrink:0}}>#{p.number}</div>
+                  color:"#B8E020",width:22,flexShrink:0}}>#{p.number}</div>
                 <span style={{color:"#fff",fontSize:12,flex:1}}>{p.name}</span>
                 <span style={{fontSize:10,color:"#4b5563"}}>{p.gender==="F"?"F":"H"}</span>
                 {onOpenDossier&&<button onClick={()=>onOpenDossier(p.id)}
@@ -131,12 +131,12 @@ export function SessionPanel({rosters,players,allPlayers,activeRosterId,onActiva
           <input value={addName} onChange={e=>setAddName(e.target.value)}
             onKeyDown={e=>{if(e.key==="Enter")handleAdd();}}
             placeholder={t.playerName}
-            style={{flex:1,padding:"8px 12px",borderRadius:10,border:"1px solid #1f2937",background:"#06070f",color:"#fff",fontSize:13,outline:"none"}}/>
+            style={{flex:1,padding:"8px 12px",borderRadius:10,border:"1px solid #1f2937",background:"#0A0A0A",color:"#fff",fontSize:13,outline:"none"}}/>
           <select value={addGender} onChange={e=>setAddGender(e.target.value)}
-            style={{padding:"8px 10px",borderRadius:10,border:"1px solid #1f2937",background:"#06070f",color:"#9ca3af",fontSize:13,outline:"none"}}>
+            style={{padding:"8px 10px",borderRadius:10,border:"1px solid #1f2937",background:"#0A0A0A",color:"#9ca3af",fontSize:13,outline:"none"}}>
             <option value="M">H</option><option value="F">F</option>
           </select>
-          <button onClick={handleAdd} style={{...S.btn("#84cc16"),padding:"8px 14px"}}>{t.addBtn}</button>
+          <button onClick={handleAdd} style={{...S.btn("#B8E020"),padding:"8px 14px"}}>{t.addBtn}</button>
         </div>
       </div>
 
@@ -148,10 +148,10 @@ export function SessionPanel({rosters,players,allPlayers,activeRosterId,onActiva
         return(
           <div style={{position:"fixed",inset:0,zIndex:60,background:"rgba(0,0,0,.92)",
             display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
-            <div style={{...S.card(),border:"2px solid #84cc1640",maxWidth:340,width:"100%",textAlign:"center"}}>
+            <div style={{...S.card(),border:"2px solid #B8E02040",maxWidth:340,width:"100%",textAlign:"center"}}>
               <div style={{color:"#fff",fontWeight:700,fontSize:16,marginBottom:4}}>{r?.name}</div>
               <div style={{fontSize:12,color:"#4b5563",marginBottom:16}}>
-                Code de partie : <span style={{color:"#84cc16",fontWeight:900,fontSize:22,
+                Code de partie : <span style={{color:"#B8E020",fontWeight:900,fontSize:22,
                   fontFamily:"'Barlow Condensed',sans-serif"}}>{code}</span>
               </div>
               <div style={{display:"inline-block",padding:12,background:"#fff",borderRadius:12,marginBottom:12}}>
@@ -161,7 +161,7 @@ export function SessionPanel({rosters,players,allPlayers,activeRosterId,onActiva
                 padding:"6px 10px",borderRadius:8,background:"#111827"}}>{url}</div>
               <div style={{display:"flex",gap:8,justifyContent:"center"}}>
                 <button onClick={()=>downloadQR(r)}
-                  style={{...S.btn("#84cc16"),padding:"10px 18px",fontSize:13}}>⬇ Télécharger</button>
+                  style={{...S.btn("#B8E020"),padding:"10px 18px",fontSize:13}}>⬇ Télécharger</button>
                 <button onClick={()=>{navigator.clipboard&&navigator.clipboard.writeText(url);}}
                   style={{...S.btn(),padding:"10px 14px",fontSize:13}}>📋 Lien</button>
                 <button onClick={()=>setActiveQR(null)}
@@ -191,7 +191,7 @@ export function SessionPanel({rosters,players,allPlayers,activeRosterId,onActiva
                       <div style={{...S.row(),gap:8,marginTop:3}}>
                         <span style={{fontSize:11,color:"#4b5563"}}>{s.gender==="F"?"Femme":"Homme"}</span>
                         <span style={{fontSize:11,color:"#f97316"}}>Arrivé à {s.createdAt}</span>
-                        {code&&<span style={{fontSize:16,color:"#84cc16",fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:3}}>🔑 {code}</span>}
+                        {code&&<span style={{fontSize:16,color:"#B8E020",fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:3}}>🔑 {code}</span>}
                       </div>
                     </div>
                     <button onClick={()=>onDismissPending&&onDismissPending(s.id)}
@@ -202,7 +202,7 @@ export function SessionPanel({rosters,players,allPlayers,activeRosterId,onActiva
                   {(()=>{
                     const groupPlayers=(allPlayers||[]).filter(p=>p.groupId===s.id);
                     return groupPlayers.length>0&&(
-                      <div style={{fontSize:11,color:"#84cc16",marginBottom:8,fontWeight:600}}>
+                      <div style={{fontSize:11,color:"#B8E020",marginBottom:8,fontWeight:600}}>
                         👥 {groupPlayers.length} joueur{groupPlayers.length>1?"s":""} dans cette session :&nbsp;
                         {groupPlayers.map(p=>p.name.split(" ")[0]).join(", ")}
                       </div>
@@ -216,7 +216,7 @@ export function SessionPanel({rosters,players,allPlayers,activeRosterId,onActiva
                         e.currentTarget.style.background="#22c55e";
                         e.currentTarget.disabled=true;
                       }}
-                      style={{...S.btn("#84cc16"),flex:1,padding:"8px",fontSize:12,color:"#000",fontWeight:700}}>
+                      style={{...S.btn("#B8E020"),flex:1,padding:"8px",fontSize:12,color:"#000",fontWeight:700}}>
                       ✓ Accepter
                     </button>}
                   </div>
@@ -242,26 +242,26 @@ export function SessionPanel({rosters,players,allPlayers,activeRosterId,onActiva
           const isActive=r.id===activeRosterId;
           const isAccepted=acceptedIds.has(r.id);
           return(
-            <div key={r.id} className={isAccepted?"pulse-accepted":""} style={{...S.card(),border:"1px solid "+(isActive?"#84cc16":code?"#84cc1630":"#1f2937")}}>
+            <div key={r.id} className={isAccepted?"pulse-accepted":""} style={{...S.card(),border:"1px solid "+(isActive?"#B8E020":code?"#B8E02030":"#1f2937")}}>
               <div style={{...S.row(),gap:8,marginBottom:8,flexWrap:"wrap"}}>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{...S.row(),gap:6}}>
                     <div style={{color:"#fff",fontWeight:600,fontSize:14}}>{r.name}</div>
-                    {isActive&&<span style={{fontSize:10,color:"#84cc16",fontWeight:700,padding:"1px 6px",borderRadius:6,background:"#84cc1620"}}>ACTIVE</span>}
+                    {isActive&&<span style={{fontSize:10,color:"#B8E020",fontWeight:700,padding:"1px 6px",borderRadius:6,background:"#B8E02020"}}>ACTIVE</span>}
                   </div>
                   <div style={{...S.row(),gap:8,marginTop:3}}>
                     <span style={{fontSize:11,color:"#4b5563"}}>{(r.entries||[]).length} dans template</span>
-                    {liveCount>0&&<span style={{fontSize:11,color:"#84cc16",fontWeight:700}}>👥 {liveCount} inscrits</span>}
-                    {code&&<span style={{fontSize:16,color:"#84cc16",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:3}}>🔑 {code}</span>}
+                    {liveCount>0&&<span style={{fontSize:11,color:"#B8E020",fontWeight:700}}>👥 {liveCount} inscrits</span>}
+                    {code&&<span style={{fontSize:16,color:"#B8E020",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:3}}>🔑 {code}</span>}
                   </div>
                 </div>
               </div>
               {totalCount>0&&(
                 <div style={{marginBottom:8}}>
                   <button onClick={()=>setExpandedRosters(prev=>({...prev,[r.id]:!prev[r.id]}))}
-                    style={{width:"100%",padding:"6px 10px",borderRadius:10,border:"1px solid #84cc1640",
+                    style={{width:"100%",padding:"6px 10px",borderRadius:10,border:"1px solid #B8E02040",
                       background:"#0d1508",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                    <span style={{fontSize:12,color:"#84cc16",fontWeight:700}}>
+                    <span style={{fontSize:12,color:"#B8E020",fontWeight:700}}>
                       👥 {totalCount} membre{totalCount>1?"s":""}
                       {liveCount>0&&<span style={{fontSize:10,color:"#22c55e",marginLeft:6}}>({liveCount} inscrit{liveCount>1?"s":""})</span>}
                     </span>
@@ -274,7 +274,7 @@ export function SessionPanel({rosters,players,allPlayers,activeRosterId,onActiva
                         <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 0",
                           borderBottom:"1px solid #1f2937"}}>
                           <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
-                            color:"#84cc16",width:24,flexShrink:0}}>#{p.number}</span>
+                            color:"#B8E020",width:24,flexShrink:0}}>#{p.number}</span>
                           <span style={{fontSize:12,color:"#fff",flex:1}}>{p.name}</span>
                           <span style={{fontSize:10,color:"#4b5563"}}>{p.gender==="F"?"F":"H"}</span>
                           {onOpenDossier&&<button onClick={()=>onOpenDossier(p.id)}
@@ -301,7 +301,7 @@ export function SessionPanel({rosters,players,allPlayers,activeRosterId,onActiva
               )}
               <div style={{display:"flex",gap:6,marginBottom:8}}>
                 <button onClick={()=>setEditIdx(i)} style={{...S.btn(),flex:1,padding:"7px",fontSize:11}}>✏️ Modifier</button>
-                <button onClick={()=>onActivate(i)} style={{...S.btn(isActive?"#374151":"#84cc16"),flex:1,padding:"7px",fontSize:11,opacity:isActive?0.5:1}}>{isActive?"✓ Active":"▶ Activer"}</button>
+                <button onClick={()=>onActivate(i)} style={{...S.btn(isActive?"#374151":"#B8E020"),flex:1,padding:"7px",fontSize:11,opacity:isActive?0.5:1}}>{isActive?"✓ Active":"▶ Activer"}</button>
                 <button onClick={()=>onDeleteRoster&&onDeleteRoster(i)}
                   style={{...S.btn("#ef444420"),flex:1,padding:"7px",fontSize:11,color:"#ef4444",border:"1px solid #ef444440"}}
                   onMouseEnter={e=>{e.currentTarget.style.background="#ef444430";}}
@@ -311,7 +311,7 @@ export function SessionPanel({rosters,players,allPlayers,activeRosterId,onActiva
               </div>
               <button onClick={()=>generateQR(r)}
                 style={{...S.btn(code?"#111827":"#0d1508"),width:"100%",padding:"8px",fontSize:12,
-                  border:"1px solid "+(code?"#374151":"#84cc1640"),color:code?"#6b7280":"#84cc16"}}>
+                  border:"1px solid "+(code?"#374151":"#B8E02040"),color:code?"#6b7280":"#B8E020"}}>
                 📲 {code?"Voir / Régénérer le QR":"Générer le QR code"}
               </button>
             </div>

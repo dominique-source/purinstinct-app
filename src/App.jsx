@@ -471,8 +471,8 @@ export default function PurInstinctApp(){
   let content=null;
   if(!fbReady){
     content=(
-      <div style={{minHeight:"100vh",background:"#06070f",display:"flex",alignItems:"center",justifyContent:"center"}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#84cc16",letterSpacing:4}}>PURINSTINCT</div>
+      <div style={{minHeight:"100vh",background:"#0A0A0A",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#B8E020",letterSpacing:4}}>PURINSTINCT</div>
       </div>
     );
   } else if(view.type==="login") content=(
@@ -555,7 +555,7 @@ export default function PurInstinctApp(){
   );
 
   else if(view.type==="adminHome") content=(
-    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{FONTS}</style>
       <div style={{textAlign:"center",marginBottom:32}}>
@@ -564,7 +564,7 @@ export default function PurInstinctApp(){
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,width:"100%",maxWidth:360}}>
         {[
-          {icon:"⚡",label:T[lang].sessionInProgress,sub:T[lang].sessionSub,color:"#84cc16",action:()=>setView({type:"admin"})},
+          {icon:"⚡",label:T[lang].sessionInProgress,sub:T[lang].sessionSub,color:"#B8E020",action:()=>setView({type:"admin"})},
           {icon:"📍",label:T[lang].stationManagerShort,sub:T[lang].stationManagerSub,color:"#f97316",action:()=>setView({type:"stationPick"})},
           {icon:"📋",label:T[lang].sessionsTab,sub:T[lang].sessionsSub,color:"#3b82f6",action:()=>setView({type:"admin",tab:"session"})},
           {icon:null,label:T[lang].disconnectShort,sub:T[lang].disconnectSub,color:"#ef4444",isLogout:true,action:()=>isTestMode?testHome():setView({type:"liveLogin"})},
@@ -587,7 +587,7 @@ export default function PurInstinctApp(){
         ))}
       </div>
       {arenaState.active&&(
-        <div style={{marginTop:20,fontSize:12,color:"#84cc16",fontWeight:600}}>
+        <div style={{marginTop:20,fontSize:12,color:"#B8E020",fontWeight:600}}>
           {T[lang].sessionActiveNote}
         </div>
       )}
@@ -719,7 +719,7 @@ export default function PurInstinctApp(){
   );
 
   else if(view.type==="stationPick") content=(
-    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{FONTS}</style>
       <div style={{width:"100%",maxWidth:380}}>
@@ -727,7 +727,7 @@ export default function PurInstinctApp(){
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:22,color:"#fff"}}>{T[lang].chooseStation}</div>
           {(rosterCodes||{})[activeRosterId]&&<div style={{fontSize:12,color:"#4b5563",marginTop:4}}>
             {(rosters.find(r=>r.id===activeRosterId)||{name:"Session Standard"}).name}
-            <span style={{color:"#84cc16",fontWeight:700,letterSpacing:3,marginLeft:8}}>{(rosterCodes||{})[activeRosterId]}</span>
+            <span style={{color:"#B8E020",fontWeight:700,letterSpacing:3,marginLeft:8}}>{(rosterCodes||{})[activeRosterId]}</span>
           </div>}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:24}}>
@@ -750,13 +750,13 @@ export default function PurInstinctApp(){
         {view.fromPlayerId?(
           <button onClick={()=>setView({type:"player",id:view.fromPlayerId})}
             style={{width:"100%",padding:"12px",borderRadius:12,background:"#111827",
-              border:"1px solid #84cc1640",color:"#84cc16",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
+              border:"1px solid #B8E02040",color:"#B8E020",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
             {T[lang].returnAsPlayer}
           </button>
         ):(
           <button onClick={()=>isTestMode?testHome():setView({type:"admin"})}
             style={{width:"100%",padding:"12px",borderRadius:12,background:"#111827",
-              border:"1px solid #84cc1640",color:"#84cc16",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
+              border:"1px solid #B8E02040",color:"#B8E020",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
             {isTestMode?"← Retour":T[lang].switchToAdmin}
           </button>
         )}

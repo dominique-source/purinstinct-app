@@ -20,8 +20,8 @@ export function PlayerRulesView(){
           {t.pointTypes}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          <div style={{borderRadius:10,padding:"10px 12px",background:"#84cc1610",border:"1px solid #84cc1630"}}>
-            <div style={{fontWeight:700,color:"#84cc16",fontSize:13,marginBottom:3}}>{t.globalPointsTitle}</div>
+          <div style={{borderRadius:10,padding:"10px 12px",background:"#B8E02010",border:"1px solid #B8E02030"}}>
+            <div style={{fontWeight:700,color:"#B8E020",fontSize:13,marginBottom:3}}>{t.globalPointsTitle}</div>
             <div style={{fontSize:12,color:"#9ca3af",lineHeight:1.5}}>{t.globalPointsDesc}<br/>
               <span style={{color:"#6b7280"}}>{t.globalPointsRange}</span>
             </div>
@@ -36,13 +36,13 @@ export function PlayerRulesView(){
       </div>
 
       {/* Global points banner */}
-      <div style={{borderRadius:14,padding:14,marginBottom:16,background:"#111a05",border:"1px solid #84cc1630"}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"#84cc16",letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>
+      <div style={{borderRadius:14,padding:14,marginBottom:16,background:"#111a05",border:"1px solid #B8E02030"}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"#B8E020",letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>
           {t.pointSystem}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
-            <div style={{width:32,height:32,borderRadius:8,background:"#84cc1620",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>🏆</div>
+            <div style={{width:32,height:32,borderRadius:8,background:"#B8E02020",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>🏆</div>
             <div>
               <div style={{fontSize:12,color:"#9ca3af",fontWeight:600,marginBottom:2}}>{t.handicapLabel}</div>
               <div style={{fontSize:12,color:"#6b7280",lineHeight:1.5}}>{t.handicapDesc}</div>
