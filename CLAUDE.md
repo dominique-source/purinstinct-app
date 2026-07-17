@@ -163,5 +163,27 @@ mobile/tablet/desktop → critique as a demanding design director → fix → re
 - **Phase 1 — done:** CSS-variable token system, base layer (Vite starter removed),
   `components.css`, `ui/` primitive library, brand palette migrated to `#0A0A0A`/`#B8E020`,
   fonts moved to `index.html`, keyframes globalized. No screen redesigns yet.
-- **Phase 2 — flagship:** `StationView` (live game management) is the reference screen.
-- **Phase 3 — propagation:** admin/cockpit, kiosk, player, login/session, augmented.
+- **Phase 2 — done:** `StationView` (live game management) is **the reference screen**.
+  Copy its language: broadcast header (zone tile + display-italic name + status +
+  arena clock telemetry), `.pi-station-grid` split (action left / context rail right
+  at ≥1024, action-first stack on mobile), `.pi-hide-mobile` for secondary context,
+  primitives over hand-rolled controls.
+- **Phase 3 — in progress.** Done: `KioskView`.
+  Remaining, in recommended order:
+  1. **Split `AdminView.jsx` first** (~1060 lines, 7 tabs in one file — the last
+     monolith). Structural, blocks its own redesign. Extract one file per tab.
+  2. `PlayerView` hub + stats (the screen in every athlete's pocket).
+  3. `LiveLoginView` (first screen every player sees).
+  4. Admin cockpit + leaderboard tabs.
+  5. `SessionPanel` / `RosterEditor` / `PlayerDossier` (lowest visibility, last).
+  6. `AugmentedLanding` / `AugmentedStation`.
+
+  Also outstanding:
+  - `QueueList`, `RulesCard`, `TierBadge`, `Bib` still carry legacy inline styles.
+  - Neutral grays (`#0d0f1a`, `#111827`, `#1f2937`, `#374151`, `#9ca3af`, `#4b5563`…)
+    are still hard-coded across screens; sweep them onto `--pi-surface-*`/`--pi-text-*`
+    as each screen is migrated.
+  - Screens still render `<style>{FONTS}</style>` (now an empty string). Delete the
+    call sites and the import as you touch each file.
+  - Pre-existing bug, untouched: `cham`/`p` are undefined in `AdminView.jsx` (winners
+    tab) and `PlayerView.jsx` — 6 `no-undef` errors. Fix when redesigning those tabs.
