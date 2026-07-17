@@ -4,6 +4,7 @@ import { useT } from "../../hooks/useLang.js";
 import { S } from "./styles.js";
 import { Bib } from "./Bib.jsx";
 import { TierBadge } from "./TierBadge.jsx";
+import { EmptyState } from "../ui/index.js";
 
 export function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReorder,highlightId}){
   const t=useT();
@@ -53,10 +54,7 @@ export function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReord
   };
 
   if(qPlayers.length===0) return(
-    <div style={{textAlign:"center",padding:"28px 0",color:"#374151",fontSize:13}}>
-      <div style={{fontSize:32,marginBottom:6,opacity:.25}}>⏳</div>
-      {t.autoRefill}
-    </div>
+    <EmptyState icon="⏳" title="FILE VIDE">{t.autoRefill}</EmptyState>
   );
 
   return(
