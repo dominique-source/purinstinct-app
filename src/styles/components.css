@@ -147,7 +147,7 @@
   flex: 1 1 auto; min-height: var(--pi-ctrl-sm);
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 0 var(--pi-s3); border: none; border-radius: var(--pi-r-sm);
-  background: transparent; color: var(--pi-text-3);
+  background: transparent; color: var(--pi-text-2); /* >=4.5:1 on surface-1 */
   font-family: var(--pi-font-body); font-size: var(--pi-fs-label);
   font-weight: var(--pi-fw-semibold); letter-spacing: 0.04em;
   text-transform: uppercase; cursor: pointer; white-space: nowrap;
@@ -155,6 +155,20 @@
 }
 .pi-tab:hover:not(.is-active) { color: var(--pi-text); background: var(--pi-surface-2); }
 .pi-tab.is-active { background: var(--pi-lime); color: var(--pi-lime-ink); font-weight: var(--pi-fw-bold); }
+
+/* ---------- RESPONSIVE UTILITIES -------------------------- */
+/* Progressive disclosure: secondary telemetry/context is dropped on mobile
+   where the core live action must own the fold. */
+@media (max-width: 599px) { .pi-hide-mobile { display: none !important; } }
+
+/* ---------- STATION CONSOLE LAYOUT ------------------------ */
+/* Mobile: action first, queue below (core live action prioritized).
+   Tablet/desktop: split — action left, queue rail right, both live at once. */
+.pi-station-grid { display: grid; gap: var(--pi-s4); align-items: start; }
+@media (min-width: 1024px) {
+  .pi-station-grid { grid-template-columns: minmax(0, 1fr) 360px; gap: var(--pi-s6); }
+  .pi-station-rail { position: sticky; top: 148px; }
+}
 
 /* ---------- FIELD / INPUT --------------------------------- */
 .pi-field { display: flex; flex-direction: column; gap: var(--pi-s2); }
