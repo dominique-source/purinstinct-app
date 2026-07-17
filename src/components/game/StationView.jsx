@@ -201,7 +201,7 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
         {tab==="game"&&(
           <div className="pi-anim-up pi-station-grid">
             {/* ===== PRIMARY COLUMN — the action ===== */}
-            <div>
+            <div className={activeGame?undefined:"pi-station-primary--setup"}>
             {activeGame?(
               /* ---------- LIVE MATCH ---------- */
               <div>

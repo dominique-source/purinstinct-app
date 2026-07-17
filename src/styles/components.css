@@ -168,6 +168,13 @@
 @media (min-width: 1024px) {
   .pi-station-grid { grid-template-columns: minmax(0, 1fr) 360px; gap: var(--pi-s6); }
   .pi-station-rail { position: sticky; top: 148px; }
+  /* Setup content is short while the queue rail is tall — center it against the
+     rail instead of stranding it at the top over a void. Live matches fill the
+     column naturally and are left alone. */
+  .pi-station-primary--setup {
+    min-height: min(62vh, 560px);
+    display: flex; flex-direction: column; justify-content: center;
+  }
 }
 
 /* ---------- FIELD / INPUT --------------------------------- */
