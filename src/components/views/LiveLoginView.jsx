@@ -1,9 +1,65 @@
 import { useState, useEffect } from "react";
-import { FONTS } from "../../config/fonts.js";
 import { ZONES, ZK, zn } from "../../config/zones.js";
-import { S } from "../shared/styles.js";
 import { LangFooter } from "../shared/LangFooter.jsx";
 import { ADMIN_PIN, STATION_PIN } from "../../config/pins.js";
+import { Button } from "../ui/Button.jsx";
+import { Panel, Eyebrow } from "../ui/Panel.jsx";
+import { Modal } from "../ui/Modal.jsx";
+
+// Numeric keypad — dot progress indicator + 3x4 grid. Module-scope (not
+// defined inside LiveLoginView) so it isn't recreated on every render.
+function NumPad({value,onChange,onComplete,maxLen=4}){
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"center",gap:"var(--pi-s3)",marginBottom:"var(--pi-s5)"}}>
+        {Array.from({length:maxLen}).map((_,i)=>(
+          <div key={i} style={{width:18,height:18,borderRadius:"50%",
+            background:i<value.length?"var(--pi-lime)":"var(--pi-surface-2)",
+            border:`2px solid ${i<value.length?"var(--pi-lime)":"var(--pi-line-strong)"}`}}/>
+        ))}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"var(--pi-s2)",maxWidth:260,margin:"0 auto"}}>
+        {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((k,i)=>(
+          <button key={i} onClick={()=>{
+            if(k==="") return;
+            if(k==="⌫"){onChange(value.slice(0,-1));}
+            else if(value.length<maxLen){
+              const nv=value+k; onChange(nv);
+              if(nv.length===maxLen) setTimeout(()=>onComplete(nv),150);
+            }
+          }} style={{padding:"var(--pi-s4)",borderRadius:"var(--pi-r-lg)",border:"1px solid var(--pi-line)",
+            background:k===""?"transparent":"var(--pi-surface-1)",color:"var(--pi-text)",
+            fontFamily:"var(--pi-font-display)",fontWeight:700,fontSize:22,
+            cursor:k===""?"default":"pointer",opacity:k===""?0:1,
+            boxShadow:k!==""?"var(--pi-shadow-pop)":"none"}}
+            onMouseEnter={e=>{if(k!=="")e.currentTarget.style.background="var(--pi-surface-2)";}}
+            onMouseLeave={e=>{if(k!=="")e.currentTarget.style.background="var(--pi-surface-1)";}}>
+            {k}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Wordmark — module-scope, no props/state.
+function Wordmark(){
+  return(
+    <div style={{textAlign:"center",marginBottom:"var(--pi-s8)"}}>
+      <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:64,letterSpacing:-2,lineHeight:1,
+        textShadow:"0 0 40px var(--pi-lime-glow)"}}>
+        <span style={{color:"var(--pi-lime)"}}>PUR</span><span style={{color:"var(--pi-text)"}}>INSTINCT</span>
+      </div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",marginTop:6}}>
+        <span style={{width:24,height:2,background:"var(--pi-lime)",transform:"skewX(-20deg)"}}/>
+        <span style={{color:"var(--pi-lime)",fontSize:12,letterSpacing:3,textTransform:"uppercase",fontWeight:700}}>
+          PurInstinct Games
+        </span>
+        <span style={{width:24,height:2,background:"var(--pi-lime)",transform:"skewX(-20deg)"}}/>
+      </div>
+    </div>
+  );
+}
 
 export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCodes,onAddPlayer,onRequestSolo}){
   // Détecter le code de session dans l'URL (?session= ou ?code=)
@@ -93,179 +149,105 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
     }
   };
 
-  // Clavier numérique réutilisable
-  const NumPad=({value,onChange,onComplete,maxLen=4})=>(
-    <div>
-      <div style={{display:"flex",justifyContent:"center",gap:12,marginBottom:20}}>
-        {Array.from({length:maxLen}).map((_,i)=>(
-          <div key={i} style={{width:18,height:18,borderRadius:"50%",
-            background:i<value.length?"#B8E020":"#1f2937",
-            border:"2px solid "+(i<value.length?"#B8E020":"#374151")}}/>
-        ))}
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,maxWidth:260,margin:"0 auto"}}>
-        {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((k,i)=>(
-          <button key={i} onClick={()=>{
-            if(k==="") return;
-            if(k==="⌫"){onChange(value.slice(0,-1));}
-            else if(value.length<maxLen){
-              const nv=value+k; onChange(nv);
-              if(nv.length===maxLen) setTimeout(()=>onComplete(nv),150);
-            }
-          }} style={{padding:"16px",borderRadius:14,border:"1px solid #1f2937",
-            background:k===""?"transparent":"#0d0f1a",color:"#fff",
-            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:22,
-            cursor:k===""?"default":"pointer",opacity:k===""?0:1,
-            boxShadow:k!==""?"0 2px 8px rgba(0,0,0,.3)":"none"}}
-            onMouseEnter={e=>{if(k!=="")e.currentTarget.style.background="#1f2937";}}
-            onMouseLeave={e=>{if(k!=="")e.currentTarget.style.background="#0d0f1a";}}>
-            {k}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  const Header=()=>(
-    <div style={{textAlign:"center",marginBottom:28}}>
-      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:64,letterSpacing:-2,lineHeight:1,
-        textShadow:"0 0 40px #B8E02030"}}>
-        <span style={{color:"#B8E020"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
-      </div>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginTop:6}}>
-        <span style={{width:24,height:2,background:"#B8E020",transform:"skewX(-20deg)"}}/>
-        <span style={{color:"#B8E020",fontSize:12,letterSpacing:3,textTransform:"uppercase",fontWeight:700}}>
-          PurInstinct Games
-        </span>
-        <span style={{width:24,height:2,background:"#B8E020",transform:"skewX(-20deg)"}}/>
-      </div>
-    </div>
-  );
-
   return(<>
-    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
-      justifyContent:"center",padding:"32px 16px",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif"}}>
-      <style>{FONTS}</style>
+    <div style={{minHeight:"100svh",display:"flex",flexDirection:"column",alignItems:"center",
+      justifyContent:"center",padding:"var(--pi-s8) var(--pi-gutter)"}}>
       {onGoTest&&<button onClick={()=>setTestUnavailable(true)}
-        style={{position:"fixed",bottom:16,right:16,fontSize:10,color:"#374151",
-          background:"none",border:"1px solid #1f2937",borderRadius:8,padding:"4px 8px",cursor:"pointer"}}>
+        style={{position:"fixed",bottom:16,right:16,fontSize:10,color:"var(--pi-text-3)",
+          background:"none",border:"1px solid var(--pi-line)",borderRadius:"var(--pi-r-sm)",padding:"4px 8px",cursor:"pointer"}}>
         Mode test
       </button>}
-      {testUnavailable&&(
-        <div onClick={()=>setTestUnavailable(false)} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,.7)",
-          display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <div style={{background:"#0d0f1a",borderRadius:16,padding:"24px 32px",border:"1px solid #f9731650",textAlign:"center",maxWidth:280}}
-            onClick={e=>e.stopPropagation()}>
-            <div style={{fontSize:32,marginBottom:12}}>🚫</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:"#fff",marginBottom:8}}>Mode test non disponible</div>
-            <div style={{fontSize:13,color:"#6b7280",marginBottom:16}}>Cette option n'est pas accessible aujourd'hui.</div>
-            <button onClick={()=>setTestUnavailable(false)} style={{padding:"8px 24px",borderRadius:10,border:"none",background:"#f97316",color:"#000",fontWeight:700,fontSize:13,cursor:"pointer"}}>OK</button>
-          </div>
+      <Modal open={testUnavailable} onClose={()=>setTestUnavailable(false)} labelledBy="test-unavail-title">
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:32,marginBottom:"var(--pi-s3)"}}>🚫</div>
+          <h2 id="test-unavail-title" style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:"var(--pi-fs-section)",color:"var(--pi-text)",marginBottom:"var(--pi-s2)"}}>
+            Mode test non disponible
+          </h2>
+          <div style={{fontSize:"var(--pi-fs-body)",color:"var(--pi-text-3)",marginBottom:"var(--pi-s4)"}}>Cette option n'est pas accessible aujourd'hui.</div>
+          <Button variant="primary" onClick={()=>setTestUnavailable(false)}>OK</Button>
         </div>
-      )}
+      </Modal>
 
-      <Header/>
+      <Wordmark/>
 
       {/* ÉTAPE 1 — Code de session (si pas de QR) */}
       {screen==="sessionCode"&&(
-        <div className="anim-up" style={{width:"100%",maxWidth:320}}>
-          <div style={{textAlign:"center",marginBottom:20}}>
-            <div style={{fontSize:32,marginBottom:8}}>🔑</div>
-            <div style={{color:"#fff",fontWeight:700,fontSize:18,marginBottom:4}}>Code de session</div>
-            <div style={{color:"#4b5563",fontSize:12}}>Entrez le code à 4 chiffres de votre session</div>
+        <div className="pi-anim-up" style={{width:"100%",maxWidth:"var(--pi-w-narrow)"}}>
+          <div style={{textAlign:"center",marginBottom:"var(--pi-s5)"}}>
+            <div style={{fontSize:32,marginBottom:"var(--pi-s2)"}}>🔑</div>
+            <div style={{color:"var(--pi-text)",fontWeight:700,fontSize:"var(--pi-fs-card)",marginBottom:4}}>Code de session</div>
+            <div style={{color:"var(--pi-text-3)",fontSize:"var(--pi-fs-label)"}}>Entrez le code à 4 chiffres de votre session</div>
           </div>
-          {sessionCodeError&&<div style={{textAlign:"center",color:"#ef4444",fontSize:12,marginBottom:12}}>
+          {sessionCodeError&&<div style={{textAlign:"center",color:"var(--pi-danger)",fontSize:"var(--pi-fs-label)",marginBottom:"var(--pi-s3)"}}>
             Code invalide. Réessayez.
           </div>}
-          {soloUnavailable&&<div style={{textAlign:"center",color:"#f97316",fontSize:12,marginBottom:12,padding:"8px 12px",borderRadius:10,background:"#1a0d00",border:"1px solid #f9731640"}}>
+          {soloUnavailable&&<div style={{textAlign:"center",color:"var(--pi-warn)",fontSize:"var(--pi-fs-label)",marginBottom:"var(--pi-s3)",
+            padding:"var(--pi-s2) var(--pi-s3)",borderRadius:"var(--pi-r-md)",background:"var(--pi-warn-wash)",border:"1px solid var(--pi-warn)"}}>
             Game solo non disponible aujourd'hui.
           </div>}
           <NumPad value={sessionCode} onChange={v=>{setSessionCode(v);setSessionCodeError(false);setSoloUnavailable(false);}}
             onComplete={handleSessionCode}/>
           {/* Boutons Admin + Station discrets en bas */}
-          <div style={{display:"flex",gap:8,marginTop:24,justifyContent:"center"}}>
-            <button onClick={()=>{setScreen("admin");setPin("");setPinError(false);}}
-              style={{padding:"8px 16px",borderRadius:10,border:"1px solid #374151",background:"#111827",
-                color:"#6b7280",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",gap:6}}
-              onMouseEnter={e=>e.currentTarget.style.borderColor="#B8E020"}
-              onMouseLeave={e=>e.currentTarget.style.borderColor="#374151"}>
+          <div style={{display:"flex",gap:"var(--pi-s2)",marginTop:"var(--pi-s6)",justifyContent:"center"}}>
+            <Button variant="ghost" size="sm" onClick={()=>{setScreen("admin");setPin("");setPinError(false);}}>
               🛡️ Admin
-            </button>
-            <button onClick={()=>setScreen("stationPick")}
-              style={{padding:"8px 16px",borderRadius:10,border:"1px solid #374151",background:"#111827",
-                color:"#6b7280",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",gap:6}}
-              onMouseEnter={e=>e.currentTarget.style.borderColor="#f97316"}
-              onMouseLeave={e=>e.currentTarget.style.borderColor="#374151"}>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={()=>setScreen("stationPick")}>
               📍 Responsable de plateau
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {/* ÉTAPE 2b — Nouveau joueur solo (code 0000) */}
       {screen==="newPlayer"&&(
-        <div className="anim-up" style={{width:"100%",maxWidth:360}}>
-          {!soloSubmitted&&<button onClick={()=>{setScreen("sessionCode");setNewName("");setSoloSubmitted(false);}}
-            style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>
+        <div className="pi-anim-up" style={{width:"100%",maxWidth:360}}>
+          {!soloSubmitted&&<Button variant="ghost" size="sm" style={{marginBottom:"var(--pi-s5)"}}
+            onClick={()=>{setScreen("sessionCode");setNewName("");setSoloSubmitted(false);}}>
             ← Retour
-          </button>}
+          </Button>}
 
           {soloSubmitted?(
             /* Confirmation en attente */
             <div style={{textAlign:"center"}}>
-              <div style={{fontSize:56,marginBottom:16}}>⏳</div>
-              <div style={{color:"#fff",fontWeight:700,fontSize:20,marginBottom:8}}>
+              <div style={{fontSize:56,marginBottom:"var(--pi-s4)"}}>⏳</div>
+              <div style={{color:"var(--pi-text)",fontWeight:700,fontSize:20,marginBottom:"var(--pi-s2)"}}>
                 Demande envoyée !
               </div>
-              <div style={{color:"#B8E020",fontWeight:700,fontSize:16,marginBottom:12}}>{newName}</div>
-              <div style={{color:"#6b7280",fontSize:13,lineHeight:1.6,marginBottom:24}}>
+              <div style={{color:"var(--pi-lime)",fontWeight:700,fontSize:16,marginBottom:"var(--pi-s3)"}}>{newName}</div>
+              <div style={{color:"var(--pi-text-3)",fontSize:"var(--pi-fs-body)",lineHeight:1.6,marginBottom:"var(--pi-s6)"}}>
                 Votre session est en attente.<br/>
                 L'administrateur va créer votre session<br/>
                 et vous fournir un code ou un QR code.
               </div>
-              <div style={{...S.card(),border:"1px solid #B8E02030",textAlign:"left"}}>
-                <div style={{fontSize:11,color:"#4b5563",marginBottom:6}}>EN ATTENTE DE VALIDATION</div>
-                <div style={{color:"#fff",fontWeight:600}}>{newName}</div>
-                <div style={{color:"#6b7280",fontSize:12}}>{newGender==="F"?"Femme":"Homme"}</div>
-              </div>
+              <Panel style={{borderColor:"var(--pi-lime-line)",textAlign:"left"}}>
+                <Eyebrow style={{marginBottom:6}}>EN ATTENTE DE VALIDATION</Eyebrow>
+                <div style={{color:"var(--pi-text)",fontWeight:600}}>{newName}</div>
+                <div style={{color:"var(--pi-text-3)",fontSize:"var(--pi-fs-label)"}}>{newGender==="F"?"Femme":"Homme"}</div>
+              </Panel>
             </div>
           ):(
             /* Formulaire */
             <div>
-              <div style={{textAlign:"center",marginBottom:24}}>
-                <div style={{fontSize:40,marginBottom:8}}>👤</div>
-                <div style={{color:"#fff",fontWeight:700,fontSize:20,marginBottom:4}}>Nouvelle session</div>
-                <div style={{color:"#4b5563",fontSize:13}}>Entrez votre nom complet</div>
+              <div style={{textAlign:"center",marginBottom:"var(--pi-s6)"}}>
+                <div style={{fontSize:40,marginBottom:"var(--pi-s2)"}}>👤</div>
+                <div style={{color:"var(--pi-text)",fontWeight:700,fontSize:20,marginBottom:4}}>Nouvelle session</div>
+                <div style={{color:"var(--pi-text-3)",fontSize:"var(--pi-fs-body)"}}>Entrez votre nom complet</div>
               </div>
-              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s3)"}}>
                 <input value={newName} onChange={e=>setNewName(e.target.value)}
                   onKeyDown={e=>{if(e.key==="Enter"&&newName.trim())handleCreateSolo();}}
-                  placeholder="Prénom et nom"
-                  autoFocus
-                  style={{width:"100%",padding:"14px 16px",borderRadius:14,border:"2px solid #374151",
-                    background:"#111827",color:"#fff",fontSize:16,outline:"none",boxSizing:"border-box"}}
-                  onFocus={e=>e.target.style.borderColor="#B8E020"}
-                  onBlur={e=>e.target.style.borderColor="#374151"}/>
-                <div style={{display:"flex",gap:8}}>
+                  placeholder="Prénom et nom" autoFocus className="pi-input"/>
+                <div style={{display:"flex",gap:"var(--pi-s2)"}}>
                   {[["M","👨 Homme"],["F","👩 Femme"]].map(([v,l])=>(
-                    <button key={v} onClick={()=>setNewGender(v)}
-                      style={{flex:1,padding:"12px",borderRadius:12,
-                        border:"2px solid "+(newGender===v?"#B8E020":"#374151"),
-                        background:newGender===v?"#1a2e05":"#111827",
-                        color:newGender===v?"#B8E020":"#6b7280",
-                        cursor:"pointer",fontWeight:600,fontSize:14}}>
+                    <button key={v} onClick={()=>setNewGender(v)} className={newGender===v?"pi-tab is-active":"pi-tab"} style={{flex:1,minHeight:"var(--pi-ctrl-lg)"}}>
                       {l}
                     </button>
                   ))}
                 </div>
-                <button onClick={handleCreateSolo} disabled={!newName.trim()}
-                  style={{padding:"14px",borderRadius:14,border:"none",cursor:newName.trim()?"pointer":"not-allowed",
-                    background:newName.trim()?"#B8E020":"#1f2937",
-                    color:newName.trim()?"#000":"#4b5563",
-                    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-                    opacity:newName.trim()?1:0.5}}>
+                <Button variant="primary" size="lg" block disabled={!newName.trim()} onClick={handleCreateSolo}>
                   Envoyer ma demande
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -274,124 +256,114 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
 
       {/* ÉTAPE 2 — Recherche joueur */}
       {screen==="player"&&(
-        <div className="anim-up" style={{width:"100%",maxWidth:380}}>
-          {!urlCode&&<button onClick={()=>{setScreen("sessionCode");setSearch("");}}
-            style={{background:"none",border:"none",color:"#6b7280",fontSize:13,cursor:"pointer",marginBottom:16,padding:0}}>
+        <div className="pi-anim-up" style={{width:"100%",maxWidth:380}}>
+          {!urlCode&&<Button variant="ghost" size="sm" style={{marginBottom:"var(--pi-s4)"}}
+            onClick={()=>{setScreen("sessionCode");setSearch("");}}>
             ← Retour
-          </button>}
-          {sessionCode&&<div style={{textAlign:"center",marginBottom:20}}>
-            <div style={{fontSize:11,color:"#4b5563",letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Code de session</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:52,color:"#B8E020",letterSpacing:6,lineHeight:1,textShadow:"0 0 30px #B8E02040"}}>{sessionCode}</div>
+          </Button>}
+          {sessionCode&&<div style={{textAlign:"center",marginBottom:"var(--pi-s5)"}}>
+            <Eyebrow style={{marginBottom:4}}>Code de session</Eyebrow>
+            <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:52,color:"var(--pi-lime)",letterSpacing:6,lineHeight:1,textShadow:"0 0 30px var(--pi-lime-glow)"}}>{sessionCode}</div>
           </div>}
-          <div style={{...S.card(),border:"1px solid #B8E02040",marginBottom:16}}>
-            <div style={{fontSize:13,color:"#B8E020",fontWeight:700,marginBottom:12,textAlign:"center"}}>👤 Qui êtes-vous ?</div>
+          <Panel style={{borderColor:"var(--pi-lime-line)",marginBottom:"var(--pi-s4)"}}>
+            <div style={{fontSize:"var(--pi-fs-body)",color:"var(--pi-lime)",fontWeight:700,marginBottom:"var(--pi-s3)",textAlign:"center"}}>👤 Qui êtes-vous ?</div>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Entrez votre nom ou numéro..." autoFocus
-              style={{width:"100%",padding:"12px 14px",borderRadius:12,border:"1px solid #374151",
-                background:"#111827",color:"#fff",fontSize:16,outline:"none",boxSizing:"border-box",marginBottom:search.trim()?10:0}}/>
+              className="pi-input" style={{marginBottom:search.trim()?10:0}}/>
             {filtered.length>0&&(
-              <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:240,overflowY:"auto"}}>
+              <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s1)",maxHeight:240,overflowY:"auto"}}>
                 {filtered.map(p=>(
                   <button key={p.id} onClick={()=>onLogin("player",p.id)}
-                    style={{...S.row(),gap:12,padding:"10px 12px",borderRadius:10,border:"1px solid #1f2937",
-                      background:"#0d0f1a",cursor:"pointer",textAlign:"left"}}
-                    onMouseEnter={e=>e.currentTarget.style.background="#1f2937"}
-                    onMouseLeave={e=>e.currentTarget.style.background="#0d0f1a"}>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,
-                      color:"#B8E020",width:32,textAlign:"center",flexShrink:0}}>#{p.number}</div>
+                    style={{display:"flex",alignItems:"center",gap:"var(--pi-s3)",padding:"var(--pi-s3)",borderRadius:"var(--pi-r-md)",border:"1px solid var(--pi-line)",
+                      background:"var(--pi-surface-1)",cursor:"pointer",textAlign:"left"}}
+                    onMouseEnter={e=>e.currentTarget.style.background="var(--pi-surface-3)"}
+                    onMouseLeave={e=>e.currentTarget.style.background="var(--pi-surface-1)"}>
+                    <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontSize:22,
+                      color:"var(--pi-lime)",width:32,textAlign:"center",flexShrink:0}}>#{p.number}</div>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{color:"#fff",fontWeight:600,fontSize:14}}>{p.name}</div>
-                      <div style={{color:"#4b5563",fontSize:11,marginTop:1}}>{p.globalPoints} pts · {(p.zonesPlayed||[]).length}/6 zones</div>
+                      <div style={{color:"var(--pi-text)",fontWeight:600,fontSize:"var(--pi-fs-body)"}}>{p.name}</div>
+                      <div style={{color:"var(--pi-text-3)",fontSize:"var(--pi-fs-label)",marginTop:1}}>{p.globalPoints} pts · {(p.zonesPlayed||[]).length}/6 zones</div>
                     </div>
-                    <div style={{color:"#374151",fontSize:16}}>›</div>
+                    <div style={{color:"var(--pi-text-4)",fontSize:16}}>›</div>
                   </button>
                 ))}
               </div>
             )}
             {search.trim().length>0&&filtered.length===0&&(
-              <div style={{marginTop:10}}>
-                <div style={{textAlign:"center",color:"#4b5563",fontSize:12,marginBottom:12}}>
-                  Aucun joueur trouvé pour <strong style={{color:"#fff"}}>"{search}"</strong>
+              <div style={{marginTop:"var(--pi-s3)"}}>
+                <div style={{textAlign:"center",color:"var(--pi-text-3)",fontSize:"var(--pi-fs-label)",marginBottom:"var(--pi-s3)"}}>
+                  Aucun joueur trouvé pour <strong style={{color:"var(--pi-text)"}}>"{search}"</strong>
                 </div>
-                <div style={{borderTop:"1px solid #1f2937",paddingTop:12}}>
-                  <div style={{fontSize:12,color:"#6b7280",marginBottom:10,textAlign:"center"}}>
+                <div style={{borderTop:"1px solid var(--pi-line)",paddingTop:"var(--pi-s3)"}}>
+                  <div style={{fontSize:"var(--pi-fs-label)",color:"var(--pi-text-2)",marginBottom:"var(--pi-s2)",textAlign:"center"}}>
                     Vous n'êtes pas encore dans ce groupe ?
                   </div>
-                  <div style={{display:"flex",gap:8,marginBottom:8}}>
+                  <div style={{display:"flex",gap:"var(--pi-s2)",marginBottom:"var(--pi-s2)"}}>
                     {[["M","👨 Homme"],["F","👩 Femme"]].map(([v,l])=>(
-                      <button key={v} onClick={()=>setNewGender(v)}
-                        style={{flex:1,padding:"8px",borderRadius:10,
-                          border:"2px solid "+(newGender===v?"#B8E020":"#374151"),
-                          background:newGender===v?"#1a2e05":"#111827",
-                          color:newGender===v?"#B8E020":"#6b7280",
-                          cursor:"pointer",fontWeight:600,fontSize:12}}>
+                      <button key={v} onClick={()=>setNewGender(v)} className={newGender===v?"pi-tab is-active":"pi-tab"} style={{flex:1}}>
                         {l}
                       </button>
                     ))}
                   </div>
-                  <button onClick={()=>{setNewName(search);handleAddToGroupWithName(search);}}
-                    style={{width:"100%",padding:"10px",borderRadius:10,border:"none",cursor:"pointer",
-                      background:"#B8E020",color:"#000",fontFamily:"'Barlow Condensed',sans-serif",
-                      fontWeight:900,fontSize:15}}>
+                  <Button variant="primary" block onClick={()=>{setNewName(search);handleAddToGroupWithName(search);}}>
                     + Rejoindre comme "{search}"
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
-          </div>
+          </Panel>
         </div>
       )}
 
       {/* PIN Admin */}
       {screen==="admin"&&(
-        <div style={{width:"100%",maxWidth:320}}>
-          <button onClick={()=>{setScreen("sessionCode");setPin("");setPinError(false);}}
-            style={{...S.backBtn,marginBottom:16}}>← Retour</button>
-          <div style={{textAlign:"center",marginBottom:24}}>
-            <div style={{fontSize:32,marginBottom:8}}>🛡️</div>
-            <div style={{color:"#fff",fontWeight:700,fontSize:18}}>Accès Administrateur</div>
-            <div style={{color:"#4b5563",fontSize:12,marginTop:4}}>Entrez votre code PIN</div>
+        <div style={{width:"100%",maxWidth:"var(--pi-w-narrow)"}}>
+          <Button variant="ghost" size="sm" style={{marginBottom:"var(--pi-s4)"}}
+            onClick={()=>{setScreen("sessionCode");setPin("");setPinError(false);}}>← Retour</Button>
+          <div style={{textAlign:"center",marginBottom:"var(--pi-s6)"}}>
+            <div style={{fontSize:32,marginBottom:"var(--pi-s2)"}}>🛡️</div>
+            <div style={{color:"var(--pi-text)",fontWeight:700,fontSize:"var(--pi-fs-card)"}}>Accès Administrateur</div>
+            <div style={{color:"var(--pi-text-3)",fontSize:"var(--pi-fs-label)",marginTop:4}}>Entrez votre code PIN</div>
           </div>
-          {pinError&&<div style={{textAlign:"center",color:"#ef4444",fontSize:12,marginBottom:12}}>Code incorrect.</div>}
+          {pinError&&<div style={{textAlign:"center",color:"var(--pi-danger)",fontSize:"var(--pi-fs-label)",marginBottom:"var(--pi-s3)"}}>Code incorrect.</div>}
           <NumPad value={pin} onChange={v=>{setPin(v);setPinError(false);}} onComplete={v=>handlePinSubmit("admin",v)}/>
         </div>
       )}
 
       {/* PIN Station */}
       {screen==="station"&&(
-        <div style={{width:"100%",maxWidth:320}}>
-          <button onClick={()=>{setScreen("sessionCode");setPin("");setPinError(false);}}
-            style={{...S.backBtn,marginBottom:16}}>← Retour</button>
-          <div style={{textAlign:"center",marginBottom:24}}>
-            <div style={{fontSize:32,marginBottom:8}}>📍</div>
-            <div style={{color:"#fff",fontWeight:700,fontSize:18}}>Accès Responsable de station</div>
-            <div style={{color:"#4b5563",fontSize:12,marginTop:4}}>Entrez votre code PIN</div>
+        <div style={{width:"100%",maxWidth:"var(--pi-w-narrow)"}}>
+          <Button variant="ghost" size="sm" style={{marginBottom:"var(--pi-s4)"}}
+            onClick={()=>{setScreen("sessionCode");setPin("");setPinError(false);}}>← Retour</Button>
+          <div style={{textAlign:"center",marginBottom:"var(--pi-s6)"}}>
+            <div style={{fontSize:32,marginBottom:"var(--pi-s2)"}}>📍</div>
+            <div style={{color:"var(--pi-text)",fontWeight:700,fontSize:"var(--pi-fs-card)"}}>Accès Responsable de station</div>
+            <div style={{color:"var(--pi-text-3)",fontSize:"var(--pi-fs-label)",marginTop:4}}>Entrez votre code PIN</div>
           </div>
-          {pinError&&<div style={{textAlign:"center",color:"#ef4444",fontSize:12,marginBottom:12}}>Code incorrect.</div>}
+          {pinError&&<div style={{textAlign:"center",color:"var(--pi-danger)",fontSize:"var(--pi-fs-label)",marginBottom:"var(--pi-s3)"}}>Code incorrect.</div>}
           <NumPad value={pin} onChange={v=>{setPin(v);setPinError(false);}} onComplete={v=>handlePinSubmit("station",v)}/>
         </div>
       )}
 
       {/* Choix station */}
       {screen==="stationPick"&&(
-        <div className="anim-up" style={{width:"100%",maxWidth:380}}>
-          <button onClick={()=>setScreen("station")}
-            style={{...S.backBtn,marginBottom:16}}>← Retour</button>
-          <div style={{color:"#fff",fontWeight:700,fontSize:16,marginBottom:16,textAlign:"center"}}>📍 Choisissez votre station</div>
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        <div className="pi-anim-up" style={{width:"100%",maxWidth:380}}>
+          <Button variant="ghost" size="sm" style={{marginBottom:"var(--pi-s4)"}} onClick={()=>setScreen("station")}>← Retour</Button>
+          <div style={{color:"var(--pi-text)",fontWeight:700,fontSize:"var(--pi-fs-card)",marginBottom:"var(--pi-s4)",textAlign:"center"}}>📍 Choisissez votre station</div>
+          <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s2)"}}>
             {ZK.map(zk=>{
               const z=ZONES[zk]; const zl=zn(zk);
               const isOff=(disabledZones||[]).includes(zk);
               return(
                 <button key={zk} onClick={()=>onLogin("station",zk)}
-                  style={{padding:"14px 16px",borderRadius:14,border:"1px solid "+(isOff?"#ef444440":z.border),
-                    background:isOff?"#1a0a0a":z.bg,color:isOff?"#ef4444":z.color,cursor:"pointer",
-                    display:"flex",alignItems:"center",gap:12,opacity:isOff?0.7:1}}
+                  style={{padding:"var(--pi-s4)",borderRadius:"var(--pi-r-lg)",border:`1px solid ${isOff?"var(--pi-danger)40":z.border}`,
+                    background:isOff?"var(--pi-danger-wash)":z.bg,color:isOff?"var(--pi-danger)":z.color,cursor:"pointer",
+                    display:"flex",alignItems:"center",gap:"var(--pi-s3)",opacity:isOff?0.7:1}}
                   onMouseEnter={e=>{if(!isOff)e.currentTarget.style.borderColor=z.color;}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor=isOff?"#ef444440":z.border;}}>
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=isOff?"var(--pi-danger)40":z.border;}}>
                   <span style={{fontSize:22}}>{z.icon}</span>
-                  <span style={{fontWeight:700,fontSize:14,flex:1,textAlign:"left"}}>{zl.name}</span>
-                  {isOff&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,
-                    background:"#ef444420",color:"#ef4444",border:"1px solid #ef444440"}}>DÉSACTIVÉE</span>}
+                  <span style={{fontWeight:700,fontSize:"var(--pi-fs-body)",flex:1,textAlign:"left"}}>{zl.name}</span>
+                  {isOff&&<span style={{fontSize:"var(--pi-fs-meta)",fontWeight:700,padding:"2px 8px",borderRadius:"var(--pi-r-pill)",
+                    background:"var(--pi-danger-wash)",color:"var(--pi-danger)",border:"1px solid var(--pi-danger)"}}>DÉSACTIVÉE</span>}
                 </button>
               );
             })}
