@@ -179,14 +179,17 @@ mobile/tablet/desktop → critique as a demanding design director → fix → re
   `PlayerStatsTab`, `PlayerLeaderboardTab`, `PlayerWinnersTab`), rebuilt in
   StationView's language. Fixed the `cham`/`p` bug in its winners tab and the
   render-time confetti-trigger anti-pattern (moved to `useEffect`) along the way.
+  Done: **`LiveLoginView` redesign** — rebuilt in place (single file, no split
+  needed) with `ui/` primitives and tokens; `NumPad`/`Wordmark` hoisted to
+  module scope. Auth/focused screens (session code, admin/station PIN) use
+  `--pi-w-narrow`.
   Remaining, in recommended order:
-  1. `LiveLoginView` (first screen every player sees).
-  2. Admin cockpit + leaderboard + stations + players + session + survey +
+  1. Admin cockpit + leaderboard + stations + players + session + survey +
      comments + winners tabs (visual redesign — the split only did structure).
      Fix the remaining `cham`/`p` bug in `AdminView`'s winners tab (now
      `src/components/admin/tabs/WinnersTab.jsx`) when redesigning it.
-  3. `SessionPanel` / `RosterEditor` / `PlayerDossier` (lowest visibility, last).
-  4. `AugmentedLanding` / `AugmentedStation`.
+  2. `SessionPanel` / `RosterEditor` / `PlayerDossier` (lowest visibility, last).
+  3. `AugmentedLanding` / `AugmentedStation`.
 
   Also outstanding:
   - `QueueList`, `RulesCard`, `TierBadge`, `Bib` still carry legacy inline styles.
