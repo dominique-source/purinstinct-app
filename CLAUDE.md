@@ -169,14 +169,24 @@ mobile/tablet/desktop → critique as a demanding design director → fix → re
   at ≥1024, action-first stack on mobile), `.pi-hide-mobile` for secondary context,
   primitives over hand-rolled controls.
 - **Phase 3 — in progress.** Done: `KioskView`.
+  Done: **`AdminView.jsx` split** — structural only, one file per tab under
+  `src/components/admin/tabs/` (`CockpitTab`, `LeaderboardTab`, `StationsTab`,
+  `PlayersTab`, `SessionTab`, `SurveyTab`, `CommentsTab`, `WinnersTab`);
+  `AdminView.jsx` is now a thin orchestrator (header, tab switcher, dossier
+  overlay, winner celebration). No visual redesign of these tabs yet.
+  Done: **`PlayerView` redesign** — split into an orchestrator plus
+  `src/components/views/player/` (`PlayerHubView`, `PlayerQueueView`,
+  `PlayerStatsTab`, `PlayerLeaderboardTab`, `PlayerWinnersTab`), rebuilt in
+  StationView's language. Fixed the `cham`/`p` bug in its winners tab and the
+  render-time confetti-trigger anti-pattern (moved to `useEffect`) along the way.
   Remaining, in recommended order:
-  1. **Split `AdminView.jsx` first** (~1060 lines, 7 tabs in one file — the last
-     monolith). Structural, blocks its own redesign. Extract one file per tab.
-  2. `PlayerView` hub + stats (the screen in every athlete's pocket).
-  3. `LiveLoginView` (first screen every player sees).
-  4. Admin cockpit + leaderboard tabs.
-  5. `SessionPanel` / `RosterEditor` / `PlayerDossier` (lowest visibility, last).
-  6. `AugmentedLanding` / `AugmentedStation`.
+  1. `LiveLoginView` (first screen every player sees).
+  2. Admin cockpit + leaderboard + stations + players + session + survey +
+     comments + winners tabs (visual redesign — the split only did structure).
+     Fix the remaining `cham`/`p` bug in `AdminView`'s winners tab (now
+     `src/components/admin/tabs/WinnersTab.jsx`) when redesigning it.
+  3. `SessionPanel` / `RosterEditor` / `PlayerDossier` (lowest visibility, last).
+  4. `AugmentedLanding` / `AugmentedStation`.
 
   Also outstanding:
   - `QueueList`, `RulesCard`, `TierBadge`, `Bib` still carry legacy inline styles.
@@ -185,5 +195,7 @@ mobile/tablet/desktop → critique as a demanding design director → fix → re
     as each screen is migrated.
   - Screens still render `<style>{FONTS}</style>` (now an empty string). Delete the
     call sites and the import as you touch each file.
-  - Pre-existing bug, untouched: `cham`/`p` are undefined in `AdminView.jsx` (winners
-    tab) and `PlayerView.jsx` — 6 `no-undef` errors. Fix when redesigning those tabs.
+  - Pre-existing bug, untouched: `cham`/`p` are undefined in
+    `src/components/admin/tabs/WinnersTab.jsx` (AdminView's winners tab) —
+    2 `no-undef` errors. Fix when redesigning that tab (PlayerView's copy of
+    this bug is already fixed).
