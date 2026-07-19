@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { ZONES, ZK } from "../../../config/zones.js";
 import { useZn, useT } from "../../../hooks/useLang.js";
-import { S } from "../../shared/styles.js";
+import { Button } from "../../ui/Button.jsx";
+import { Panel, Eyebrow } from "../../ui/Panel.jsx";
+import { Badge, LiveIndicator } from "../../ui/Status.jsx";
 
 // Au-delà de ce délai sans résultat soumis (arène active), une zone est signalée comme stagnante dans le cockpit.
 const STAGNATION_THRESHOLD_MS=4*60*1000;
@@ -21,21 +23,20 @@ export function CockpitTab({queues,activeGames,arenaState,lastResultAt,onToggleZ
     return "il y a "+Math.floor(s/60)+" min";
   };
   return(
-  <div className="anim-up" style={{display:"flex",flexDirection:"column",gap:12}}>
+  <div className="pi-anim-up" style={{display:"flex",flexDirection:"column",gap:"var(--pi-s3)"}}>
     {/* Contrôles globaux — regroupés ici pour piloter l'arène sans changer d'onglet */}
-    <div style={{...S.heroCard(),display:"flex",flexWrap:"wrap",alignItems:"center",gap:8,padding:14}}>
-      <div style={{...S.label(),marginRight:"auto"}}>Contrôle arène</div>
-      {arenaState.active&&<button onClick={onPause} style={{...S.btn("#f97316"),padding:"6px 14px",fontSize:12,color:"#000"}}>⏸ Pause</button>}
-      {arenaState.paused&&<button onClick={onResume} style={{...S.btn("#B8E020"),padding:"6px 14px",fontSize:12,color:"#000"}}>▶ Reprendre</button>}
-      {(arenaState.active||arenaState.paused)&&<button onClick={onEnd} style={{...S.btn("#dc2626"),padding:"6px 14px",fontSize:12,color:"#fff"}}>■ Terminer</button>}
-      <button onClick={winnersPublished?onUnpublishWinners:onPublishWinners}
-        style={{...S.btn(winnersPublished?"#374151":"#B8E020"),padding:"6px 14px",fontSize:12,color:winnersPublished?"#9ca3af":"#000"}}>
+    <Panel variant="hero" style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:"var(--pi-s2)"}}>
+      <Eyebrow style={{marginRight:"auto"}}>Contrôle arène</Eyebrow>
+      {arenaState.active&&<Button variant="secondary" size="sm" onClick={onPause} style={{background:"var(--pi-warn-wash)",color:"var(--pi-warn)"}}>⏸ Pause</Button>}
+      {arenaState.paused&&<Button variant="primary" size="sm" onClick={onResume}>▶ Reprendre</Button>}
+      {(arenaState.active||arenaState.paused)&&<Button variant="danger" size="sm" onClick={onEnd}>■ Terminer</Button>}
+      <Button variant={winnersPublished?"secondary":"primary"} size="sm" onClick={winnersPublished?onUnpublishWinners:onPublishWinners}>
         {winnersPublished?t.unpublish:t.publish}
-      </button>
-    </div>
+      </Button>
+    </Panel>
 
     {/* Grille temps réel des 6 zones — vue d'ensemble sans drill-down */}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:10}}>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:"var(--pi-s3)"}}>
       {ZK.map(zk=>{
         const z=ZONES[zk]; const zl=zn(zk);
         const q=queues[zk]||[]; const game=activeGames[zk];
@@ -46,42 +47,41 @@ export function CockpitTab({queues,activeGames,arenaState,lastResultAt,onToggleZ
         // Aucun résultat encore soumis => on se réfère au départ de l'arène (jamais un timestamp null: évite NaN/Infinity)
         const ref=last||arenaState.startTime;
         const stagnant=arenaState.active&&!isDisabled&&hasPlayers&&!!ref&&(now-ref)>STAGNATION_THRESHOLD_MS;
-        const borderCol=isDisabled?"#1f2937":stagnant?"#f59e0b":z.border;
+        const borderCol=isDisabled?"var(--pi-line)":stagnant?"var(--pi-warn)":z.border;
         // Match en cours = carte héros (coins coupés + rim aux couleurs de la zone);
         // l'alerte de stagnation garde priorité visuelle (bordure ambre, carte standard)
-        const base=game&&!isDisabled&&!stagnant
-          ?{...S.heroCard(z.color),padding:14}
-          :{...S.card(),border:"1px solid "+borderCol};
+        const isHero=game&&!isDisabled&&!stagnant;
         return(
-          <div key={zk} style={{...base,opacity:isDisabled?0.5:1,
-            display:"flex",flexDirection:"column",gap:10}}>
+          <Panel key={zk} variant={isHero?"hero":"default"}
+            style={{borderColor:isHero?z.color+"50":borderCol,opacity:isDisabled?0.5:1,
+              display:"flex",flexDirection:"column",gap:"var(--pi-s2)"}}>
             {/* En-tête zone + toggle activation */}
-            <div style={{...S.row(),justifyContent:"space-between"}}>
-              <div style={{...S.row(),gap:8,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{display:"flex",alignItems:"center",gap:"var(--pi-s2)",minWidth:0}}>
                 <span style={{fontSize:20,flexShrink:0}}>{z.icon}</span>
-                <div style={{color:"#fff",fontWeight:700,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{zl.name}</div>
-                {stagnant&&<span className="pulse-lime" style={S.liveDot("#f59e0b")}/>}
+                <div style={{color:"var(--pi-text)",fontWeight:700,fontSize:"var(--pi-fs-body)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{zl.name}</div>
+                {stagnant&&<span className="pi-pulse" style={{width:9,height:9,borderRadius:"50%",flexShrink:0,background:"var(--pi-warn)",boxShadow:"0 0 6px var(--pi-warn)"}}/>}
               </div>
               <button onClick={()=>onToggleZone(zk)}
-                style={{padding:"4px 10px",borderRadius:20,cursor:"pointer",fontSize:10,fontWeight:700,flexShrink:0,
-                  background:isDisabled?"#ef444420":"#B8E02020",color:isDisabled?"#ef4444":"#B8E020",
-                  border:"1px solid "+(isDisabled?"#ef444440":"#B8E02040")}}>
+                style={{padding:"4px 10px",borderRadius:"var(--pi-r-pill)",cursor:"pointer",fontSize:"var(--pi-fs-meta)",fontWeight:700,flexShrink:0,border:"1px solid",
+                  background:isDisabled?"var(--pi-danger-wash)":"var(--pi-lime-wash)",color:isDisabled?"var(--pi-danger)":"var(--pi-lime)",
+                  borderColor:isDisabled?"var(--pi-danger)":"var(--pi-lime-line)"}}>
                 {isDisabled?"⏸ OFF":"● ON"}
               </button>
             </div>
             {/* Partie en cours + file */}
-            <div style={{...S.row(),justifyContent:"space-between",gap:8}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"var(--pi-s2)"}}>
               {game
-                ?<div style={S.liveTag()}><span className="pulse-lime" style={S.liveDot("#dc2626",6)}/>⚡ {allInGame} en partie</div>
-                :<div style={{fontSize:12,color:"#4b5563"}}>Aucune partie</div>}
-              <div style={{...S.tag(z.color)}}>{q.length} en file</div>
+                ?<LiveIndicator label={allInGame+" en partie"}/>
+                :<div style={{fontSize:"var(--pi-fs-body)",color:"var(--pi-text-3)"}}>Aucune partie</div>}
+              <Badge style={{background:z.color+"18",color:z.color}}>{q.length} en file</Badge>
             </div>
             {/* Dernier résultat */}
-            <div style={{...S.row(),justifyContent:"space-between",fontSize:11}}>
-              <span style={{color:"#4b5563",textTransform:"uppercase",letterSpacing:"1px"}}>Dernier résultat</span>
-              <span style={{color:stagnant?"#f59e0b":"#6b7280",fontWeight:stagnant?700:600}}>{fmtAgo(last)}</span>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:"var(--pi-fs-label)"}}>
+              <span style={{color:"var(--pi-text-3)",textTransform:"uppercase",letterSpacing:"1px"}}>Dernier résultat</span>
+              <span style={{color:stagnant?"var(--pi-warn)":"var(--pi-text-2)",fontWeight:stagnant?700:600}}>{fmtAgo(last)}</span>
             </div>
-          </div>
+          </Panel>
         );
       })}
     </div>
