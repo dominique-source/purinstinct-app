@@ -6,7 +6,10 @@ import { S } from "./components/shared/styles.js";
 import { INITIAL_ROSTERS } from "./config/rosters.js";
 import { T } from "./config/translations.js";
 import { LangContext } from "./hooks/useLang.js";
+import { MODES, classifyModeRoute } from "./config/modes.js";
+import { ModeContext } from "./hooks/useMode.js";
 import { shuffle, getStatus, createPlayersFromRoster, makeEmptyGames, makeEmptyQueues, computeTeamResult, computeIndividualResult, refillQueues, buildInitialQueues } from "./lib/game-logic.js";
+import { assertAllowedCapture } from "./lib/playerCapture.js";
 import { LangFooter } from "./components/shared/LangFooter.jsx";
 import { AdminView } from "./components/admin/AdminView.jsx";
 import { StationView } from "./components/game/StationView.jsx";
@@ -52,6 +55,9 @@ export default function PurInstinctApp(){
   const [fbReady,setFbReady]=useState(false);
   const [lang,setLang]=useState("fr");
   const [isTestMode,setIsTestMode]=useState(false);
+  // Mode d'activation courant (clé de MODES: "games","corporate","ecole",
+  // "festival","parc","admin") — null tant qu'aucun code n'a été résolu.
+  const [activationMode,setActivationMode]=useState(null);
 
   // 30 hardcoded test players — never synced to Firebase
   const TEST_PLAYERS=useState(()=>
@@ -128,6 +134,7 @@ export default function PurInstinctApp(){
         if(data.liveMode) setView(v=>v.type==="login"?{type:"liveLogin"}:v);
       }
       if(data.activeRosterId) setActiveRosterId(data.activeRosterId);
+      if(data.activationMode) setActivationMode(data.activationMode);
       if(data.extraRosters) setRosters([...INITIAL_ROSTERS,...Object.values(data.extraRosters).map(r=>({...r,entries:r.entries||[]}))]);
 
       setFbReady(true);
@@ -147,6 +154,7 @@ export default function PurInstinctApp(){
   const syncQueues=(newQueues)=>{setQueues(newQueues);fbSet("queues",queuesToFb(newQueues));};
   const syncGames=(newGames)=>{setActiveGames(newGames);fbSet("activeGames",newGames);};
   const syncArena=(newArena)=>{setArenaState(newArena);fbSet("arenaState",newArena);};
+  const syncActivationMode=(modeKey)=>{setActivationMode(modeKey);fbSet("activationMode",modeKey);};
 
   // ── Écritures granulaires (anti-collision multi-plateaux) ──────
   // Une seule file, un seul joueur: chaque action n'écrit que son chemin.
@@ -199,17 +207,23 @@ export default function PurInstinctApp(){
     const newR={id:"r"+Date.now(),name:"Nouvelle liste",entries:[]};
     const a=[...rosters,newR];setRosters(a);syncExtraRosters(a);
   };
-  const addPlayerToSession=async(name,gender,callback,groupId="main")=>{
+  const addPlayerToSession=async(name,gender,callback,groupId="main",extra={})=>{
     // ID alloué par transaction Firebase: deux inscriptions simultanées
     // (deux bornes, deux mobiles) ne peuvent plus obtenir le même numéro.
     const localMax=players.length>0?Math.max(...players.map(p=>Number(p.id)||0)):0;
     const newId=await allocPlayerId(localMax);
+    // Verrou dur: en mode allowPII=false (ex. ecole), aucune donnée de contact
+    // ne peut être écrite, même si une vue en amont en a fourni par erreur.
+    let safeExtra=extra||{};
+    try{ assertAllowedCapture(activationMode,safeExtra); }
+    catch(e){ console.warn(e.message); safeExtra={}; }
     const newPlayer={id:newId,number:newId,name,gender:gender||"M",globalPoints:0,
       zoneScores:{purinstinct:50,speed:50,handAgility:50,footAgility:50,generalAgility:50,iq:50},
       zoneStreaks:{purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0},
       zonesPlayed:[],lastResult:null,history:[],
       groupId,
-      age:"",email:"",instagram:"",tiktok:"",snapchat:"",
+      age:"",email:safeExtra.email||"",instagram:"",tiktok:"",snapchat:"",
+      marketingConsent:!!safeExtra.marketingConsent,
       photoConsent:false,videoConsent:false,profilePhoto:null,highlights:[]};
     setPlayers(ps=>[...ps,newPlayer]);
     fbUpdate({["state/players/"+newId]:newPlayer});
@@ -239,9 +253,9 @@ export default function PurInstinctApp(){
   // Borne kiosque: inscription (ou joueur déjà connu) + entrée directe dans la
   // file de la zone choisie, en un seul geste. force=true comme pour l'ajout
   // manuel côté StationView — la borne agit comme un responsable de plateau.
-  const kioskRegister=(zone,name,gender,existingId,onDone)=>{
+  const kioskRegister=(zone,name,gender,existingId,onDone,extra)=>{
     if(existingId){ addToQueue(existingId,zone,true); onDone(); return; }
-    addPlayerToSession(name,gender,(newId)=>{ addToQueue(newId,zone,true); onDone(); },activeRosterId);
+    addPlayerToSession(name,gender,(newId)=>{ addToQueue(newId,zone,true); onDone(); },activeRosterId,extra);
   };
 
   const updatePlayer=(updated)=>syncOnePlayer(updated);
@@ -477,20 +491,59 @@ export default function PurInstinctApp(){
     );
   } else if(view.type==="login") content=(
     <ModeSelectView
-      onLive={()=>{fbSet("liveMode",true);setIsTestMode(false);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());setView({type:"liveLogin"});}}
-      onTest={()=>{
-        fbSet("liveMode",false);
-        setIsTestMode(true);
-        // Pre-fill every zone queue with all 30 test players
-        const testQ={};
-        ZK.forEach(zk=>{testQ[zk]=TEST_PLAYERS.map(p=>p.id);});
-        setQueues(testQ);
-        // Pre-fill every augmented game queue with test player names
-        const testAug={};
-        AUG_GAMES.forEach(g=>{testAug[g.id]={queue:TEST_PLAYERS.map(p=>p.name),activeMatch:null};});
-        setAugState(testAug);
-        setView({type:"testLogin"});
+      onSelectMode={(modeKey)=>{
+        syncActivationMode(modeKey);
+        const routeKind=classifyModeRoute(modeKey);
+        // "live" (games) = comportement Live actuel, référence — ne jamais régresser.
+        if(routeKind==="live"){
+          fbSet("liveMode",true);setIsTestMode(false);setWinnersPublished(false);
+          fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());
+          setView({type:"liveLogin"});
+          return;
+        }
+        // "admin" = raccourci caché, tout débloqué — reprend l'ancien TEST MODE.
+        if(routeKind==="admin"){
+          fbSet("liveMode",false);
+          setIsTestMode(true);
+          const testQ={};
+          ZK.forEach(zk=>{testQ[zk]=TEST_PLAYERS.map(p=>p.id);});
+          setQueues(testQ);
+          const testAug={};
+          AUG_GAMES.forEach(g=>{testAug[g.id]={queue:TEST_PLAYERS.map(p=>p.name),activeMatch:null};});
+          setAugState(testAug);
+          setView({type:"testLogin"});
+          return;
+        }
+        // "kiosk" (festival/parc, kioskDefault): bascule direct en kiosque,
+        // comme ?kiosk=1 aujourd'hui — piloté par la config, pas le nom du mode.
+        if(routeKind==="kiosk"){
+          setView({type:"kiosk",zone:null});
+          return;
+        }
+        // "stub" (corporate/ecole): pas encore de vue dédiée (entryFlow
+        // prereg-checkin / roster-team) — capture de données déjà paramétrable
+        // depuis l'étape 4, vue dédiée à construire dans un futur incrément.
+        setView({type:"modeStub",mode:modeKey});
       }}/>
+  );
+
+  else if(view.type==="modeStub") content=(
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
+      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,gap:16}}>
+      <style>{FONTS}</style>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:24,color:"#B8E020"}}>
+        ✅ CODE RECONNU
+      </div>
+      <div style={{fontSize:14,color:"#9ca3af",textTransform:"uppercase",letterSpacing:2}}>mode: {view.mode}</div>
+      <div style={{fontSize:12,color:"#4b5563",maxWidth:280,textAlign:"center"}}>
+        Vue dédiée (entryFlow {MODES[view.mode]?.entryFlow}) à construire — capture de données déjà paramétrable.
+      </div>
+      <button onClick={()=>setView({type:"login"})}
+        style={{marginTop:12,padding:"10px 20px",borderRadius:12,background:"#111827",
+          border:"1px solid #B8E02040",color:"#B8E020",cursor:"pointer",fontSize:13,fontWeight:700}}>
+        ← Retour
+      </button>
+    </div>
   );
 
   else if(view.type==="kiosk") content=(
@@ -793,5 +846,9 @@ export default function PurInstinctApp(){
     }
   }
 
-  return <LangContext.Provider value={{lang,setLang}}>{content}</LangContext.Provider>;
+  return (
+    <ModeContext.Provider value={{mode:activationMode,modeConfig:MODES[activationMode]||null}}>
+      <LangContext.Provider value={{lang,setLang}}>{content}</LangContext.Provider>
+    </ModeContext.Provider>
+  );
 }
