@@ -183,22 +183,23 @@ mobile/tablet/desktop → critique as a demanding design director → fix → re
   needed) with `ui/` primitives and tokens; `NumPad`/`Wordmark` hoisted to
   module scope. Auth/focused screens (session code, admin/station PIN) use
   `--pi-w-narrow`.
+  Done: **AdminView tab visual redesign** — all 8 tabs (`CockpitTab`,
+  `LeaderboardTab`, `StationsTab`, `PlayersTab`, `SessionTab`, `SurveyTab`,
+  `CommentsTab`, `WinnersTab`) rebuilt with `ui/` primitives and tokens.
+  `SessionTab`'s inner `SessionPanel` itself is intentionally untouched
+  (still legacy — see below, deferred as lowest-visibility). Fixed the last
+  `cham`/`p` ReferenceError in `WinnersTab.jsx` — this tab previously crashed
+  to a blank screen for admins whenever any zone had a champion; both
+  documented occurrences (AdminView + PlayerView) are now fixed.
   Remaining, in recommended order:
-  1. Admin cockpit + leaderboard + stations + players + session + survey +
-     comments + winners tabs (visual redesign — the split only did structure).
-     Fix the remaining `cham`/`p` bug in `AdminView`'s winners tab (now
-     `src/components/admin/tabs/WinnersTab.jsx`) when redesigning it.
-  2. `SessionPanel` / `RosterEditor` / `PlayerDossier` (lowest visibility, last).
-  3. `AugmentedLanding` / `AugmentedStation`.
+  1. `SessionPanel` / `RosterEditor` / `PlayerDossier` (lowest visibility, last).
+  2. `AugmentedLanding` / `AugmentedStation`.
 
   Also outstanding:
-  - `QueueList`, `RulesCard`, `TierBadge`, `Bib` still carry legacy inline styles.
+  - `SessionPanel`, `RosterEditor`, `PlayerDossier`, `QueueList`, `RulesCard`,
+    `TierBadge`, `Bib` still carry legacy inline styles.
   - Neutral grays (`#0d0f1a`, `#111827`, `#1f2937`, `#374151`, `#9ca3af`, `#4b5563`…)
-    are still hard-coded across screens; sweep them onto `--pi-surface-*`/`--pi-text-*`
-    as each screen is migrated.
+    are still hard-coded across the screens above; sweep them onto
+    `--pi-surface-*`/`--pi-text-*` as each is migrated.
   - Screens still render `<style>{FONTS}</style>` (now an empty string). Delete the
     call sites and the import as you touch each file.
-  - Pre-existing bug, untouched: `cham`/`p` are undefined in
-    `src/components/admin/tabs/WinnersTab.jsx` (AdminView's winners tab) —
-    2 `no-undef` errors. Fix when redesigning that tab (PlayerView's copy of
-    this bug is already fixed).
