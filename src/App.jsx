@@ -6,6 +6,8 @@ import { S } from "./components/shared/styles.js";
 import { INITIAL_ROSTERS } from "./config/rosters.js";
 import { T } from "./config/translations.js";
 import { LangContext } from "./hooks/useLang.js";
+import { MODES } from "./config/modes.js";
+import { ModeContext } from "./hooks/useMode.js";
 import { shuffle, getStatus, createPlayersFromRoster, makeEmptyGames, makeEmptyQueues, computeTeamResult, computeIndividualResult, refillQueues, buildInitialQueues } from "./lib/game-logic.js";
 import { LangFooter } from "./components/shared/LangFooter.jsx";
 import { AdminView } from "./components/admin/AdminView.jsx";
@@ -52,6 +54,9 @@ export default function PurInstinctApp(){
   const [fbReady,setFbReady]=useState(false);
   const [lang,setLang]=useState("fr");
   const [isTestMode,setIsTestMode]=useState(false);
+  // Mode d'activation courant (clé de MODES: "games","corporate","ecole",
+  // "festival","parc","admin") — null tant qu'aucun code n'a été résolu.
+  const [activationMode,setActivationMode]=useState(null);
 
   // 30 hardcoded test players — never synced to Firebase
   const TEST_PLAYERS=useState(()=>
@@ -128,6 +133,7 @@ export default function PurInstinctApp(){
         if(data.liveMode) setView(v=>v.type==="login"?{type:"liveLogin"}:v);
       }
       if(data.activeRosterId) setActiveRosterId(data.activeRosterId);
+      if(data.activationMode) setActivationMode(data.activationMode);
       if(data.extraRosters) setRosters([...INITIAL_ROSTERS,...Object.values(data.extraRosters).map(r=>({...r,entries:r.entries||[]}))]);
 
       setFbReady(true);
@@ -147,6 +153,7 @@ export default function PurInstinctApp(){
   const syncQueues=(newQueues)=>{setQueues(newQueues);fbSet("queues",queuesToFb(newQueues));};
   const syncGames=(newGames)=>{setActiveGames(newGames);fbSet("activeGames",newGames);};
   const syncArena=(newArena)=>{setArenaState(newArena);fbSet("arenaState",newArena);};
+  const syncActivationMode=(modeKey)=>{setActivationMode(modeKey);fbSet("activationMode",modeKey);};
 
   // ── Écritures granulaires (anti-collision multi-plateaux) ──────
   // Une seule file, un seul joueur: chaque action n'écrit que son chemin.
@@ -478,6 +485,7 @@ export default function PurInstinctApp(){
   } else if(view.type==="login") content=(
     <ModeSelectView
       onSelectMode={(modeKey)=>{
+        syncActivationMode(modeKey);
         // "games" = comportement Live actuel, référence — ne jamais régresser.
         if(modeKey==="games"){
           fbSet("liveMode",true);setIsTestMode(false);setWinnersPublished(false);
@@ -498,8 +506,14 @@ export default function PurInstinctApp(){
           setView({type:"testLogin"});
           return;
         }
-        // corporate / ecole / festival / parc: routing + vues dédiées arrivent
-        // à l'étape 3 (activationMode + montage conditionnel par enabledViews).
+        // Mode kioskDefault (festival/parc): bascule direct en kiosque, comme
+        // ?kiosk=1 aujourd'hui — piloté par la config, pas par le nom du mode.
+        if(MODES[modeKey]?.kioskDefault){
+          setView({type:"kiosk",zone:null});
+          return;
+        }
+        // corporate / ecole: pas encore de vue dédiée (entryFlow prereg-checkin /
+        // roster-team) — arrive à l'étape 4 avec la capture de données paramétrable.
         setView({type:"modeStub",mode:modeKey});
       }}/>
   );
@@ -513,7 +527,7 @@ export default function PurInstinctApp(){
       </div>
       <div style={{fontSize:14,color:"#9ca3af",textTransform:"uppercase",letterSpacing:2}}>mode: {view.mode}</div>
       <div style={{fontSize:12,color:"#4b5563",maxWidth:280,textAlign:"center"}}>
-        Vues dédiées à ce mode — arrivent à l'étape 3.
+        Vue dédiée (entryFlow {MODES[view.mode]?.entryFlow}) — arrive à l'étape 4.
       </div>
       <button onClick={()=>setView({type:"login"})}
         style={{marginTop:12,padding:"10px 20px",borderRadius:12,background:"#111827",
@@ -823,5 +837,9 @@ export default function PurInstinctApp(){
     }
   }
 
-  return <LangContext.Provider value={{lang,setLang}}>{content}</LangContext.Provider>;
+  return (
+    <ModeContext.Provider value={{mode:activationMode,modeConfig:MODES[activationMode]||null}}>
+      <LangContext.Provider value={{lang,setLang}}>{content}</LangContext.Provider>
+    </ModeContext.Provider>
+  );
 }
