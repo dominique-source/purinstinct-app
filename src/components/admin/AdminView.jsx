@@ -104,7 +104,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
           </div>
         </div>
         <div style={{display:"flex",gap:4}}>
-          {[["cockpit","🎛 Cockpit"],["leaderboard",t.tabLeader],["stations",t.tabStations],["players",t.tabPlayers],["teams","👥 Équipes"],["session",t.tabSession],["survey",t.tabSurvey],["comments",t.tabComments],["winners",t.tabWinners]].map(([tb,l])=>(
+          {[["cockpit","🎛 Cockpit"],["leaderboard",t.tabLeader],["stations",t.tabStations],["players",t.tabPlayers],["teams",t.tabTeams],["session",t.tabSession],["survey",t.tabSurvey],["comments",t.tabComments],["winners",t.tabWinners]].map(([tb,l])=>(
             <button key={tb} onClick={()=>{setTab(tb);setSelectedStation(null);}} style={{
               padding:"6px 10px",borderRadius:8,fontSize:11,fontWeight:600,border:"none",cursor:"pointer",
               background:tab===tb?"#B8E020":"#0d0f1a",color:tab===tb?"#000":"#6b7280"}}>

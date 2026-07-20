@@ -45,7 +45,6 @@ const CONFIRM_MS = 3000;     // durée d'affichage de l'écran de confirmation
 // peut demander — un seul est actif à la fois selon le mode (company: corporate,
 // class: ecole), mais l'ensemble reste ouvert à d'autres champs futurs.
 const EXTRA_TEXT_FIELDS=["company","class"];
-const EXTRA_FIELD_PLACEHOLDER={company:"Entreprise / équipe",class:"Classe"};
 
 // Borne fixe et publique: écran d'accueil = classement en boucle, jamais de
 // session affichée trop longtemps. Inscription en 3 taps (2 en mode équipes): zone →
@@ -244,7 +243,7 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
               <div style={{fontSize:36,marginBottom:"var(--pi-s2)"}}>{zone?ZONES[zone].icon:"🤝"}</div>
               <Eyebrow style={{marginBottom:"var(--pi-s2)"}}>Étape 2 sur 3</Eyebrow>
               <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
-                fontSize:"var(--pi-fs-title)",color:"#fff"}}>CHOISISSEZ VOTRE ÉQUIPE</div>
+                fontSize:"var(--pi-fs-title)",color:"#fff"}}>{t.chooseYourTeam}</div>
             </div>
 
             {teamsList.length>0&&(
@@ -255,19 +254,21 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
                       padding:"0 var(--pi-s4)",borderRadius:"var(--pi-r-md)",border:"1px solid var(--pi-line)",
                       background:"var(--pi-surface-1)",cursor:"pointer",textAlign:"left"}}>
                     <span style={{color:"#fff",fontWeight:600,fontSize:16,flex:1}}>{tm.name}</span>
-                    <span style={{color:"var(--pi-text-4)",fontSize:13}}>{(tm.memberIds||[]).length} membre{(tm.memberIds||[]).length>1?"s":""}</span>
+                    <span style={{color:"var(--pi-text-4)",fontSize:13}}>
+                      {(tm.memberIds||[]).length} {(tm.memberIds||[]).length>1?t.memberCountLabelPlural:t.memberCountLabel}
+                    </span>
                   </button>
                 ))}
               </div>
             )}
 
             <input value={teamSearch} onChange={e=>{bump();setTeamSearch(e.target.value);}}
-              placeholder="Ou tapez un nouveau nom d'équipe…" className="pi-input"
+              placeholder={t.newTeamPlaceholder} className="pi-input"
               style={{minHeight:"var(--pi-ctrl-lg)",fontSize:16,marginBottom:"var(--pi-s3)"}}/>
 
             {teamSearch.trim().length>0&&!teamExactMatch&&(
               <Button variant="primary" size="lg" cut block onClick={()=>pickTeam(null,teamSearch.trim())}>
-                + Créer l'équipe « {teamSearch.trim()} »
+                {t.createTeamPrefix} « {teamSearch.trim()} »
               </Button>
             )}
           </div>
@@ -288,7 +289,7 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
               <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
                 fontSize:"var(--pi-fs-title)",color:"#fff"}}>QUEL EST VOTRE NOM ?</div>
               {selectedTeam&&<div style={{marginTop:"var(--pi-s2)",color:"var(--pi-lime)",fontSize:"var(--pi-fs-label)",fontWeight:700}}>
-                Équipe : {selectedTeam.name}
+                {t.teamLabel} : {selectedTeam.name}
               </div>}
             </div>
 
@@ -326,7 +327,7 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
                 </div>
                 {extraFieldKey&&(
                   <Field inputProps={{type:"text",value:extraFieldValue,
-                    placeholder:EXTRA_FIELD_PLACEHOLDER[extraFieldKey],
+                    placeholder:extraFieldKey==="company"?t.companyPlaceholder:t.classPlaceholder,
                     onChange:e=>{bump();setExtraFieldValue(e.target.value);}}}
                     style={{marginBottom:"var(--pi-s3)"}}/>
                 )}
@@ -366,7 +367,7 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
             fontSize:"var(--pi-fs-section)",fontWeight:700}}>
             <span>{ZONES[confirmed.zone]?.icon}</span>
             {confirmed.teamName
-              ?`Équipe ${confirmed.teamName} — ${zn(confirmed.zone).name}`
+              ?`${t.teamLabel} ${confirmed.teamName} — ${zn(confirmed.zone).name}`
               :`Vous êtes dans la file — ${zn(confirmed.zone).name}`}
           </div>
         </div>

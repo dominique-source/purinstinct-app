@@ -242,9 +242,9 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
               /* ---------- SETUP / GENERATE — mode équipes manuel ---------- */
               <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s3)"}}>
                 <Panel variant="raised" style={{padding:"var(--pi-s5)"}}>
-                  <Eyebrow style={{marginBottom:"var(--pi-s3)"}}>Équipes · {z.teamSize} par équipe</Eyebrow>
+                  <Eyebrow style={{marginBottom:"var(--pi-s3)"}}>{t.teamsLabel} · {z.teamSize} {t.teamPerTeamSuffix}</Eyebrow>
                   {teamsList.length===0?(
-                    <div style={{fontSize:"var(--pi-fs-body)",color:"var(--pi-text-3)"}}>Aucune équipe inscrite pour cette zone.</div>
+                    <div style={{fontSize:"var(--pi-fs-body)",color:"var(--pi-text-3)"}}>{t.noTeamsRegistered}</div>
                   ):(
                     <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s2)",marginBottom:"var(--pi-s4)"}}>
                       {teamsList.map(tm=>{
@@ -264,11 +264,11 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
                     </div>
                   )}
                   <Button variant="primary" size="xl" cut block disabled={!canGenTeamMatch} onClick={onGenerateTeamMatch}>
-                    Générer le prochain match
+                    {t.generateNextMatch}
                   </Button>
                   {!canGenTeamMatch&&teamsList.length>0&&(
                     <div style={{fontSize:"var(--pi-fs-label)",color:"var(--pi-text-3)",marginTop:"var(--pi-s2)",textAlign:"center"}}>
-                      Il faut au moins 2 équipes prêtes ({z.teamSize}+ joueurs chacune)
+                      {t.needTwoReadyTeams} ({z.teamSize}+ {t.playersEachSuffix})
                     </div>
                   )}
                 </Panel>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ZONES, ZK } from "../../../config/zones.js";
-import { useZn } from "../../../hooks/useLang.js";
+import { useZn, useT } from "../../../hooks/useLang.js";
 import { Bib } from "../../shared/Bib.jsx";
 import { Button, IconButton } from "../../ui/Button.jsx";
 import { Panel, Eyebrow } from "../../ui/Panel.jsx";
@@ -16,6 +16,7 @@ const TEAM_ZONES = ZK.filter((zk) => ZONES[zk].gameStyle==="team");
 // dépendre du self-service au kiosque (même mécanisme, joinOrCreateTeam côté
 // App.jsx via onAssignPlayer).
 export function TeamsTab({players,teams,arenaState,onToggleTeamMode,onAssignPlayer,onRemoveTeamMember,onRenameTeam}){
+  const t=useT();
   const zn=useZn();
   const teamMode=!!arenaState.teamMode;
   const [selectedZone,setSelectedZone]=useState(TEAM_ZONES[0]);
@@ -42,9 +43,9 @@ export function TeamsTab({players,teams,arenaState,onToggleTeamMode,onAssignPlay
       <Panel>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"var(--pi-s3)"}}>
           <div>
-            <div style={{fontWeight:700,fontSize:"var(--pi-fs-body)",color:"var(--pi-text)"}}>Mode équipes manuel</div>
+            <div style={{fontWeight:700,fontSize:"var(--pi-fs-body)",color:"var(--pi-text)"}}>{t.teamModeTitle}</div>
             <div style={{fontSize:"var(--pi-fs-label)",color:"var(--pi-text-3)",marginTop:2}}>
-              Les joueurs rejoignent une équipe nommée au lieu d'une file individuelle (zones équipe seulement).
+              {t.teamModeDesc}
             </div>
           </div>
           <button onClick={onToggleTeamMode}
@@ -53,7 +54,7 @@ export function TeamsTab({players,teams,arenaState,onToggleTeamMode,onAssignPlay
               background:teamMode?"var(--pi-lime-wash)":"var(--pi-surface-2)",
               color:teamMode?"var(--pi-lime)":"var(--pi-text-3)",
               borderColor:teamMode?"var(--pi-lime-line)":"var(--pi-line)"}}>
-            {teamMode?"● ACTIF":"○ INACTIF"}
+            {teamMode?t.teamModeActive:t.teamModeInactive}
           </button>
         </div>
       </Panel>
@@ -73,9 +74,9 @@ export function TeamsTab({players,teams,arenaState,onToggleTeamMode,onAssignPlay
       </div>
 
       <Panel>
-        <Eyebrow style={{marginBottom:"var(--pi-s3)"}}>{zl.name} · {z.teamSize} par équipe</Eyebrow>
+        <Eyebrow style={{marginBottom:"var(--pi-s3)"}}>{zl.name} · {z.teamSize} {t.teamPerTeamSuffix}</Eyebrow>
         {teamsList.length===0?(
-          <EmptyState icon="👥" title="AUCUNE ÉQUIPE">Aucune équipe inscrite pour cette zone pour l'instant.</EmptyState>
+          <EmptyState icon="👥" title={t.noTeamsTitle}>{t.noTeamsDesc}</EmptyState>
         ):(
           <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s3)"}}>
             {teamsList.map((tm)=>(
@@ -104,7 +105,7 @@ export function TeamsTab({players,teams,arenaState,onToggleTeamMode,onAssignPlay
                 </div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:"var(--pi-s2)"}}>
                   {(tm.memberIds||[]).length===0&&(
-                    <span style={{fontSize:"var(--pi-fs-label)",color:"var(--pi-text-4)"}}>Aucun membre</span>
+                    <span style={{fontSize:"var(--pi-fs-label)",color:"var(--pi-text-4)"}}>{t.noMembers}</span>
                   )}
                   {(tm.memberIds||[]).map((id)=>{
                     const p=players.find((px)=>px.id===id);
@@ -125,13 +126,13 @@ export function TeamsTab({players,teams,arenaState,onToggleTeamMode,onAssignPlay
         )}
 
         <div style={{marginTop:"var(--pi-s4)",paddingTop:"var(--pi-s4)",borderTop:"1px solid var(--pi-line)"}}>
-          <Eyebrow style={{marginBottom:"var(--pi-s2)"}}>Assigner un joueur</Eyebrow>
+          <Eyebrow style={{marginBottom:"var(--pi-s2)"}}>{t.assignPlayerTitle}</Eyebrow>
           <div style={{display:"flex",gap:"var(--pi-s2)"}}>
             <input type="number" placeholder="# Joueur" value={numInput} onChange={(e)=>setNumInput(e.target.value)}
               className="pi-input" style={{width:100}}/>
-            <input placeholder="Nom d'équipe (existante ou nouvelle)" value={teamNameInput} onChange={(e)=>setTeamNameInput(e.target.value)}
+            <input placeholder={t.teamNamePlaceholder} value={teamNameInput} onChange={(e)=>setTeamNameInput(e.target.value)}
               className="pi-input" style={{flex:1}}/>
-            <Button variant="primary" onClick={handleAssign}>Assigner</Button>
+            <Button variant="primary" onClick={handleAssign}>{t.assignBtn}</Button>
           </div>
         </div>
       </Panel>

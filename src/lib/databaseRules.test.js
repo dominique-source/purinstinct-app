@@ -14,13 +14,21 @@ const rulesPath = path.resolve(
 const RULES = JSON.parse(readFileSync(rulesPath, "utf-8"));
 
 function makeRef(data) {
+  const value = data === undefined ? null : data;
   return {
-    val: () => (data === undefined ? null : data),
+    val: () => value,
     child: (childPath) => {
       let cur = data;
       for (const part of childPath.split("/")) cur = cur?.[part];
       return makeRef(cur);
     },
+    // Sous-ensemble des méthodes natives de validation Firebase RTDB
+    // utilisées dans database.rules.json — étendre au besoin si de
+    // nouvelles règles en utilisent d'autres (isBoolean, exists, ...).
+    isString: () => typeof value === "string",
+    isNumber: () => typeof value === "number",
+    isBoolean: () => typeof value === "boolean",
+    exists: () => value !== null,
   };
 }
 
@@ -68,5 +76,35 @@ describe("database.rules.json — verrou PII en mode ecole", () => {
         evalValidate(expr, { rootData: { state: { activationMode: "ecole" } }, newDataValue: "@sam" }),
       ).toBe(false);
     }
+  });
+});
+
+describe("database.rules.json — mode équipes manuel (teams/teamPairCounts)", () => {
+  const nameExpr = RULES.rules.state.teams.$zone.$teamId.name[".validate"];
+  const memberIdExpr = RULES.rules.state.teams.$zone.$teamId.memberIds.$index[".validate"];
+  const pairCountExpr = RULES.rules.state.teamPairCounts.$zone.$pairKey[".validate"];
+
+  it("accepte un nom d'équipe qui est une chaîne", () => {
+    expect(evalValidate(nameExpr, { rootData: {}, newDataValue: "Marketing" })).toBe(true);
+  });
+
+  it("rejette un nom d'équipe qui n'est pas une chaîne", () => {
+    expect(evalValidate(nameExpr, { rootData: {}, newDataValue: 123 })).toBe(false);
+  });
+
+  it("accepte un memberId numérique", () => {
+    expect(evalValidate(memberIdExpr, { rootData: {}, newDataValue: 27 })).toBe(true);
+  });
+
+  it("rejette un memberId non numérique", () => {
+    expect(evalValidate(memberIdExpr, { rootData: {}, newDataValue: "27" })).toBe(false);
+  });
+
+  it("accepte un compte de paire numérique", () => {
+    expect(evalValidate(pairCountExpr, { rootData: {}, newDataValue: 2 })).toBe(true);
+  });
+
+  it("rejette un compte de paire non numérique", () => {
+    expect(evalValidate(pairCountExpr, { rootData: {}, newDataValue: "2" })).toBe(false);
   });
 });

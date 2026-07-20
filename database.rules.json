@@ -23,6 +23,23 @@
           "tiktok":    { ".validate": "root.child('state/activationMode').val() !== 'ecole' || newData.val() === ''" },
           "snapchat":  { ".validate": "root.child('state/activationMode').val() !== 'ecole' || newData.val() === ''" }
         }
+      },
+
+      "teams": {
+        "$zone": {
+          "$teamId": {
+            "name": { ".validate": "newData.isString()" },
+            "memberIds": {
+              "$index": { ".validate": "newData.isNumber()" }
+            }
+          }
+        }
+      },
+
+      "teamPairCounts": {
+        "$zone": {
+          "$pairKey": { ".validate": "newData.isNumber()" }
+        }
       }
     }
   }
