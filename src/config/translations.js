@@ -169,6 +169,8 @@ export const T={
     returnAsPlayer:"👤 Retourner comme joueur",
     switchToAdmin:"🛡️ Basculer en mode Admin",
     disconnectSession:"Déconnecter la session",
+    enterAccessCode:"Entrez votre code d'accès",
+    invalidAccessCode:"Code inconnu",
   },
   en:{
     lang:"EN", langOther:"FR",
@@ -340,5 +342,7 @@ export const T={
     returnAsPlayer:"👤 Return as player",
     switchToAdmin:"🛡️ Switch to Admin",
     disconnectSession:"Disconnect session",
+    enterAccessCode:"Enter your access code",
+    invalidAccessCode:"Unknown code",
   },
 };

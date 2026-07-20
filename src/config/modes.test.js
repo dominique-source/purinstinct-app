@@ -39,11 +39,11 @@ describe("MODES", () => {
 
 describe("resolveMode", () => {
   it("resolves a valid mode code to its mode key", () => {
-    expect(resolveMode("00")).toBe("games");
-    expect(resolveMode("01")).toBe("corporate");
-    expect(resolveMode("02")).toBe("ecole");
-    expect(resolveMode("03")).toBe("festival");
-    expect(resolveMode("04")).toBe("parc");
+    expect(resolveMode("0000")).toBe("games");
+    expect(resolveMode("0001")).toBe("corporate");
+    expect(resolveMode("0002")).toBe("ecole");
+    expect(resolveMode("0003")).toBe("festival");
+    expect(resolveMode("0004")).toBe("parc");
   });
 
   it("resolves the admin PIN to the admin mode", () => {
@@ -52,7 +52,7 @@ describe("resolveMode", () => {
 
   it("returns null for an unknown code", () => {
     expect(resolveMode("9999")).toBeNull();
-    expect(resolveMode("zz")).toBeNull();
+    expect(resolveMode("zzzz")).toBeNull();
   });
 
   it("returns null for empty/missing input", () => {

@@ -43,14 +43,15 @@ export const MODES={
   },
 };
 
-// Codes d'entrée → clé de mode. Valeurs de repli en dev = celles de la
-// config de référence (00 games / 01 corporate / 02 ecole / 03 festival / 04 parc).
+// Codes d'entrée → clé de mode. Le pavé numérique de ModeSelectView est fixé
+// à 4 chiffres (dots + validation à 4 caractères) — les codes de référence
+// (00/01/02/03/04) sont donc paddés en 4 chiffres pour ne pas y toucher.
 const MODE_CODES={
-  games:import.meta.env.VITE_CODE_GAMES||"00",
-  corporate:import.meta.env.VITE_CODE_CORPORATE||"01",
-  ecole:import.meta.env.VITE_CODE_ECOLE||"02",
-  festival:import.meta.env.VITE_CODE_FESTIVAL||"03",
-  parc:import.meta.env.VITE_CODE_PARC||"04",
+  games:import.meta.env.VITE_CODE_GAMES||"0000",
+  corporate:import.meta.env.VITE_CODE_CORPORATE||"0001",
+  ecole:import.meta.env.VITE_CODE_ECOLE||"0002",
+  festival:import.meta.env.VITE_CODE_FESTIVAL||"0003",
+  parc:import.meta.env.VITE_CODE_PARC||"0004",
 };
 
 // Mappe un code saisi → clé de mode ("games","corporate",...) ou "admin"

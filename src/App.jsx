@@ -477,20 +477,50 @@ export default function PurInstinctApp(){
     );
   } else if(view.type==="login") content=(
     <ModeSelectView
-      onLive={()=>{fbSet("liveMode",true);setIsTestMode(false);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());setView({type:"liveLogin"});}}
-      onTest={()=>{
-        fbSet("liveMode",false);
-        setIsTestMode(true);
-        // Pre-fill every zone queue with all 30 test players
-        const testQ={};
-        ZK.forEach(zk=>{testQ[zk]=TEST_PLAYERS.map(p=>p.id);});
-        setQueues(testQ);
-        // Pre-fill every augmented game queue with test player names
-        const testAug={};
-        AUG_GAMES.forEach(g=>{testAug[g.id]={queue:TEST_PLAYERS.map(p=>p.name),activeMatch:null};});
-        setAugState(testAug);
-        setView({type:"testLogin"});
+      onSelectMode={(modeKey)=>{
+        // "games" = comportement Live actuel, référence — ne jamais régresser.
+        if(modeKey==="games"){
+          fbSet("liveMode",true);setIsTestMode(false);setWinnersPublished(false);
+          fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());
+          setView({type:"liveLogin"});
+          return;
+        }
+        // "admin" = raccourci caché, tout débloqué — reprend l'ancien TEST MODE.
+        if(modeKey==="admin"){
+          fbSet("liveMode",false);
+          setIsTestMode(true);
+          const testQ={};
+          ZK.forEach(zk=>{testQ[zk]=TEST_PLAYERS.map(p=>p.id);});
+          setQueues(testQ);
+          const testAug={};
+          AUG_GAMES.forEach(g=>{testAug[g.id]={queue:TEST_PLAYERS.map(p=>p.name),activeMatch:null};});
+          setAugState(testAug);
+          setView({type:"testLogin"});
+          return;
+        }
+        // corporate / ecole / festival / parc: routing + vues dédiées arrivent
+        // à l'étape 3 (activationMode + montage conditionnel par enabledViews).
+        setView({type:"modeStub",mode:modeKey});
       }}/>
+  );
+
+  else if(view.type==="modeStub") content=(
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
+      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,gap:16}}>
+      <style>{FONTS}</style>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:24,color:"#B8E020"}}>
+        ✅ CODE RECONNU
+      </div>
+      <div style={{fontSize:14,color:"#9ca3af",textTransform:"uppercase",letterSpacing:2}}>mode: {view.mode}</div>
+      <div style={{fontSize:12,color:"#4b5563",maxWidth:280,textAlign:"center"}}>
+        Vues dédiées à ce mode — arrivent à l'étape 3.
+      </div>
+      <button onClick={()=>setView({type:"login"})}
+        style={{marginTop:12,padding:"10px 20px",borderRadius:12,background:"#111827",
+          border:"1px solid #B8E02040",color:"#B8E020",cursor:"pointer",fontSize:13,fontWeight:700}}>
+        ← Retour
+      </button>
+    </div>
   );
 
   else if(view.type==="kiosk") content=(
