@@ -2,7 +2,11 @@
 
 Branche: `feat/multi-mode` (base: `redesign/level-5`, 15 commits devant `main`).
 
-## 1. État actuel — routing (src/App.jsx)
+> Les sections 1 à 4 ci-dessous sont l'état des lieux et le plan tels que rédigés à
+> l'étape 0, avant toute implémentation — conservées comme référence historique.
+> Voir **section 5** pour l'état final réellement implémenté.
+
+## 1. État initial — routing (src/App.jsx)
 
 Le routing est un état local `view` (`{type, ...}`), initialisé depuis l'URL :
 - `?kiosk=1[&zone=X]` → `{type:"kiosk", zone}` directement (bypass écran PIN)
@@ -72,7 +76,7 @@ Aucune règle par champ pour l'instant (à étendre à l'étape 5).
 
 `games` = comportement Live actuel de référence, ne doit subir **aucune régression**.
 
-## 4. Prochaines étapes
+## 4. Plan d'étapes (tel que rédigé à l'étape 0)
 1. `src/config/modes.js` — objet `MODES` + `resolveMode(code)`, additif, non câblé, tests unitaires.
 2. Refactor `ModeSelectView.jsx` — code d'entrée → `resolveMode` → `onSelectMode(modeKey)`.
 3. État global `activationMode` (+ contexte) et routing conditionnel par `enabledViews` dans `App.jsx`.
@@ -81,3 +85,92 @@ Aucune règle par champ pour l'instant (à étendre à l'étape 5).
 6. QA e2e des 5 modes, docs, smoke test de bascule.
 
 Chaque étape : commit conventionnel, tests + lint, diff résumé, puis attente du "OK".
+
+---
+
+## 5. État final implémenté (étapes 1-6)
+
+### 5.1 Config centrale — `src/config/modes.js`
+- `MODES` : les 5 modes de la table §3, tel quel, + mode caché `admin` (union
+  automatique de tous les `enabledViews`, `hidden:true`).
+- `resolveMode(code)` : code à 4 chiffres → clé de mode, ou `"admin"` si le code
+  correspond à `ADMIN_PIN`, ou `null` si inconnu. Codes de repli en dev : `0000`
+  (games) … `0004` (parc) — paddés en 4 chiffres pour garder le pavé numérique
+  existant à l'identique (décision validée à l'étape 2 : le pavé n'a **pas** été
+  raccourci à 2 chiffres).
+- `classifyModeRoute(modeKey)` : classification `"live" | "admin" | "kiosk" | "stub" |
+  null`, utilisée à la fois par `App.jsx` (dispatcher réel) et par le smoke test —
+  une seule source de vérité pour "quel mode va où".
+
+### 5.2 Sélecteur d'entrée — `ModeSelectView.jsx`
+Écran unique de saisie de code (4 chiffres, mêmes dots/numpad/animations qu'avant).
+Remplace l'ancien écran à deux étapes LIVE/TEST + `MODE_PIN` unique. `MODE_PIN` /
+`VITE_MODE_PIN` ont été retirés (dead code) une fois cette bascule terminée.
+
+### 5.3 État global — `App.jsx` + `src/hooks/useMode.js`
+- `activationMode` (état React) persisté sur `state/activationMode` (Firebase),
+  lu au chargement comme `activeRosterId`.
+- `ModeContext` / `useMode()` / `hasView(mode, category)` : contexte React exposant
+  `{mode, modeConfig}` à tout composant descendant (utilisé par `KioskView`).
+- Dispatcher `onSelectMode` (branché sur `classifyModeRoute`) :
+  - **live** (games) → flux Live actuel, inchangé à l'octet près (zéro régression).
+  - **admin** → flux Test/Admin actuel, inchangé (raccourci "tout débloqué").
+  - **kiosk** (festival, parc — `kioskDefault:true`) → bascule direct sur le vrai
+    `KioskView`, comme `?kiosk=1` aujourd'hui, piloté par la config et non par le nom
+    du mode.
+  - **stub** (corporate, ecole) → écran de confirmation temporaire (`entryFlow`
+    affiché dynamiquement) ; ces deux modes n'ont pas encore de vue dédiée montée
+    dans le routing (voir §6 — reste optionnel).
+
+### 5.4 Capture de données paramétrable
+- Modèle joueur étendu : `marketingConsent` (`email` existait déjà mais n'était
+  rendu dans aucune UI avant l'étape 4).
+- `<ConsentGate>` (`src/components/shared/ConsentGate.jsx`) : case à cocher + texte
+  Loi 25, bilingue FR/EN, rendu quand `consent` est `"marketing"` ou
+  `"marketingOptional"`.
+- `KioskView` lit `MODES[mode].captureFields`/`consent` via `useMode()` : champ
+  courriel + `ConsentGate` affichés seulement quand le mode le prévoit (festival :
+  facultatifs ; parc : aucun champ additionnel, identique à avant l'étape 4).
+  `LiveLoginView` (games) non touché — son `captureFields` (`name`, `number`) ne
+  change rien à l'existant.
+- Verrou dur PII : `src/lib/playerCapture.js` (`assertAllowedCapture`) lève une
+  erreur si un champ de contact (`email`/`instagram`/`tiktok`/`snapchat`) est soumis
+  pour un mode à `allowPII:false` (ecole). Câblé en défense en profondeur dans
+  `addPlayerToSession` (App.jsx), même si aucune UI ecole n'existe encore.
+
+### 5.5 Règles Firebase — `database.rules.json`
+`.validate` sur `state/players/$playerId/{email,instagram,tiktok,snapchat}` :
+rejet côté serveur de toute valeur **non vide** quand `state/activationMode ===
+"ecole"` (source de vérité écrite par le client à l'étape 3). La chaîne vide
+(valeur par défaut) reste toujours permise. `activationMode` a aussi sa validation
+de type, au même titre que `activeRosterId`. Aucune règle existante relâchée.
+
+**Pas déployé** sur le projet Firebase — à faire séparément (`firebase deploy
+--only database` ou console), hors scope de ce travail additif/branché.
+
+### 5.6 Tests
+- `src/config/modes.test.js` — `MODES`, `resolveMode`, et le **smoke test de
+  bascule de mode** (`mode switching (smoke test)`) : pour chacun des 6 codes,
+  vérifie le trajet complet code → `resolveMode` → `classifyModeRoute`.
+- `src/lib/playerCapture.test.js` — verrou PII (5 tests, dont le test explicite
+  "throws if an email is submitted in ecole mode").
+- `src/lib/databaseRules.test.js` — mini-simulateur qui évalue littéralement les
+  expressions `.validate` du `database.rules.json` réel (pas d'émulateur Firebase
+  installé dans ce projet).
+- Total : 42/42 tests verts, lint 21 erreurs/1 warning (baseline pré-existante,
+  aucune régression ajoutée à aucune étape).
+
+## 6. Ce qui reste optionnel / hors scope
+- **Vues dédiées corporate/ecole** (`prereg-checkin`, `roster-team`) — la capture de
+  données est déjà paramétrable (§5.4), mais aucun écran n'est monté dans
+  `App.jsx` ; ces deux codes affichent l'écran stub "CODE RECONNU".
+- **Import de liste RH** (mode corporate) — chargement d'une liste d'employés
+  pré-inscrits, non traité.
+- **Compteurs de débit / limite de capacité** (mode parc) — pas de gestion de flux
+  ou de file d'attente physique au-delà de ce qu'offre déjà `KioskView`.
+- **Encodage RFID in-app** (mode games) — l'association bracelet/joueur reste hors
+  de cette app.
+- **Déploiement des règles Firebase** (§5.5) — écrites et testées, non poussées sur
+  le projet Firebase réel.
+- **Émulateur Firebase RTDB** — le test des règles est un simulateur JS léger, pas
+  le véritable émulateur (`firebase-tools` + JVM non installés dans ce projet).

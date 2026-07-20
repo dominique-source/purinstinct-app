@@ -62,3 +62,19 @@ export function resolveMode(code){
   const entry=Object.entries(MODE_CODES).find(([,c])=>c===code);
   return entry?entry[0]:null;
 }
+
+// Classification utilisée par App.jsx pour router après resolveMode(code) —
+// centralisée ici pour qu'un seul test end-to-end (code → route) couvre la
+// même logique que le dispatcher réel, sans dupliquer les branches.
+//   "live"  → games, flux Live actuel (référence, zéro régression)
+//   "admin" → mode caché, tout débloqué (reprend l'ancien TEST MODE)
+//   "kiosk" → kioskDefault: bascule direct en KioskView (comme ?kiosk=1)
+//   "stub"  → mode valide sans vue dédiée pour l'instant (corporate/ecole)
+//   null    → clé de mode inconnue
+export function classifyModeRoute(modeKey){
+  if(modeKey==="games") return "live";
+  if(modeKey==="admin") return "admin";
+  if(MODES[modeKey]?.kioskDefault) return "kiosk";
+  if(MODES[modeKey]) return "stub";
+  return null;
+}

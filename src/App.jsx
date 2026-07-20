@@ -6,7 +6,7 @@ import { S } from "./components/shared/styles.js";
 import { INITIAL_ROSTERS } from "./config/rosters.js";
 import { T } from "./config/translations.js";
 import { LangContext } from "./hooks/useLang.js";
-import { MODES } from "./config/modes.js";
+import { MODES, classifyModeRoute } from "./config/modes.js";
 import { ModeContext } from "./hooks/useMode.js";
 import { shuffle, getStatus, createPlayersFromRoster, makeEmptyGames, makeEmptyQueues, computeTeamResult, computeIndividualResult, refillQueues, buildInitialQueues } from "./lib/game-logic.js";
 import { assertAllowedCapture } from "./lib/playerCapture.js";
@@ -493,15 +493,16 @@ export default function PurInstinctApp(){
     <ModeSelectView
       onSelectMode={(modeKey)=>{
         syncActivationMode(modeKey);
-        // "games" = comportement Live actuel, référence — ne jamais régresser.
-        if(modeKey==="games"){
+        const routeKind=classifyModeRoute(modeKey);
+        // "live" (games) = comportement Live actuel, référence — ne jamais régresser.
+        if(routeKind==="live"){
           fbSet("liveMode",true);setIsTestMode(false);setWinnersPublished(false);
           fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());
           setView({type:"liveLogin"});
           return;
         }
         // "admin" = raccourci caché, tout débloqué — reprend l'ancien TEST MODE.
-        if(modeKey==="admin"){
+        if(routeKind==="admin"){
           fbSet("liveMode",false);
           setIsTestMode(true);
           const testQ={};
@@ -513,14 +514,15 @@ export default function PurInstinctApp(){
           setView({type:"testLogin"});
           return;
         }
-        // Mode kioskDefault (festival/parc): bascule direct en kiosque, comme
-        // ?kiosk=1 aujourd'hui — piloté par la config, pas par le nom du mode.
-        if(MODES[modeKey]?.kioskDefault){
+        // "kiosk" (festival/parc, kioskDefault): bascule direct en kiosque,
+        // comme ?kiosk=1 aujourd'hui — piloté par la config, pas le nom du mode.
+        if(routeKind==="kiosk"){
           setView({type:"kiosk",zone:null});
           return;
         }
-        // corporate / ecole: pas encore de vue dédiée (entryFlow prereg-checkin /
-        // roster-team) — arrive à l'étape 4 avec la capture de données paramétrable.
+        // "stub" (corporate/ecole): pas encore de vue dédiée (entryFlow
+        // prereg-checkin / roster-team) — capture de données déjà paramétrable
+        // depuis l'étape 4, vue dédiée à construire dans un futur incrément.
         setView({type:"modeStub",mode:modeKey});
       }}/>
   );
@@ -534,7 +536,7 @@ export default function PurInstinctApp(){
       </div>
       <div style={{fontSize:14,color:"#9ca3af",textTransform:"uppercase",letterSpacing:2}}>mode: {view.mode}</div>
       <div style={{fontSize:12,color:"#4b5563",maxWidth:280,textAlign:"center"}}>
-        Vue dédiée (entryFlow {MODES[view.mode]?.entryFlow}) — arrive à l'étape 4.
+        Vue dédiée (entryFlow {MODES[view.mode]?.entryFlow}) à construire — capture de données déjà paramétrable.
       </div>
       <button onClick={()=>setView({type:"login"})}
         style={{marginTop:12,padding:"10px 20px",borderRadius:12,background:"#111827",
