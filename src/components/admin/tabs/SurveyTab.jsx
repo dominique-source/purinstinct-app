@@ -1,5 +1,8 @@
 import { ZONES, ZK } from "../../../config/zones.js";
 import { useZn } from "../../../hooks/useLang.js";
+import { Panel } from "../../ui/Panel.jsx";
+import { Button } from "../../ui/Button.jsx";
+import { EmptyState } from "../../ui/Feedback.jsx";
 
 export function SurveyTab({players,onResetAllSurveys}){
   const zn=useZn();
@@ -16,39 +19,39 @@ export function SurveyTab({players,onResetAllSurveys}){
   });
   const ranked=[...ZK].sort((a,b)=>scores[b]-scores[a]);
   return(
-    <div style={{padding:"0 0 16px"}}>
-      <div style={{marginBottom:16,padding:"12px 16px",borderRadius:12,background:"#0d0f1a",border:"1px solid #1f2937",display:"flex",alignItems:"center",gap:12}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:32,color:"#B8E020"}}>{total}</div>
-        <div style={{fontSize:12,color:"#6b7280",flex:1}}>réponse{total!==1?"s":""} sur {players.length} joueur{players.length!==1?"s":""}</div>
-        {total>0&&onResetAllSurveys&&<button onClick={()=>{if(window.confirm("Effacer tous les sondages ?")) onResetAllSurveys();}}
-          style={{padding:"6px 12px",borderRadius:8,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12,flexShrink:0}}>
+    <div style={{maxWidth:"var(--pi-w-content)",margin:"0 auto",padding:"0 0 var(--pi-s4)"}}>
+      <Panel style={{marginBottom:"var(--pi-s4)",display:"flex",alignItems:"center",gap:"var(--pi-s3)"}}>
+        <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontSize:32,color:"var(--pi-lime)"}}>{total}</div>
+        <div style={{fontSize:"var(--pi-fs-body)",color:"var(--pi-text-3)",flex:1}}>réponse{total!==1?"s":""} sur {players.length} joueur{players.length!==1?"s":""}</div>
+        {total>0&&onResetAllSurveys&&<Button variant="danger" size="sm" style={{background:"var(--pi-danger)",color:"#fff",flexShrink:0}}
+          onClick={()=>{if(window.confirm("Effacer tous les sondages ?")) onResetAllSurveys();}}>
           🗑️ Remettre à 0
-        </button>}
-      </div>
+        </Button>}
+      </Panel>
       {total===0?(
-        <div style={{textAlign:"center",padding:32,color:"#374151",fontSize:13}}>Aucune réponse pour l'instant.</div>
+        <EmptyState>Aucune réponse pour l'instant.</EmptyState>
       ):(
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s2)"}}>
           {ranked.map((zk,rank)=>{
             const z=ZONES[zk];const zl=zn(zk);
             const pct=total>0?Math.round((scores[zk]/(total*ZK.length))*100):0;
             const first=firstVotes[zk];
             const medals=["🥇","🥈","🥉","4️⃣","5️⃣","6️⃣"];
             return(
-              <div key={zk} style={{borderRadius:14,background:"#0d0f1a",border:"1px solid "+z.border,padding:"12px 16px"}}>
-                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+              <Panel key={zk} style={{borderColor:z.border}}>
+                <div style={{display:"flex",alignItems:"center",gap:"var(--pi-s3)",marginBottom:"var(--pi-s2)"}}>
                   <span style={{fontSize:20}}>{medals[rank]}</span>
                   <span style={{fontSize:22}}>{z.icon}</span>
-                  <span style={{flex:1,fontWeight:700,color:"#fff",fontSize:14}}>{zl.name}</span>
-                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:z.color}}>{pct}%</span>
+                  <span style={{flex:1,fontWeight:700,color:"var(--pi-text)",fontSize:"var(--pi-fs-body)"}}>{zl.name}</span>
+                  <span style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontSize:20,color:z.color}}>{pct}%</span>
                 </div>
-                <div style={{height:6,borderRadius:3,background:"#1f2937",overflow:"hidden",marginBottom:6}}>
+                <div style={{height:6,borderRadius:3,background:"var(--pi-surface-3)",overflow:"hidden",marginBottom:6}}>
                   <div style={{height:"100%",width:pct+"%",background:z.color,borderRadius:3,transition:"width .5s"}}/>
                 </div>
-                <div style={{fontSize:11,color:"#4b5563"}}>
+                <div style={{fontSize:"var(--pi-fs-label)",color:"var(--pi-text-3)"}}>
                   {first} choix #1 · Score {scores[zk]} pts
                 </div>
-              </div>
+              </Panel>
             );
           })}
         </div>
