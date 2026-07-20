@@ -281,6 +281,42 @@ export default function PurInstinctApp(){
     fbUpdate({["state/teams/"+zone+"/"+teamId]:newTeam});
   };
 
+  // Interrupteur global du mode équipes manuel (onglet admin "Équipes").
+  const onToggleTeamMode=()=>syncArena({...arenaState,teamMode:!arenaState.teamMode});
+
+  // Assignation manuelle par un responsable/professeur: comme joinTeam, mais
+  // retire d'abord le joueur de toute autre équipe de la même zone (un
+  // responsable réassigne, il ne fait pas que rejoindre) avant de
+  // rejoindre-ou-créer l'équipe visée par nom.
+  const assignPlayerToTeam=(zone,playerId,teamName)=>{
+    const teamsForZone=teams[zone]||{};
+    const cleaned={};
+    Object.entries(teamsForZone).forEach(([id,tm])=>{
+      cleaned[id]={...tm,memberIds:(tm.memberIds||[]).filter(pid=>pid!==playerId)};
+    });
+    const {teamId,name,isNew}=joinOrCreateTeam(cleaned,teamName);
+    const existing=isNew?{name,memberIds:[]}:cleaned[teamId];
+    const newTeamsForZone={...cleaned,[teamId]:{name:existing.name,memberIds:[...(existing.memberIds||[]),playerId]}};
+    setTeams(prev=>({...prev,[zone]:newTeamsForZone}));
+    fbSet("teams/"+zone,newTeamsForZone);
+  };
+
+  const removeTeamMember=(zone,teamId,playerId)=>{
+    const team=(teams[zone]||{})[teamId];
+    if(!team) return;
+    const newTeam={...team,memberIds:(team.memberIds||[]).filter(id=>id!==playerId)};
+    setTeams(prev=>({...prev,[zone]:{...(prev[zone]||{}),[teamId]:newTeam}}));
+    fbUpdate({["state/teams/"+zone+"/"+teamId]:newTeam});
+  };
+
+  const renameTeam=(zone,teamId,newName)=>{
+    const team=(teams[zone]||{})[teamId];
+    if(!team||!newName.trim()) return;
+    const newTeam={...team,name:newName.trim()};
+    setTeams(prev=>({...prev,[zone]:{...(prev[zone]||{}),[teamId]:newTeam}}));
+    fbUpdate({["state/teams/"+zone+"/"+teamId]:newTeam});
+  };
+
   // Borne kiosque: inscription (ou joueur déjà connu) + entrée directe dans la
   // file de la zone choisie, en un seul geste — sauf en mode équipes manuel, où le
   // joueur rejoint directement son équipe au lieu d'une file (extra.team présent).
@@ -411,7 +447,7 @@ export default function PurInstinctApp(){
   // le mode compétitif existant).
   const generateTeamMatch=(zone)=>{
     const z=ZONES[zone];
-    if(!z.teamSize) return;
+    if(z.gameStyle!=="team") return;
     const teamsForZone=teams[zone]||{};
     const pairCountsForZone=teamPairCounts[zone]||{};
     const matchup=pickTeamMatchup(teamsForZone,activeGames,z.teamSize,pairCountsForZone);
@@ -722,6 +758,11 @@ export default function PurInstinctApp(){
       if(ZK.some(zk=>{const g=activeGames[zk];if(!g)return false;const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(p.id);})) return true;
       return false;
     })} allPlayers={isTestMode?TEST_PLAYERS:players} queues={queues} activeGames={activeGames} arenaState={arenaState} lastResultAt={lastResultAt} rosters={rosters} activeRosterId={activeRosterId} initialTab={view.tab}
+      teams={teams}
+      onToggleTeamMode={onToggleTeamMode}
+      onAssignPlayer={assignPlayerToTeam}
+      onRemoveTeamMember={removeTeamMember}
+      onRenameTeam={renameTeam}
       onStart={(mins)=>syncArena({...arenaState,active:true,ended:false,paused:false,startTime:Date.now(),sessionMins:mins||75})}
       onEnd={()=>syncArena({active:false,ended:false,paused:false,startTime:null,pausedRemaining:null,disabledZones:arenaState.disabledZones||[],sessionMins:arenaState.sessionMins||75})}
       onPause={()=>{

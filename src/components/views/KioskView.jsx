@@ -77,9 +77,10 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
   const consentRequired=consentKind==="marketing";
   const extraFieldKey=captureFields.find(f=>EXTRA_TEXT_FIELDS.includes(f))||null;
 
-  // Mode équipes manuel: uniquement pour les zones de type équipe (teamSize défini) —
-  // les zones individuelles (vitesse, habileté pied) ne sont jamais concernées.
-  const zoneNeedsTeam=(zk)=>!!(teamMode&&zk&&ZONES[zk]?.teamSize);
+  // Mode équipes manuel: uniquement pour les zones gameStyle "team" — les
+  // zones individuelles (vitesse: sprint, habileté pied: duel 1v1, malgré un
+  // teamSize:1 techniquement truthy) ne sont jamais concernées.
+  const zoneNeedsTeam=(zk)=>!!(teamMode&&zk&&ZONES[zk]?.gameStyle==="team");
   const teamStepApplies=zoneNeedsTeam(zone);
   const teamsForZone=(zone&&teams?.[zone])||{};
   const teamsList=Object.entries(teamsForZone).map(([id,tm])=>({id,...tm}));

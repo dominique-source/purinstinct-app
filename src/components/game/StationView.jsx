@@ -50,7 +50,9 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
   // directement (voir teamMatch.js / App.jsx generateTeamMatch). Cette liste ne
   // sert qu'à l'affichage — l'exclusion des joueurs déjà en jeu ailleurs se fait
   // côté App.jsx (seul endroit qui connaît activeGames pour toutes les zones).
-  const teamModeActive=!!(teamMode&&z.teamSize);
+  // gameStyle==="team" précisément — footAgility a teamSize:1 (truthy) mais
+  // gameStyle:"duel" (1v1 individuel), pas une vraie zone équipe.
+  const teamModeActive=!!(teamMode&&z.gameStyle==="team");
   const teamsList=Object.entries(teams||{}).map(([id,tm])=>({id,...tm}));
   const readyTeamsCount=teamsList.filter(tm=>(tm.memberIds||[]).length>=z.teamSize).length;
   const canGenTeamMatch=!activeGame&&readyTeamsCount>=2;
