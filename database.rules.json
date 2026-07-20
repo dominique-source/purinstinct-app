@@ -13,7 +13,17 @@
 
       "winnersPublished": { ".validate": "newData.isBoolean()" },
       "liveMode":         { ".validate": "newData.isBoolean()" },
-      "activeRosterId":   { ".validate": "newData.isString()" }
+      "activeRosterId":   { ".validate": "newData.isString()" },
+      "activationMode":   { ".validate": "newData.isString()" },
+
+      "players": {
+        "$playerId": {
+          "email":     { ".validate": "root.child('state/activationMode').val() !== 'ecole' || newData.val() === ''" },
+          "instagram": { ".validate": "root.child('state/activationMode').val() !== 'ecole' || newData.val() === ''" },
+          "tiktok":    { ".validate": "root.child('state/activationMode').val() !== 'ecole' || newData.val() === ''" },
+          "snapchat":  { ".validate": "root.child('state/activationMode').val() !== 'ecole' || newData.val() === ''" }
+        }
+      }
     }
   }
 }
