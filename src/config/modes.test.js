@@ -70,8 +70,8 @@ describe("resolveMode", () => {
 describe("mode switching (smoke test)", () => {
   const EXPECTED = {
     "0000": { mode: "games", route: "live" },
-    "0001": { mode: "corporate", route: "stub" },
-    "0002": { mode: "ecole", route: "stub" },
+    "0001": { mode: "corporate", route: "kiosk" },
+    "0002": { mode: "ecole", route: "kiosk" },
     "0003": { mode: "festival", route: "kiosk" },
     "0004": { mode: "parc", route: "kiosk" },
     "1111": { mode: "admin", route: "admin" },
