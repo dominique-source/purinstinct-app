@@ -171,6 +171,10 @@ export const T={
     disconnectSession:"Déconnecter la session",
     enterAccessCode:"Entrez votre code d'accès",
     invalidAccessCode:"Code inconnu",
+    consentMarketingLabel:"J'accepte de recevoir des communications marketing de PurInstinct Games.",
+    consentMarketingSub:"Vos renseignements personnels sont traités conformément à la Loi 25 sur la protection des renseignements personnels. Vous pouvez retirer votre consentement en tout temps.",
+    consentOptionalTag:"(facultatif)",
+    emailOptionalPlaceholder:"Courriel (facultatif)",
   },
   en:{
     lang:"EN", langOther:"FR",
@@ -344,5 +348,9 @@ export const T={
     disconnectSession:"Disconnect session",
     enterAccessCode:"Enter your access code",
     invalidAccessCode:"Unknown code",
+    consentMarketingLabel:"I agree to receive marketing communications from PurInstinct Games.",
+    consentMarketingSub:"Your personal information is processed in accordance with Quebec's Act respecting the protection of personal information (Law 25). You can withdraw your consent at any time.",
+    consentOptionalTag:"(optional)",
+    emailOptionalPlaceholder:"Email (optional)",
   },
 };

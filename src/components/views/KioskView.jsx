@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ZONES, ZK } from "../../config/zones.js";
-import { useZn } from "../../hooks/useLang.js";
+import { useZn, useT } from "../../hooks/useLang.js";
+import { useMode } from "../../hooks/useMode.js";
 import { useCountUp } from "../../hooks/useCountUp.js";
-import { Button, Eyebrow, EmptyState } from "../ui/index.js";
+import { Button, Eyebrow, EmptyState, Field } from "../ui/index.js";
+import { ConsentGate } from "../shared/ConsentGate.jsx";
 
 // Ligne du classement kiosque — composant séparé pour que useCountUp anime chaque score.
 // Podium (1-3) vs peloton: la hiérarchie passe par l'échelle et le rim-light, pas par
@@ -43,19 +45,33 @@ const CONFIRM_MS = 3000;     // durée d'affichage de l'écran de confirmation
 // session affichée trop longtemps. Inscription en 3 taps: zone → nom → confirmer.
 export function KioskView({players,disabledZones,lockedZone,onRegister}){
   const zn=useZn();
+  const t=useT();
+  const {modeConfig}=useMode();
   const [mode,setMode]=useState("idle"); // idle | zone | identify | confirm
   const [zone,setZone]=useState(lockedZone||null);
   const [search,setSearch]=useState("");
   const [gender,setGender]=useState("M");
+  const [email,setEmail]=useState("");
+  const [marketingConsent,setMarketingConsent]=useState(false);
   const [confirmed,setConfirmed]=useState(null); // {name,zone}
   const lastActivityRef=useRef(null);
   const rootRef=useRef(null);
+
+  // Capture paramétrée par mode (MODES[mode].captureFields/consent) — sans
+  // mode résolu (ex. borne fixe ?kiosk=1 legacy), aucun champ additionnel:
+  // comportement identique à avant l'étape 4.
+  const captureFields=modeConfig?.captureFields||[];
+  const showEmail=captureFields.includes("email")||captureFields.includes("emailOptional");
+  const consentKind=modeConfig?.consent||"none";
+  const showConsent=consentKind==="marketing"||consentKind==="marketingOptional";
+  const consentRequired=consentKind==="marketing";
 
   // Date.now()/setState doivent rester dans un callback (pas évalués pendant
   // le render) — useCallback plutôt qu'une fonction inline recréée à chaque passe.
   const bump=useCallback(()=>{ lastActivityRef.current=Date.now(); },[]);
   const reset=useCallback(()=>{
     setMode("idle"); setZone(lockedZone||null); setSearch(""); setGender("M"); setConfirmed(null);
+    setEmail(""); setMarketingConsent(false);
   },[lockedZone]);
 
   // Désactive le pinch-zoom pour cette borne publique uniquement — on restaure
@@ -104,10 +120,16 @@ export function KioskView({players,disabledZones,lockedZone,onRegister}){
     :[];
 
   const finish=(name,existingId=null)=>{
+    // Un joueur déjà connu (existingId) rejoint simplement la file — pas de
+    // nouvelle capture de données, seul un nouveau joueur fournit email/consent.
+    const extra=existingId?undefined:{
+      ...(showEmail&&email.trim()?{email:email.trim()}:{}),
+      ...(showConsent?{marketingConsent}:{}),
+    };
     onRegister(zone,name,gender,existingId,()=>{
       setConfirmed({name,zone});
       setMode("confirm");
-    });
+    },extra);
   };
 
   const sorted=[...players].sort((a,b)=>b.globalPoints-a.globalPoints).slice(0,10);
@@ -223,7 +245,21 @@ export function KioskView({players,disabledZones,lockedZone,onRegister}){
                     </button>
                   ))}
                 </div>
-                <Button variant="primary" size="xl" cut block onClick={()=>{bump();finish(search.trim());}}>
+                {showEmail&&(
+                  <Field inputProps={{type:"email",value:email,autoComplete:"email",
+                    placeholder:t.emailOptionalPlaceholder,
+                    onChange:e=>{bump();setEmail(e.target.value);}}}
+                    style={{marginBottom:"var(--pi-s3)"}}/>
+                )}
+                {showConsent&&(
+                  <div style={{marginBottom:"var(--pi-s3)"}}>
+                    <ConsentGate checked={marketingConsent} required={consentRequired}
+                      onChange={v=>{bump();setMarketingConsent(v);}}/>
+                  </div>
+                )}
+                <Button variant="primary" size="xl" cut block
+                  disabled={consentRequired&&!marketingConsent}
+                  onClick={()=>{bump();finish(search.trim());}}>
                   ✓ Confirmer — {search.trim()}
                 </Button>
               </div>

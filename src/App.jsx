@@ -9,6 +9,7 @@ import { LangContext } from "./hooks/useLang.js";
 import { MODES } from "./config/modes.js";
 import { ModeContext } from "./hooks/useMode.js";
 import { shuffle, getStatus, createPlayersFromRoster, makeEmptyGames, makeEmptyQueues, computeTeamResult, computeIndividualResult, refillQueues, buildInitialQueues } from "./lib/game-logic.js";
+import { assertAllowedCapture } from "./lib/playerCapture.js";
 import { LangFooter } from "./components/shared/LangFooter.jsx";
 import { AdminView } from "./components/admin/AdminView.jsx";
 import { StationView } from "./components/game/StationView.jsx";
@@ -206,17 +207,23 @@ export default function PurInstinctApp(){
     const newR={id:"r"+Date.now(),name:"Nouvelle liste",entries:[]};
     const a=[...rosters,newR];setRosters(a);syncExtraRosters(a);
   };
-  const addPlayerToSession=async(name,gender,callback,groupId="main")=>{
+  const addPlayerToSession=async(name,gender,callback,groupId="main",extra={})=>{
     // ID alloué par transaction Firebase: deux inscriptions simultanées
     // (deux bornes, deux mobiles) ne peuvent plus obtenir le même numéro.
     const localMax=players.length>0?Math.max(...players.map(p=>Number(p.id)||0)):0;
     const newId=await allocPlayerId(localMax);
+    // Verrou dur: en mode allowPII=false (ex. ecole), aucune donnée de contact
+    // ne peut être écrite, même si une vue en amont en a fourni par erreur.
+    let safeExtra=extra||{};
+    try{ assertAllowedCapture(activationMode,safeExtra); }
+    catch(e){ console.warn(e.message); safeExtra={}; }
     const newPlayer={id:newId,number:newId,name,gender:gender||"M",globalPoints:0,
       zoneScores:{purinstinct:50,speed:50,handAgility:50,footAgility:50,generalAgility:50,iq:50},
       zoneStreaks:{purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0},
       zonesPlayed:[],lastResult:null,history:[],
       groupId,
-      age:"",email:"",instagram:"",tiktok:"",snapchat:"",
+      age:"",email:safeExtra.email||"",instagram:"",tiktok:"",snapchat:"",
+      marketingConsent:!!safeExtra.marketingConsent,
       photoConsent:false,videoConsent:false,profilePhoto:null,highlights:[]};
     setPlayers(ps=>[...ps,newPlayer]);
     fbUpdate({["state/players/"+newId]:newPlayer});
@@ -246,9 +253,9 @@ export default function PurInstinctApp(){
   // Borne kiosque: inscription (ou joueur déjà connu) + entrée directe dans la
   // file de la zone choisie, en un seul geste. force=true comme pour l'ajout
   // manuel côté StationView — la borne agit comme un responsable de plateau.
-  const kioskRegister=(zone,name,gender,existingId,onDone)=>{
+  const kioskRegister=(zone,name,gender,existingId,onDone,extra)=>{
     if(existingId){ addToQueue(existingId,zone,true); onDone(); return; }
-    addPlayerToSession(name,gender,(newId)=>{ addToQueue(newId,zone,true); onDone(); },activeRosterId);
+    addPlayerToSession(name,gender,(newId)=>{ addToQueue(newId,zone,true); onDone(); },activeRosterId,extra);
   };
 
   const updatePlayer=(updated)=>syncOnePlayer(updated);
