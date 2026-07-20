@@ -10,7 +10,7 @@ import { MODES, classifyModeRoute } from "./config/modes.js";
 import { ModeContext } from "./hooks/useMode.js";
 import { shuffle, getStatus, createPlayersFromRoster, makeEmptyGames, makeEmptyQueues, computeTeamResult, computeIndividualResult, refillQueues, buildInitialQueues } from "./lib/game-logic.js";
 import { assertAllowedCapture } from "./lib/playerCapture.js";
-import { joinOrCreateTeam } from "./lib/teamMatch.js";
+import { joinOrCreateTeam, pickTeamMatchup, formTeamMatch, pairKey } from "./lib/teamMatch.js";
 import { LangFooter } from "./components/shared/LangFooter.jsx";
 import { AdminView } from "./components/admin/AdminView.jsx";
 import { StationView } from "./components/game/StationView.jsx";
@@ -48,6 +48,9 @@ export default function PurInstinctApp(){
   // Mode équipes manuel (corporate/ecole): { [zone]: { [teamId]: {name,memberIds} } } —
   // voir src/lib/teamMatch.js.
   const [teams,setTeams]=useState({});
+  // Rotation équitable: { [zone]: { "teamIdA|teamIdB": count } } — nombre de fois
+  // que chaque paire d'équipes s'est déjà affrontée dans cette zone.
+  const [teamPairCounts,setTeamPairCounts]=useState({});
   // Borne fixe: ?kiosk=1 (option &zone=X pour verrouiller une borne à une seule
   // zone) bascule directement en mode kiosque, sans passer par l'écran PIN.
   const [view,setView]=useState(()=>{
@@ -140,6 +143,7 @@ export default function PurInstinctApp(){
       if(data.activeRosterId) setActiveRosterId(data.activeRosterId);
       if(data.activationMode) setActivationMode(data.activationMode);
       setTeams(data.teams||{});
+      setTeamPairCounts(data.teamPairCounts||{});
       if(data.extraRosters) setRosters([...INITIAL_ROSTERS,...Object.values(data.extraRosters).map(r=>({...r,entries:r.entries||[]}))]);
 
       setFbReady(true);
@@ -397,6 +401,29 @@ export default function PurInstinctApp(){
     fbUpdate({
       ["state/queues/"+zone]:newQ.length>0?newQ:null,
       ["state/activeGames/"+zone]:gameData
+    });
+  };
+
+  // Mode équipes manuel: choisit la paire d'équipes la moins souvent jouée
+  // ensemble (rotation équitable) et forme le match à partir de leurs membres
+  // prêts — voir src/lib/teamMatch.js. Ne touche jamais queues[zone] (les
+  // équipes ne sont pas des files) ni le chemin generateTeams (zéro impact sur
+  // le mode compétitif existant).
+  const generateTeamMatch=(zone)=>{
+    const z=ZONES[zone];
+    if(!z.teamSize) return;
+    const teamsForZone=teams[zone]||{};
+    const pairCountsForZone=teamPairCounts[zone]||{};
+    const matchup=pickTeamMatchup(teamsForZone,activeGames,z.teamSize,pairCountsForZone);
+    if(!matchup) return;
+    const gameData=formTeamMatch(teamsForZone[matchup.teamAId],teamsForZone[matchup.teamBId],z.teamSize,activeGames);
+    const key=pairKey(matchup.teamAId,matchup.teamBId);
+    const newPairCounts={...pairCountsForZone,[key]:(pairCountsForZone[key]||0)+1};
+    setActiveGames(g=>({...g,[zone]:gameData}));
+    setTeamPairCounts(prev=>({...prev,[zone]:newPairCounts}));
+    fbUpdate({
+      ["state/activeGames/"+zone]:gameData,
+      ["state/teamPairCounts/"+zone]:newPairCounts,
     });
   };
 
@@ -797,6 +824,9 @@ export default function PurInstinctApp(){
       arenaState={arenaState}
       sessionName={(rosters.find(r=>r.id===activeRosterId)||{name:"Session Standard"}).name}
       sessionCode={(rosterCodes||{})[activeRosterId]||null}
+      teamMode={!!arenaState.teamMode}
+      teams={teams[view.id]||{}}
+      onGenerateTeamMatch={()=>generateTeamMatch(view.id)}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onGenerate={(p,force)=>generateTeams(view.id,p,force)}
       onResult={(w,second)=>submitResult(view.id,w,second)}
