@@ -46,6 +46,10 @@ const CONFIRM_MS = 3000;     // durée d'affichage de l'écran de confirmation
 // class: ecole), mais l'ensemble reste ouvert à d'autres champs futurs.
 const EXTRA_TEXT_FIELDS=["company","class"];
 
+// Bouton retour de la borne: cible tactile large (~3x la taille "sm" du design
+// system), en variant outline pour rester visible sur fond sombre.
+const BACK_BTN_STYLE={minHeight:108,padding:"0 32px",fontSize:24,fontWeight:700};
+
 // Borne fixe et publique: écran d'accueil = classement en boucle, jamais de
 // session affichée trop longtemps. Inscription en 3 taps (2 en mode équipes): zone →
 // [équipe] → nom → confirmer.
@@ -177,20 +181,28 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
         <div style={{minHeight:"100svh",display:"flex",flexDirection:"column"}}>
 
           {/* Moitié haute — inscription (comportement inchangé: wake() -> zone/team/identify) */}
-          <div onClick={wake} style={{flex:1,display:"flex",flexDirection:"column",
-            alignItems:"center",justifyContent:"center",padding:"var(--pi-s6)",cursor:"pointer",
+          <div style={{flex:1,display:"flex",flexDirection:"column",
+            alignItems:"center",justifyContent:"center",padding:"var(--pi-s5) var(--pi-s5) var(--pi-s6)",gap:"var(--pi-s4)",
             borderBottom:"1px dashed var(--pi-line)"}}>
 
             <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
-              fontSize:"clamp(32px,6vw,52px)",letterSpacing:"-0.02em",lineHeight:1,marginBottom:"var(--pi-s4)",
-              textShadow:"0 0 40px var(--pi-lime-glow)"}}>
+              fontSize:"clamp(22px,4vw,30px)",letterSpacing:"-0.02em",lineHeight:1,
+              textShadow:"0 0 30px var(--pi-lime-glow)"}}>
               <span style={{color:"var(--pi-lime)"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
             </div>
 
-            <div className="pi-pulse" style={{display:"flex",alignItems:"center",gap:"var(--pi-s2)",
-              color:"var(--pi-lime)",fontSize:"var(--pi-fs-body)",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase"}}>
-              🖐️ Touchez ici pour vous inscrire
-            </div>
+            <button onClick={wake} style={{flex:1,width:"100%",maxWidth:460,minHeight:150,
+              display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",
+              background:"var(--pi-lime)",color:"#0a0a0a",border:"none",borderRadius:28,cursor:"pointer",
+              boxShadow:"0 10px 0 var(--pi-lime-press), 0 18px 0 rgba(0,0,0,0.35), 0 30px 50px rgba(184,224,32,0.35)",
+              transform:"translateY(0)",transition:"transform 80ms ease, box-shadow 80ms ease"}}
+              onPointerDown={e=>{e.currentTarget.style.transform="translateY(8px)";e.currentTarget.style.boxShadow="0 2px 0 var(--pi-lime-press), 0 6px 0 rgba(0,0,0,0.35), 0 12px 30px rgba(184,224,32,0.3)";}}
+              onPointerUp={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 10px 0 var(--pi-lime-press), 0 18px 0 rgba(0,0,0,0.35), 0 30px 50px rgba(184,224,32,0.35)";}}
+              onPointerLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 10px 0 var(--pi-lime-press), 0 18px 0 rgba(0,0,0,0.35), 0 30px 50px rgba(184,224,32,0.35)";}}>
+              <span style={{fontSize:"clamp(36px,9vw,56px)"}}>🖐️</span>
+              <span style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
+                fontSize:"clamp(24px,6vw,38px)",letterSpacing:"0.01em"}}>S'INSCRIRE</span>
+            </button>
           </div>
 
           {/* Moitié basse — aperçu du classement, tap pour la vue complète */}
@@ -224,7 +236,7 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
         <div className="pi-anim-up" style={{minHeight:"100svh",display:"flex",flexDirection:"column",
           alignItems:"center",padding:"var(--pi-s6) var(--pi-s6) var(--pi-s8)"}}>
           <div style={{width:"100%",maxWidth:"min(92vw, 720px)"}}>
-            <Button variant="ghost" size="sm" onClick={()=>{bump();reset();}} style={{marginBottom:"var(--pi-s5)"}}>← Retour</Button>
+            <Button variant="outline" onClick={()=>{bump();reset();}} style={{...BACK_BTN_STYLE,marginBottom:"var(--pi-s5)"}}>← Retour</Button>
 
             <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",marginBottom:"var(--pi-s6)"}}>
               <span className="pi-pulse" style={{width:8,height:8,borderRadius:"50%",background:"var(--pi-lime)",
@@ -244,7 +256,7 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
       {/* ================= STEP 1 — zone ================= */}
       {mode==="zone"&&(
         <div className="pi-anim-up" style={{minHeight:"100svh",display:"flex",flexDirection:"column",padding:"var(--pi-s6)"}}>
-          <Button variant="ghost" size="sm" onClick={()=>{bump();reset();}}>← Retour</Button>
+          <Button variant="outline" onClick={()=>{bump();reset();}} style={BACK_BTN_STYLE}>← Retour</Button>
           <div style={{textAlign:"center",margin:"var(--pi-s6) 0 var(--pi-s8)"}}>
             <Eyebrow style={{marginBottom:"var(--pi-s2)"}}>Étape 1 sur {teamMode?3:2}</Eyebrow>
             <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
@@ -277,7 +289,7 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
         <div className="pi-anim-up" style={{minHeight:"100svh",display:"flex",flexDirection:"column",alignItems:"center",
           justifyContent:"center",padding:"var(--pi-s6)"}}>
           <div style={{width:"100%",maxWidth:"var(--pi-w-narrow)"}}>
-            {!lockedZone&&<Button variant="ghost" size="sm" onClick={()=>{bump();setMode("zone");}} style={{marginBottom:"var(--pi-s4)"}}>← Retour</Button>}
+            {!lockedZone&&<Button variant="outline" onClick={()=>{bump();setMode("zone");}} style={{...BACK_BTN_STYLE,marginBottom:"var(--pi-s4)"}}>← Retour</Button>}
             <div style={{textAlign:"center",marginBottom:"var(--pi-s5)"}}>
               <div style={{fontSize:36,marginBottom:"var(--pi-s2)"}}>{zone?ZONES[zone].icon:"🤝"}</div>
               <Eyebrow style={{marginBottom:"var(--pi-s2)"}}>Étape 2 sur 3</Eyebrow>
@@ -319,9 +331,9 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
         <div className="pi-anim-up" style={{minHeight:"100svh",display:"flex",flexDirection:"column",alignItems:"center",
           justifyContent:"center",padding:"var(--pi-s6)"}}>
           <div style={{width:"100%",maxWidth:"var(--pi-w-narrow)"}}>
-            {!lockedZone&&<Button variant="ghost" size="sm"
+            {!lockedZone&&<Button variant="outline"
               onClick={()=>{bump();setMode(teamStepApplies?"team":"zone");}}
-              style={{marginBottom:"var(--pi-s4)"}}>← Retour</Button>}
+              style={{...BACK_BTN_STYLE,marginBottom:"var(--pi-s4)"}}>← Retour</Button>}
             <div style={{textAlign:"center",marginBottom:"var(--pi-s5)"}}>
               <div style={{fontSize:36,marginBottom:"var(--pi-s2)"}}>{zone?ZONES[zone].icon:"👤"}</div>
               <Eyebrow style={{marginBottom:"var(--pi-s2)"}}>Étape {teamStepApplies?3:2} sur {teamStepApplies?3:2}</Eyebrow>
