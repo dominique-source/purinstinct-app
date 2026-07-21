@@ -1,16 +1,51 @@
-# React + Vite
+# PurInstinct Games
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+App de gestion d'événements sportifs en temps réel (React + Vite + Firebase Realtime
+Database). Voir [CLAUDE.md](CLAUDE.md) pour l'identité visuelle et les règles de design,
+et [MODE-ARCHITECTURE.md](MODE-ARCHITECTURE.md) pour le détail du système multi-mode.
 
-Currently, two official plugins are available:
+## Démarrage
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+cp .env.example .env   # remplir les clés Firebase + codes d'accès
+npm run dev
+```
 
-## React Compiler
+- `npm run dev` — serveur de développement Vite
+- `npm run build` — build de production
+- `npm test` — tests unitaires (Vitest)
+- `npm run lint` — ESLint
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Variables d'environnement
 
-## Expanding the ESLint configuration
+Voir [.env.example](.env.example) pour la liste complète. Deux familles:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `VITE_FB_*` — configuration Firebase (auth anonyme + Realtime Database, `auth != null`
+  requis par `database.rules.json`).
+- `VITE_ADMIN_PIN` / `VITE_STATION_PIN` / `VITE_CODE_*` — codes d'accès à 4 chiffres
+  (jamais dans le code source).
+
+## Multi-mode
+
+Une seule app, un seul backend Firebase, un mode choisi par code d'entrée à l'écran de
+démarrage. Chaque mode débloque une combinaison différente de vues et de champs de
+capture de joueur — voir `src/config/modes.js` (`MODES`, `resolveMode`,
+`classifyModeRoute`) et [MODE-ARCHITECTURE.md](MODE-ARCHITECTURE.md) pour le détail.
+
+| Code (dev)     | Mode      | Description                                    |
+|----------------|-----------|-------------------------------------------------|
+| `VITE_CODE_GAMES` (`0000`)     | games     | Référence RFID/Live — comportement historique |
+| `VITE_CODE_CORPORATE` (`0001`) | corporate | Pré-inscription + check-in (vue à construire) |
+| `VITE_CODE_ECOLE` (`0002`)     | ecole     | Roster par classe, aucune PII (vue à construire) |
+| `VITE_CODE_FESTIVAL` (`0003`)  | festival  | Kiosque libre-service, courriel/consentement facultatifs |
+| `VITE_CODE_PARC` (`0004`)      | parc      | Kiosque fixe, prénom seulement |
+| `VITE_ADMIN_PIN` (`1111`)      | admin     | Raccourci caché — débloque toutes les vues (démos) |
+
+## Tests
+
+- `src/lib/*.test.js` — logique de jeu, verrou PII, simulation des règles Firebase
+- `src/config/modes.test.js` — résolution des codes + smoke test de bascule de mode
+
+Le pipeline complet (code → `resolveMode` → `classifyModeRoute` → vue montée dans
+`App.jsx`) est couvert par le smoke test `mode switching (smoke test)`.

@@ -2,7 +2,7 @@ export function PlayerAvatar({gender,skinColor,hairColor,morphology}){
   const cx=50;
   const bw=[28,36,46][morphology]||36;
   const bl=cx-bw/2, br=cx+bw/2;
-  const acc="#84cc16";
+  const acc="#B8E020";
   const darkSkin=(s)=>s.replace(/#/,"");
   // nose / smile tint derived from skin
   const shadow="rgba(0,0,0,0.18)";

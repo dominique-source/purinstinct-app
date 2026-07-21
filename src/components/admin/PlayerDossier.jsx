@@ -66,7 +66,7 @@ export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onA
   };
 
   const inp={width:"100%",padding:"8px 12px",borderRadius:10,border:"1px solid #1f2937",
-    background:"#06070f",color:"#fff",fontSize:13,outline:"none"};
+    background:"#0A0A0A",color:"#fff",fontSize:13,outline:"none"};
 
   const body=(
     <div style={{padding:embedded?0:16,display:"flex",flexDirection:"column",gap:12}}>
@@ -91,7 +91,7 @@ export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onA
               style={{fontSize:10,color:"#6b7280",background:"none",border:"none",cursor:"pointer"}}>Retirer</button>
           )}
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:26,
-            color:"#84cc16",lineHeight:1}}>#{player.number}</div>
+            color:"#B8E020",lineHeight:1}}>#{player.number}</div>
         </div>
         <div style={{flex:1,display:"flex",flexDirection:"column",gap:8}}>
           <div>
@@ -165,7 +165,7 @@ export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onA
                   </div>
                   <div style={{textAlign:"right",flexShrink:0}}>
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-                      color:h.delta>=0?"#84cc16":"#ef4444"}}>
+                      color:h.delta>=0?"#B8E020":"#ef4444"}}>
                       {h.delta>0?"+":""}{h.delta} pts
                     </div>
                     {h.gp!==undefined&&<div style={{fontSize:10,color:"#4b5563"}}>{h.gp} total</div>}
@@ -195,7 +195,7 @@ export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onA
                 onDragEnd={()=>{setSurveyDragIdx(null);setSurveyOverIdx(null);}}
                 style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:12,
                   background:isDragging?"#1a2e05":isOver?"#0d1a30":"#0d0f1a",
-                  border:"1px solid "+(isOver?z.color+"80":isDragging?"#84cc1660":z.border),
+                  border:"1px solid "+(isOver?z.color+"80":isDragging?"#B8E02060":z.border),
                   opacity:isDragging?0.5:1,transition:"all .15s",cursor:"grab"}}>
                 <div onTouchStart={(e)=>surveyTouchStart(e,i)}
                   style={{color:"#4b5563",fontSize:20,cursor:"grab",touchAction:"none",padding:"0 2px",lineHeight:1}}>⠿</div>
@@ -250,7 +250,7 @@ export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onA
       <button onClick={handleSave} style={{
         padding:"14px",borderRadius:14,border:"none",cursor:"pointer",width:"100%",
         fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-        background:saved?"#22c55e":"#84cc16",color:"#000",transition:"background .3s"}}>
+        background:saved?"#22c55e":"#B8E020",color:"#000",transition:"background .3s"}}>
         {saved?t.savedMsg:t.saveBtn}
       </button>
     </div>
@@ -259,15 +259,15 @@ export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onA
   if(embedded) return body;
 
   return(
-    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
       <div style={{position:"sticky",top:0,zIndex:10,
         paddingTop:"calc(env(safe-area-inset-top) + 12px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",
-        background:"#06070f",borderBottom:"1px solid #111827",
+        background:"#0A0A0A",borderBottom:"1px solid #111827",
         display:"flex",alignItems:"center",gap:12}}>
         {onBack&&<button onClick={onBack} style={{...S.backBtn}}>{t.back}</button>}
         <div style={{flex:1}}>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#84cc16"}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#B8E020"}}>
             #{player.number}
           </div>
           <div style={{fontSize:11,color:"#4b5563"}}>{form.name}</div>
@@ -278,7 +278,7 @@ export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onA
               color:"#f97316",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12}}>
             📍
           </button>}
-          <button onClick={handleSave} style={{...S.btn(saved?"#22c55e":"#84cc16"),padding:"8px 16px"}}>
+          <button onClick={handleSave} style={{...S.btn(saved?"#22c55e":"#B8E020"),padding:"8px 16px"}}>
             {saved?t.saveOK:t.save}
           </button>
         </div>

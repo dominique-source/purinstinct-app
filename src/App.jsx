@@ -6,7 +6,11 @@ import { S } from "./components/shared/styles.js";
 import { INITIAL_ROSTERS } from "./config/rosters.js";
 import { T } from "./config/translations.js";
 import { LangContext } from "./hooks/useLang.js";
+import { MODES, classifyModeRoute, resolveMode } from "./config/modes.js";
+import { ModeContext } from "./hooks/useMode.js";
 import { shuffle, getStatus, createPlayersFromRoster, makeEmptyGames, makeEmptyQueues, computeTeamResult, computeIndividualResult, refillQueues, buildInitialQueues } from "./lib/game-logic.js";
+import { assertAllowedCapture } from "./lib/playerCapture.js";
+import { joinOrCreateTeam, pickTeamMatchup, formTeamMatch, pairKey } from "./lib/teamMatch.js";
 import { LangFooter } from "./components/shared/LangFooter.jsx";
 import { AdminView } from "./components/admin/AdminView.jsx";
 import { StationView } from "./components/game/StationView.jsx";
@@ -41,6 +45,12 @@ export default function PurInstinctApp(){
   const [winnersPublished,setWinnersPublished]=useState(false);
   const [rosterCodes,setRosterCodes]=useState({});
   const [pendingSessions,setPendingSessions]=useState([]);
+  // Mode équipes manuel (corporate/ecole): { [zone]: { [teamId]: {name,memberIds} } } —
+  // voir src/lib/teamMatch.js.
+  const [teams,setTeams]=useState({});
+  // Rotation équitable: { [zone]: { "teamIdA|teamIdB": count } } — nombre de fois
+  // que chaque paire d'équipes s'est déjà affrontée dans cette zone.
+  const [teamPairCounts,setTeamPairCounts]=useState({});
   // Borne fixe: ?kiosk=1 (option &zone=X pour verrouiller une borne à une seule
   // zone) bascule directement en mode kiosque, sans passer par l'écran PIN.
   const [view,setView]=useState(()=>{
@@ -52,6 +62,9 @@ export default function PurInstinctApp(){
   const [fbReady,setFbReady]=useState(false);
   const [lang,setLang]=useState("fr");
   const [isTestMode,setIsTestMode]=useState(false);
+  // Mode d'activation courant (clé de MODES: "games","corporate","ecole",
+  // "festival","parc","admin") — null tant qu'aucun code n'a été résolu.
+  const [activationMode,setActivationMode]=useState(null);
 
   // 30 hardcoded test players — never synced to Firebase
   const TEST_PLAYERS=useState(()=>
@@ -128,6 +141,9 @@ export default function PurInstinctApp(){
         if(data.liveMode) setView(v=>v.type==="login"?{type:"liveLogin"}:v);
       }
       if(data.activeRosterId) setActiveRosterId(data.activeRosterId);
+      if(data.activationMode) setActivationMode(data.activationMode);
+      setTeams(data.teams||{});
+      setTeamPairCounts(data.teamPairCounts||{});
       if(data.extraRosters) setRosters([...INITIAL_ROSTERS,...Object.values(data.extraRosters).map(r=>({...r,entries:r.entries||[]}))]);
 
       setFbReady(true);
@@ -147,6 +163,7 @@ export default function PurInstinctApp(){
   const syncQueues=(newQueues)=>{setQueues(newQueues);fbSet("queues",queuesToFb(newQueues));};
   const syncGames=(newGames)=>{setActiveGames(newGames);fbSet("activeGames",newGames);};
   const syncArena=(newArena)=>{setArenaState(newArena);fbSet("arenaState",newArena);};
+  const syncActivationMode=(modeKey)=>{setActivationMode(modeKey);fbSet("activationMode",modeKey);};
 
   // ── Écritures granulaires (anti-collision multi-plateaux) ──────
   // Une seule file, un seul joueur: chaque action n'écrit que son chemin.
@@ -199,17 +216,24 @@ export default function PurInstinctApp(){
     const newR={id:"r"+Date.now(),name:"Nouvelle liste",entries:[]};
     const a=[...rosters,newR];setRosters(a);syncExtraRosters(a);
   };
-  const addPlayerToSession=async(name,gender,callback,groupId="main")=>{
+  const addPlayerToSession=async(name,gender,callback,groupId="main",extra={})=>{
     // ID alloué par transaction Firebase: deux inscriptions simultanées
     // (deux bornes, deux mobiles) ne peuvent plus obtenir le même numéro.
     const localMax=players.length>0?Math.max(...players.map(p=>Number(p.id)||0)):0;
     const newId=await allocPlayerId(localMax);
+    // Verrou dur: en mode allowPII=false (ex. ecole), aucune donnée de contact
+    // ne peut être écrite, même si une vue en amont en a fourni par erreur.
+    let safeExtra=extra||{};
+    try{ assertAllowedCapture(activationMode,safeExtra); }
+    catch(e){ console.warn(e.message); safeExtra={}; }
     const newPlayer={id:newId,number:newId,name,gender:gender||"M",globalPoints:0,
       zoneScores:{purinstinct:50,speed:50,handAgility:50,footAgility:50,generalAgility:50,iq:50},
       zoneStreaks:{purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0},
       zonesPlayed:[],lastResult:null,history:[],
       groupId,
-      age:"",email:"",instagram:"",tiktok:"",snapchat:"",
+      age:"",email:safeExtra.email||"",instagram:"",tiktok:"",snapchat:"",
+      marketingConsent:!!safeExtra.marketingConsent,
+      company:safeExtra.company||"",class:safeExtra.class||"",
       photoConsent:false,videoConsent:false,profilePhoto:null,highlights:[]};
     setPlayers(ps=>[...ps,newPlayer]);
     fbUpdate({["state/players/"+newId]:newPlayer});
@@ -236,12 +260,81 @@ export default function PurInstinctApp(){
     syncZoneQueue(zone,[...queues[zone],id]);
   };
 
+  // Mode équipes manuel: rejoint (ou crée, si teamChoice.teamId est vide) une équipe
+  // nommée pour cette zone. Résolu ici (pas côté KioskView) contre le `teams` le plus
+  // à jour, pour limiter le risque de doublon si deux bornes créent la même équipe
+  // au même instant — même compromis que le reste du code (pas de transaction
+  // Firebase ici, comme addToQueue/syncZoneQueue).
+  const joinTeam=(zone,teamChoice,playerId)=>{
+    const teamsForZone=teams[zone]||{};
+    let teamId=teamChoice.teamId;
+    let base=teamsForZone;
+    if(!teamId){
+      const resolved=joinOrCreateTeam(teamsForZone,teamChoice.name);
+      teamId=resolved.teamId;
+      if(resolved.isNew) base={...teamsForZone,[teamId]:{name:resolved.name,memberIds:[]}};
+    }
+    const existing=base[teamId]||{name:teamChoice.name,memberIds:[]};
+    if((existing.memberIds||[]).includes(playerId)) return;
+    const newTeam={name:existing.name,memberIds:[...(existing.memberIds||[]),playerId]};
+    setTeams(prev=>({...prev,[zone]:{...(prev[zone]||{}),[teamId]:newTeam}}));
+    fbUpdate({["state/teams/"+zone+"/"+teamId]:newTeam});
+  };
+
+  // Interrupteur global du mode équipes manuel (onglet admin "Équipes").
+  const onToggleTeamMode=()=>syncArena({...arenaState,teamMode:!arenaState.teamMode});
+
+  // Assignation manuelle par un responsable/professeur: comme joinTeam, mais
+  // retire d'abord le joueur de toute autre équipe de la même zone (un
+  // responsable réassigne, il ne fait pas que rejoindre) avant de
+  // rejoindre-ou-créer l'équipe visée par nom.
+  const assignPlayerToTeam=(zone,playerId,teamName)=>{
+    const teamsForZone=teams[zone]||{};
+    const cleaned={};
+    Object.entries(teamsForZone).forEach(([id,tm])=>{
+      cleaned[id]={...tm,memberIds:(tm.memberIds||[]).filter(pid=>pid!==playerId)};
+    });
+    const {teamId,name,isNew}=joinOrCreateTeam(cleaned,teamName);
+    const existing=isNew?{name,memberIds:[]}:cleaned[teamId];
+    const newTeamsForZone={...cleaned,[teamId]:{name:existing.name,memberIds:[...(existing.memberIds||[]),playerId]}};
+    setTeams(prev=>({...prev,[zone]:newTeamsForZone}));
+    fbSet("teams/"+zone,newTeamsForZone);
+  };
+
+  const removeTeamMember=(zone,teamId,playerId)=>{
+    const team=(teams[zone]||{})[teamId];
+    if(!team) return;
+    const newTeam={...team,memberIds:(team.memberIds||[]).filter(id=>id!==playerId)};
+    setTeams(prev=>({...prev,[zone]:{...(prev[zone]||{}),[teamId]:newTeam}}));
+    fbUpdate({["state/teams/"+zone+"/"+teamId]:newTeam});
+  };
+
+  const renameTeam=(zone,teamId,newName)=>{
+    const team=(teams[zone]||{})[teamId];
+    if(!team||!newName.trim()) return;
+    const newTeam={...team,name:newName.trim()};
+    setTeams(prev=>({...prev,[zone]:{...(prev[zone]||{}),[teamId]:newTeam}}));
+    fbUpdate({["state/teams/"+zone+"/"+teamId]:newTeam});
+  };
+
   // Borne kiosque: inscription (ou joueur déjà connu) + entrée directe dans la
-  // file de la zone choisie, en un seul geste. force=true comme pour l'ajout
-  // manuel côté StationView — la borne agit comme un responsable de plateau.
-  const kioskRegister=(zone,name,gender,existingId,onDone)=>{
-    if(existingId){ addToQueue(existingId,zone,true); onDone(); return; }
-    addPlayerToSession(name,gender,(newId)=>{ addToQueue(newId,zone,true); onDone(); },activeRosterId);
+  // file de la zone choisie, en un seul geste — sauf en mode équipes manuel, où le
+  // joueur rejoint directement son équipe au lieu d'une file (extra.team présent).
+  // force=true comme pour l'ajout manuel côté StationView — la borne agit comme un
+  // responsable de plateau.
+  const kioskRegister=(zone,name,gender,existingId,onDone,extra)=>{
+    const teamChoice=extra?.team;
+    if(existingId){
+      if(teamChoice) joinTeam(zone,teamChoice,existingId);
+      else addToQueue(existingId,zone,true);
+      onDone();
+      return;
+    }
+    addPlayerToSession(name,gender,(newId)=>{
+      if(teamChoice) joinTeam(zone,teamChoice,newId);
+      else addToQueue(newId,zone,true);
+      onDone();
+    },activeRosterId,extra);
   };
 
   const updatePlayer=(updated)=>syncOnePlayer(updated);
@@ -344,6 +437,29 @@ export default function PurInstinctApp(){
     fbUpdate({
       ["state/queues/"+zone]:newQ.length>0?newQ:null,
       ["state/activeGames/"+zone]:gameData
+    });
+  };
+
+  // Mode équipes manuel: choisit la paire d'équipes la moins souvent jouée
+  // ensemble (rotation équitable) et forme le match à partir de leurs membres
+  // prêts — voir src/lib/teamMatch.js. Ne touche jamais queues[zone] (les
+  // équipes ne sont pas des files) ni le chemin generateTeams (zéro impact sur
+  // le mode compétitif existant).
+  const generateTeamMatch=(zone)=>{
+    const z=ZONES[zone];
+    if(z.gameStyle!=="team") return;
+    const teamsForZone=teams[zone]||{};
+    const pairCountsForZone=teamPairCounts[zone]||{};
+    const matchup=pickTeamMatchup(teamsForZone,activeGames,z.teamSize,pairCountsForZone);
+    if(!matchup) return;
+    const gameData=formTeamMatch(teamsForZone[matchup.teamAId],teamsForZone[matchup.teamBId],z.teamSize,activeGames);
+    const key=pairKey(matchup.teamAId,matchup.teamBId);
+    const newPairCounts={...pairCountsForZone,[key]:(pairCountsForZone[key]||0)+1};
+    setActiveGames(g=>({...g,[zone]:gameData}));
+    setTeamPairCounts(prev=>({...prev,[zone]:newPairCounts}));
+    fbUpdate({
+      ["state/activeGames/"+zone]:gameData,
+      ["state/teamPairCounts/"+zone]:newPairCounts,
     });
   };
 
@@ -467,36 +583,91 @@ export default function PurInstinctApp(){
   // Always returns to test landing when in test mode
   const testHome=()=>setView({type:"testLogin"});
 
+  // Résout un code (4 chiffres) vers son mode et route en conséquence — logique
+  // partagée entre le pavé numérique de ModeSelectView et le lien direct ?code=XXXX
+  // (ex. QR code pointant vers une zone d'inscription précise).
+  const handleSelectMode=(modeKey)=>{
+    syncActivationMode(modeKey);
+    const routeKind=classifyModeRoute(modeKey);
+    // "live" (games) = comportement Live actuel, référence — ne jamais régresser.
+    if(routeKind==="live"){
+      fbSet("liveMode",true);setIsTestMode(false);setWinnersPublished(false);
+      fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());
+      setView({type:"liveLogin"});
+      return;
+    }
+    // "admin" = raccourci caché, tout débloqué — reprend l'ancien TEST MODE.
+    if(routeKind==="admin"){
+      fbSet("liveMode",false);
+      setIsTestMode(true);
+      const testQ={};
+      ZK.forEach(zk=>{testQ[zk]=TEST_PLAYERS.map(p=>p.id);});
+      setQueues(testQ);
+      const testAug={};
+      AUG_GAMES.forEach(g=>{testAug[g.id]={queue:TEST_PLAYERS.map(p=>p.name),activeMatch:null};});
+      setAugState(testAug);
+      setView({type:"testLogin"});
+      return;
+    }
+    // "kiosk": festival/parc (kioskDefault, comme ?kiosk=1 aujourd'hui) et
+    // corporate/ecole (prereg-checkin/roster-team, même KioskView étendue par
+    // captureFields/teamMode) — piloté par la config, pas le nom du mode.
+    if(routeKind==="kiosk"){
+      setView({type:"kiosk",zone:null});
+      return;
+    }
+    // "stub": mode valide sans vue dédiée pour l'instant.
+    setView({type:"modeStub",mode:modeKey});
+  };
+
+  // Lien direct ?code=XXXX (ex. QR code affiché sur place) : saute le pavé
+  // numérique et route directement, une seule fois au chargement.
+  useEffect(()=>{
+    if(!fbReady||view.type!=="login") return;
+    const code=new URLSearchParams(window.location.search).get("code");
+    if(!code) return;
+    const modeKey=resolveMode(code);
+    if(modeKey) setTimeout(()=>handleSelectMode(modeKey),0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[fbReady]);
+
   // --- Routing ---
   let content=null;
   if(!fbReady){
     content=(
-      <div style={{minHeight:"100vh",background:"#06070f",display:"flex",alignItems:"center",justifyContent:"center"}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#84cc16",letterSpacing:4}}>PURINSTINCT</div>
+      <div style={{minHeight:"100vh",background:"#0A0A0A",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#B8E020",letterSpacing:4}}>PURINSTINCT</div>
       </div>
     );
   } else if(view.type==="login") content=(
-    <ModeSelectView
-      onLive={()=>{fbSet("liveMode",true);setIsTestMode(false);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());setView({type:"liveLogin"});}}
-      onTest={()=>{
-        fbSet("liveMode",false);
-        setIsTestMode(true);
-        // Pre-fill every zone queue with all 30 test players
-        const testQ={};
-        ZK.forEach(zk=>{testQ[zk]=TEST_PLAYERS.map(p=>p.id);});
-        setQueues(testQ);
-        // Pre-fill every augmented game queue with test player names
-        const testAug={};
-        AUG_GAMES.forEach(g=>{testAug[g.id]={queue:TEST_PLAYERS.map(p=>p.name),activeMatch:null};});
-        setAugState(testAug);
-        setView({type:"testLogin"});
-      }}/>
+    <ModeSelectView onSelectMode={handleSelectMode}/>
+  );
+
+  else if(view.type==="modeStub") content=(
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
+      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,gap:16}}>
+      <style>{FONTS}</style>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:24,color:"#B8E020"}}>
+        ✅ CODE RECONNU
+      </div>
+      <div style={{fontSize:14,color:"#9ca3af",textTransform:"uppercase",letterSpacing:2}}>mode: {view.mode}</div>
+      <div style={{fontSize:12,color:"#4b5563",maxWidth:280,textAlign:"center"}}>
+        Vue dédiée (entryFlow {MODES[view.mode]?.entryFlow}) à construire — capture de données déjà paramétrable.
+      </div>
+      <button onClick={()=>setView({type:"login"})}
+        style={{marginTop:12,padding:"10px 20px",borderRadius:12,background:"#111827",
+          border:"1px solid #B8E02040",color:"#B8E020",cursor:"pointer",fontSize:13,fontWeight:700}}>
+        ← Retour
+      </button>
+    </div>
   );
 
   else if(view.type==="kiosk") content=(
     <KioskView players={players.filter(p=>(p.groupId||"main")===activeRosterId)}
       disabledZones={arenaState.disabledZones||[]}
       lockedZone={view.zone}
+      teamMode={!!arenaState.teamMode}
+      teams={teams}
       onRegister={kioskRegister}/>
   );
 
@@ -555,7 +726,7 @@ export default function PurInstinctApp(){
   );
 
   else if(view.type==="adminHome") content=(
-    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{FONTS}</style>
       <div style={{textAlign:"center",marginBottom:32}}>
@@ -564,7 +735,7 @@ export default function PurInstinctApp(){
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,width:"100%",maxWidth:360}}>
         {[
-          {icon:"⚡",label:T[lang].sessionInProgress,sub:T[lang].sessionSub,color:"#84cc16",action:()=>setView({type:"admin"})},
+          {icon:"⚡",label:T[lang].sessionInProgress,sub:T[lang].sessionSub,color:"#B8E020",action:()=>setView({type:"admin"})},
           {icon:"📍",label:T[lang].stationManagerShort,sub:T[lang].stationManagerSub,color:"#f97316",action:()=>setView({type:"stationPick"})},
           {icon:"📋",label:T[lang].sessionsTab,sub:T[lang].sessionsSub,color:"#3b82f6",action:()=>setView({type:"admin",tab:"session"})},
           {icon:null,label:T[lang].disconnectShort,sub:T[lang].disconnectSub,color:"#ef4444",isLogout:true,action:()=>isTestMode?testHome():setView({type:"liveLogin"})},
@@ -587,7 +758,7 @@ export default function PurInstinctApp(){
         ))}
       </div>
       {arenaState.active&&(
-        <div style={{marginTop:20,fontSize:12,color:"#84cc16",fontWeight:600}}>
+        <div style={{marginTop:20,fontSize:12,color:"#B8E020",fontWeight:600}}>
           {T[lang].sessionActiveNote}
         </div>
       )}
@@ -602,6 +773,11 @@ export default function PurInstinctApp(){
       if(ZK.some(zk=>{const g=activeGames[zk];if(!g)return false;const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(p.id);})) return true;
       return false;
     })} allPlayers={isTestMode?TEST_PLAYERS:players} queues={queues} activeGames={activeGames} arenaState={arenaState} lastResultAt={lastResultAt} rosters={rosters} activeRosterId={activeRosterId} initialTab={view.tab}
+      teams={teams}
+      onToggleTeamMode={onToggleTeamMode}
+      onAssignPlayer={assignPlayerToTeam}
+      onRemoveTeamMember={removeTeamMember}
+      onRenameTeam={renameTeam}
       onStart={(mins)=>syncArena({...arenaState,active:true,ended:false,paused:false,startTime:Date.now(),sessionMins:mins||75})}
       onEnd={()=>syncArena({active:false,ended:false,paused:false,startTime:null,pausedRemaining:null,disabledZones:arenaState.disabledZones||[],sessionMins:arenaState.sessionMins||75})}
       onPause={()=>{
@@ -704,6 +880,9 @@ export default function PurInstinctApp(){
       arenaState={arenaState}
       sessionName={(rosters.find(r=>r.id===activeRosterId)||{name:"Session Standard"}).name}
       sessionCode={(rosterCodes||{})[activeRosterId]||null}
+      teamMode={!!arenaState.teamMode}
+      teams={teams[view.id]||{}}
+      onGenerateTeamMatch={()=>generateTeamMatch(view.id)}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onGenerate={(p,force)=>generateTeams(view.id,p,force)}
       onResult={(w,second)=>submitResult(view.id,w,second)}
@@ -719,7 +898,7 @@ export default function PurInstinctApp(){
   );
 
   else if(view.type==="stationPick") content=(
-    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
+    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{FONTS}</style>
       <div style={{width:"100%",maxWidth:380}}>
@@ -727,7 +906,7 @@ export default function PurInstinctApp(){
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:22,color:"#fff"}}>{T[lang].chooseStation}</div>
           {(rosterCodes||{})[activeRosterId]&&<div style={{fontSize:12,color:"#4b5563",marginTop:4}}>
             {(rosters.find(r=>r.id===activeRosterId)||{name:"Session Standard"}).name}
-            <span style={{color:"#84cc16",fontWeight:700,letterSpacing:3,marginLeft:8}}>{(rosterCodes||{})[activeRosterId]}</span>
+            <span style={{color:"#B8E020",fontWeight:700,letterSpacing:3,marginLeft:8}}>{(rosterCodes||{})[activeRosterId]}</span>
           </div>}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:24}}>
@@ -750,13 +929,13 @@ export default function PurInstinctApp(){
         {view.fromPlayerId?(
           <button onClick={()=>setView({type:"player",id:view.fromPlayerId})}
             style={{width:"100%",padding:"12px",borderRadius:12,background:"#111827",
-              border:"1px solid #84cc1640",color:"#84cc16",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
+              border:"1px solid #B8E02040",color:"#B8E020",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
             {T[lang].returnAsPlayer}
           </button>
         ):(
           <button onClick={()=>isTestMode?testHome():setView({type:"admin"})}
             style={{width:"100%",padding:"12px",borderRadius:12,background:"#111827",
-              border:"1px solid #84cc1640",color:"#84cc16",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
+              border:"1px solid #B8E02040",color:"#B8E020",cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:8}}>
             {isTestMode?"← Retour":T[lang].switchToAdmin}
           </button>
         )}
@@ -793,5 +972,9 @@ export default function PurInstinctApp(){
     }
   }
 
-  return <LangContext.Provider value={{lang,setLang}}>{content}</LangContext.Provider>;
+  return (
+    <ModeContext.Provider value={{mode:activationMode,modeConfig:MODES[activationMode]||null}}>
+      <LangContext.Provider value={{lang,setLang}}>{content}</LangContext.Provider>
+    </ModeContext.Provider>
+  );
 }

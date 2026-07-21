@@ -1,0 +1,249 @@
+/* ============================================================
+   PURINSTINCT — UI PRIMITIVE CLASSES
+   Full interactive states for the src/components/ui/ wrappers.
+   Everything here is driven by tokens.css variables.
+   ============================================================ */
+
+/* ---------- BUTTON ---------------------------------------- */
+.pi-btn {
+  --_h: var(--pi-ctrl-md);
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: var(--pi-s2);
+  min-height: var(--_h);
+  padding: 0 var(--pi-s5);
+  border: var(--pi-bw) solid transparent;
+  border-radius: var(--pi-r-md);
+  font-family: var(--pi-font-body);
+  font-weight: var(--pi-fw-semibold);
+  font-size: var(--pi-fs-body);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--pi-text);
+  background: var(--pi-surface-2);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: background var(--pi-dur-fast) var(--pi-ease-out),
+              border-color var(--pi-dur-fast) var(--pi-ease-out),
+              transform var(--pi-dur-fast) var(--pi-ease-out),
+              box-shadow var(--pi-dur-fast) var(--pi-ease-out);
+}
+.pi-btn:active { transform: scale(0.975); }
+.pi-btn:disabled, .pi-btn[aria-disabled="true"] {
+  opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none;
+}
+
+.pi-btn--sm { --_h: var(--pi-ctrl-sm); padding: 0 var(--pi-s3); font-size: var(--pi-fs-label); }
+.pi-btn--lg { --_h: var(--pi-ctrl-lg); padding: 0 var(--pi-s6); font-size: var(--pi-fs-card); }
+.pi-btn--xl {
+  --_h: var(--pi-ctrl-xl); padding: 0 var(--pi-s6);
+  font-family: var(--pi-font-display); font-weight: var(--pi-fw-black);
+  font-style: italic; font-size: 22px; letter-spacing: 0.02em;
+}
+.pi-btn--block { width: 100%; }
+.pi-btn--cut {
+  border-radius: 0;
+  clip-path: polygon(var(--pi-cut) 0, 100% 0, 100% calc(100% - var(--pi-cut)),
+             calc(100% - var(--pi-cut)) 100%, 0 100%, 0 var(--pi-cut));
+}
+
+/* Primary — the one lime action per screen */
+.pi-btn--primary {
+  background: var(--pi-lime); color: var(--pi-lime-ink);
+  border-color: var(--pi-lime);
+  font-weight: var(--pi-fw-bold);
+}
+.pi-btn--primary:hover:not(:disabled) { background: var(--pi-lime-hover); box-shadow: var(--pi-glow-lime); }
+.pi-btn--primary:active:not(:disabled) { background: var(--pi-lime-press); }
+
+/* Secondary — bordered neutral */
+.pi-btn--secondary { background: var(--pi-surface-2); border-color: var(--pi-line-strong); color: var(--pi-text); }
+.pi-btn--secondary:hover:not(:disabled) { background: var(--pi-surface-3); border-color: var(--pi-line-strong); }
+
+/* Ghost — quiet, for tertiary actions */
+.pi-btn--ghost { background: transparent; border-color: transparent; color: var(--pi-text-2); }
+.pi-btn--ghost:hover:not(:disabled) { background: var(--pi-surface-2); color: var(--pi-text); }
+
+/* Danger — destructive */
+.pi-btn--danger { background: var(--pi-danger-wash); border-color: var(--pi-danger); color: var(--pi-danger); }
+.pi-btn--danger:hover:not(:disabled) { background: var(--pi-danger); color: #fff; }
+
+/* Outline lime — secondary brand action */
+.pi-btn--outline { background: transparent; border-color: var(--pi-lime-line); color: var(--pi-lime); }
+.pi-btn--outline:hover:not(:disabled) { background: var(--pi-lime-wash); border-color: var(--pi-lime); }
+
+/* Icon-only */
+.pi-iconbtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--pi-ctrl-md); height: var(--pi-ctrl-md);
+  border-radius: var(--pi-r-md); border: var(--pi-bw) solid var(--pi-line);
+  background: var(--pi-surface-2); color: var(--pi-text-2);
+  cursor: pointer; font-size: 18px; line-height: 1;
+  transition: background var(--pi-dur-fast) var(--pi-ease-out), color var(--pi-dur-fast) var(--pi-ease-out);
+}
+.pi-iconbtn:hover:not(:disabled) { background: var(--pi-surface-3); color: var(--pi-text); }
+.pi-iconbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ---------- PANEL / CARD ---------------------------------- */
+.pi-panel {
+  background: var(--pi-surface-1);
+  border: var(--pi-bw) solid var(--pi-line);
+  border-radius: var(--pi-r-lg);
+  padding: var(--pi-s4);
+}
+.pi-panel--flush { padding: 0; overflow: hidden; }
+.pi-panel--raised { background: var(--pi-surface-2); }
+.pi-panel--hero {
+  border-radius: 0;
+  border-color: var(--pi-lime-line);
+  clip-path: polygon(var(--pi-cut) 0, 100% 0, 100% calc(100% - var(--pi-cut)),
+             calc(100% - var(--pi-cut)) 100%, 0 100%, 0 var(--pi-cut));
+  background-image: repeating-linear-gradient(0deg, transparent 0 3px, var(--pi-lime-wash) 3px 4px);
+}
+
+/* ---------- LABEL / EYEBROW ------------------------------- */
+.pi-eyebrow {
+  font-family: var(--pi-font-body);
+  font-size: var(--pi-fs-label); font-weight: var(--pi-fw-semibold);
+  letter-spacing: var(--pi-tracking-cap); text-transform: uppercase;
+  color: var(--pi-text-3);
+}
+
+/* ---------- BADGE ----------------------------------------- */
+.pi-badge {
+  display: inline-flex; align-items: center; gap: var(--pi-s1);
+  padding: 3px var(--pi-s2);
+  border-radius: var(--pi-r-sm);
+  font-size: var(--pi-fs-label); font-weight: var(--pi-fw-bold);
+  letter-spacing: 0.02em; line-height: 1;
+  background: var(--pi-surface-3); color: var(--pi-text-2);
+}
+.pi-badge--lime   { background: var(--pi-lime-wash);   color: var(--pi-lime); }
+.pi-badge--ok     { background: var(--pi-ok-wash);     color: var(--pi-ok); }
+.pi-badge--warn   { background: var(--pi-warn-wash);   color: var(--pi-warn); }
+.pi-badge--danger { background: var(--pi-danger-wash); color: var(--pi-danger); }
+
+/* ---------- LIVE INDICATOR -------------------------------- */
+.pi-live {
+  display: inline-flex; align-items: center; gap: var(--pi-s2);
+  padding: 3px var(--pi-s2) 3px 6px; border-radius: var(--pi-r-sm);
+  background: var(--pi-live-wash); color: var(--pi-live);
+  font-size: var(--pi-fs-label); font-weight: var(--pi-fw-bold);
+  letter-spacing: 0.1em;
+}
+.pi-live__dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--pi-live); flex-shrink: 0;
+  animation: pi-live-ring 1.6s ease-out infinite;
+}
+
+/* ---------- SEGMENTED TABS -------------------------------- */
+.pi-tabs {
+  display: flex; gap: 2px; padding: 3px;
+  background: var(--pi-surface-1); border: var(--pi-bw) solid var(--pi-line);
+  border-radius: var(--pi-r-md);
+}
+.pi-tab {
+  flex: 1 1 auto; min-height: var(--pi-ctrl-sm);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 0 var(--pi-s3); border: none; border-radius: var(--pi-r-sm);
+  background: transparent; color: var(--pi-text-2); /* >=4.5:1 on surface-1 */
+  font-family: var(--pi-font-body); font-size: var(--pi-fs-label);
+  font-weight: var(--pi-fw-semibold); letter-spacing: 0.04em;
+  text-transform: uppercase; cursor: pointer; white-space: nowrap;
+  transition: background var(--pi-dur-fast), color var(--pi-dur-fast);
+}
+.pi-tab:hover:not(.is-active) { color: var(--pi-text); background: var(--pi-surface-2); }
+.pi-tab.is-active { background: var(--pi-lime); color: var(--pi-lime-ink); font-weight: var(--pi-fw-bold); }
+
+/* ---------- RESPONSIVE UTILITIES -------------------------- */
+/* Progressive disclosure: secondary telemetry/context is dropped on mobile
+   where the core live action must own the fold. */
+@media (max-width: 599px) { .pi-hide-mobile { display: none !important; } }
+
+/* ---------- STATION CONSOLE LAYOUT ------------------------ */
+/* Mobile: action first, queue below (core live action prioritized).
+   Tablet/desktop: split — action left, queue rail right, both live at once. */
+.pi-station-grid { display: grid; gap: var(--pi-s4); align-items: start; }
+@media (min-width: 1024px) {
+  .pi-station-grid { grid-template-columns: minmax(0, 1fr) 360px; gap: var(--pi-s6); }
+  .pi-station-rail { position: sticky; top: 148px; }
+  /* Setup content is short while the queue rail is tall — center it against the
+     rail instead of stranding it at the top over a void. Live matches fill the
+     column naturally and are left alone. */
+  .pi-station-primary--setup {
+    min-height: min(62vh, 560px);
+    display: flex; flex-direction: column; justify-content: center;
+  }
+}
+
+/* ---------- FIELD / INPUT --------------------------------- */
+.pi-field { display: flex; flex-direction: column; gap: var(--pi-s2); }
+.pi-field__label {
+  font-size: var(--pi-fs-label); font-weight: var(--pi-fw-semibold);
+  letter-spacing: var(--pi-tracking-cap); text-transform: uppercase;
+  color: var(--pi-text-3);
+}
+.pi-input {
+  width: 100%; min-height: var(--pi-ctrl-md);
+  padding: 0 var(--pi-s3);
+  background: var(--pi-surface-2); color: var(--pi-text);
+  border: var(--pi-bw) solid var(--pi-line);
+  border-radius: var(--pi-r-md);
+  font-family: var(--pi-font-body); font-size: 16px; /* 16px = no iOS zoom */
+  outline: none;
+  transition: border-color var(--pi-dur-fast);
+}
+.pi-input::placeholder { color: var(--pi-text-4); }
+.pi-input:focus { border-color: var(--pi-lime); }
+.pi-input[aria-invalid="true"] { border-color: var(--pi-danger); }
+.pi-field__error { font-size: var(--pi-fs-label); color: var(--pi-danger); }
+
+/* ---------- MODAL ----------------------------------------- */
+.pi-overlay {
+  position: fixed; inset: 0; z-index: var(--pi-z-modal);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--pi-s4);
+  background: rgba(0,0,0,0.72);
+  animation: pi-fade-up var(--pi-dur-base) var(--pi-ease-out);
+}
+.pi-modal {
+  width: 100%; max-width: var(--pi-w-narrow);
+  background: var(--pi-surface-1);
+  border: var(--pi-bw) solid var(--pi-line-strong);
+  border-radius: var(--pi-r-lg);
+  box-shadow: var(--pi-shadow-float);
+  padding: var(--pi-s6);
+  animation: pi-pop-in var(--pi-dur-base) var(--pi-ease-spring);
+}
+.pi-modal--danger { border-color: var(--pi-danger); }
+
+/* ---------- TIMER / SCORE NUMERALS ------------------------ */
+.pi-timer, .pi-score {
+  font-family: var(--pi-font-display); font-weight: var(--pi-fw-black);
+  font-style: italic; line-height: 1; font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+.pi-timer { font-size: var(--pi-fs-score); }
+.pi-score { font-size: var(--pi-fs-score); color: var(--pi-lime); }
+
+/* ---------- EMPTY / LOADING ------------------------------- */
+.pi-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--pi-s3); padding: var(--pi-s10) var(--pi-s4); text-align: center;
+  color: var(--pi-text-3);
+}
+.pi-empty__icon { font-size: 40px; opacity: 0.5; }
+.pi-empty__title { font-family: var(--pi-font-display); font-weight: var(--pi-fw-bold); font-size: var(--pi-fs-section); color: var(--pi-text-2); }
+
+.pi-skeleton {
+  background: linear-gradient(90deg, var(--pi-surface-2) 25%, var(--pi-surface-3) 50%, var(--pi-surface-2) 75%);
+  background-size: 200% 100%;
+  animation: pi-shimmer 1.4s linear infinite;
+  border-radius: var(--pi-r-sm);
+}
+.pi-spinner {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid var(--pi-line-strong); border-top-color: var(--pi-lime);
+  animation: pi-spin 0.7s linear infinite;
+}

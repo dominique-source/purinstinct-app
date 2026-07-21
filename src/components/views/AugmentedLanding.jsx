@@ -28,7 +28,7 @@ export function AugmentedLanding({augState,onSelect,onBack}){
           return(
             <div key={game.id} onClick={()=>onSelect(game.id)}
               style={{borderRadius:14,overflow:"hidden",cursor:"pointer",position:"relative",
-                border:"2px solid "+(hasMatch?"#84cc16":AUG_COLOR+"50"),
+                border:"2px solid "+(hasMatch?"#B8E020":AUG_COLOR+"50"),
                 boxShadow:"0 4px 16px "+AUG_COLOR+"20",transition:"transform .15s"}}
               onMouseEnter={e=>e.currentTarget.style.transform="scale(1.03)"}
               onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>
@@ -39,7 +39,7 @@ export function AugmentedLanding({augState,onSelect,onBack}){
                   onError={e=>{e.target.style.display="none";}}/>
                 {/* Overlay badges */}
                 {hasMatch&&(
-                  <div style={{position:"absolute",top:8,right:8,background:"#84cc16",
+                  <div style={{position:"absolute",top:8,right:8,background:"#B8E020",
                     borderRadius:20,padding:"3px 10px",fontSize:10,fontWeight:700,color:"#000"}}>
                     ⚡ LIVE
                   </div>

@@ -90,10 +90,10 @@ export function AugmentedStation({gameId,gameState,onUpdate,onBack}){
 
         {/* Active match */}
         {activeMatch&&(
-          <div style={{borderRadius:14,padding:16,background:"#1a0a2e",border:"2px solid #84cc16"}}>
+          <div style={{borderRadius:14,padding:16,background:"#1a0a2e",border:"2px solid #B8E020"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:14,
-                color:"#84cc16",letterSpacing:2}}>⚡ {activeMatch.format.toUpperCase()} EN COURS</div>
+                color:"#B8E020",letterSpacing:2}}>⚡ {activeMatch.format.toUpperCase()} EN COURS</div>
               <button onClick={cancelMatch}
                 style={{fontSize:11,color:"#6b7280",background:"none",border:"none",cursor:"pointer"}}>
                 ↩ Annuler

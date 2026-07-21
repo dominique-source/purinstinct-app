@@ -4,7 +4,7 @@ export function ProgressChart({player}){
   const history=player.history||[];
   if(history.length===0) return null;
 
-  const zoneColors={purinstinct:"#84cc16",speed:"#f97316",handAgility:"#3b82f6",
+  const zoneColors={purinstinct:"#B8E020",speed:"#f97316",handAgility:"#3b82f6",
     footAgility:"#56A0D3",generalAgility:"#eab308",iq:"#a855f7"};
   const zoneShort={purinstinct:"PurI.",speed:"Vitesse",handAgility:"Main",
     footAgility:"Pied",generalAgility:"Agilité",iq:"IQ"};
@@ -87,10 +87,10 @@ export function ProgressChart({player}){
         {sessions.map((s,i)=>(
           <g key={i}>
             <line x1={s.x} y1={PAD_V} x2={s.x} y2={PAD_V+INNER_H}
-              stroke={s.today?"#84cc16":"#374151"} strokeWidth="1" strokeDasharray={s.today?"none":"3 2"}
+              stroke={s.today?"#B8E020":"#374151"} strokeWidth="1" strokeDasharray={s.today?"none":"3 2"}
               strokeOpacity={s.today?0.6:0.5}/>
             <text x={s.x} y={PAD_V+INNER_H+12} textAnchor="middle"
-              fill={s.today?"#84cc16":"#6b7280"} fontSize="8" fontWeight={s.today?"bold":"normal"}>
+              fill={s.today?"#B8E020":"#6b7280"} fontSize="8" fontWeight={s.today?"bold":"normal"}>
               {s.label}
             </text>
           </g>
@@ -103,13 +103,13 @@ export function ProgressChart({player}){
         ))}
         {/* Ligne GP */}
         <path d={makePath(gpPoints,gpY)}
-          fill="none" stroke="#84cc16" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          fill="none" stroke="#B8E020" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         {/* Point GP */}
-        <circle cx={lastX} cy={gpY(gpPoints[n-1])} r="3" fill="#84cc16"/>
+        <circle cx={lastX} cy={gpY(gpPoints[n-1])} r="3" fill="#B8E020"/>
         {/* Trait de connexion + label GP */}
         <line x1={lastX} y1={gpY(gpPoints[n-1])} x2={lastX+4} y2={gpLabelY+1}
-          stroke="#84cc16" strokeWidth="0.7" strokeOpacity="0.5"/>
-        <text x={lastX+6} y={gpLabelY+4} fill="#84cc16" fontSize="9" fontWeight="bold">
+          stroke="#B8E020" strokeWidth="0.7" strokeOpacity="0.5"/>
+        <text x={lastX+6} y={gpLabelY+4} fill="#B8E020" fontSize="9" fontWeight="bold">
           {gpPoints[n-1]} pts
         </text>
         {/* Labels zones avec trait de connexion et position anti-overlap */}

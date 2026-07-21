@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { FONTS } from "../../config/fonts.js";
 import { ZONES } from "../../config/zones.js";
 import { useZn, useT } from "../../hooks/useLang.js";
-import { S } from "../shared/styles.js";
 import { TierBadge } from "../shared/TierBadge.jsx";
 import { RulesCard } from "../shared/RulesCard.jsx";
 import { LangFooter } from "../shared/LangFooter.jsx";
@@ -11,8 +9,12 @@ import { SprintGameView } from "./SprintGameView.jsx";
 import { IndividualGameView } from "./IndividualGameView.jsx";
 import { TeamGameView } from "./TeamGameView.jsx";
 import { useArenaTimer } from "../../hooks/useArenaTimer.js";
+import { Button, IconButton, Panel, Eyebrow, Badge, LiveIndicator, Tabs, Timer, Modal } from "../ui/index.js";
 
-export function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId,onFillQueue}){
+// Flagship live-station console. Presentation is design-system-driven; the
+// pending/undo state machine, auto-generation and queue logic are preserved
+// verbatim from the previous implementation.
+export function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,teamMode,teams,onGenerateTeamMatch,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId,onFillQueue}){
   const t=useT();
   const zn=useZn();
   const z=ZONES[zone];
@@ -22,7 +24,6 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
   const [showRoster,setShowRoster]=useState(false);
   const [numInput,setNumInput]=useState("");
   const [sprintSize,setSprintSize]=useState(4); // nombre ou "tous"
-  const [iqCount,setIqCount]=useState(2);
   const [flash,setFlash]=useState(null);
   const [confirmShortGame,setConfirmShortGame]=useState(false);
   const [highlightId,setHighlightId]=useState(null);
@@ -45,6 +46,16 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
   const minToShow=z.teamSize?2:z.minP;
   const canGen=!activeGame&&qPlayers.length>=minToShow;
   const hasIdeal=qPlayers.length>=idealCount;
+  // Mode équipes manuel: pas de file, les joueurs rejoignent une équipe nommée
+  // directement (voir teamMatch.js / App.jsx generateTeamMatch). Cette liste ne
+  // sert qu'à l'affichage — l'exclusion des joueurs déjà en jeu ailleurs se fait
+  // côté App.jsx (seul endroit qui connaît activeGames pour toutes les zones).
+  // gameStyle==="team" précisément — footAgility a teamSize:1 (truthy) mais
+  // gameStyle:"duel" (1v1 individuel), pas une vraie zone équipe.
+  const teamModeActive=!!(teamMode&&z.gameStyle==="team");
+  const teamsList=Object.entries(teams||{}).map(([id,tm])=>({id,...tm}));
+  const readyTeamsCount=teamsList.filter(tm=>(tm.memberIds||[]).length>=z.teamSize).length;
+  const canGenTeamMatch=!activeGame&&readyTeamsCount>=2;
   // Remettre à false à chaque changement du nombre de joueurs en file
   useEffect(()=>{setConfirmShortGame(false);},[qPlayers.length]);
 
@@ -73,44 +84,38 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
   useEffect(()=>{
     if(activeGame||!autoGenArmedRef.current) return;
     autoGenArmedRef.current=false;
+    // Mode équipes manuel: jamais d'auto-génération depuis la file — les
+    // joueurs ne s'y trouvent pas (ils rejoignent une équipe), et le
+    // responsable déclenche "Générer le prochain match" lui-même.
+    if(teamModeActive) return;
     if(canGen&&(hasIdeal||zone==="speed"))
       onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):null);
-  },[activeGame,canGen,hasIdeal,zone,sprintSize,qPlayers.length,onGenerate]);
-  const validSprintSizes=[4,10,15,20,25,30,40,50].filter(s=>s<=qPlayers.length);
+  },[activeGame,canGen,hasIdeal,zone,sprintSize,qPlayers.length,onGenerate,teamModeActive]);
   const sprintLine=[...qPlayers].sort((a,b)=>((a.zoneScores||{}).speed||50)-((b.zoneScores||{}).speed||50));
 
   const handleAdd=()=>{
     const n=parseInt(numInput,10);
     const p=players.find(px=>px.number===n);
     if(!p){setNumInput(""); return;}
-    // Already in THIS queue: highlight and scroll to them
     if(queue.includes(p.id)){
       setHighlightId(p.id);
       setTimeout(()=>setHighlightId(null),2800);
       setNumInput("");
       return;
     }
-    // Force-add regardless of how many queues the player is in
     onAddQ(p.id,zone,true);
     setNumInput("");
   };
 
-  const handleFlashResult=(label)=>{
-    setFlash(label);
-    setTimeout(()=>setFlash(null),2200);
-  };
+  const handleFlashResult=(label)=>{ setFlash(label); setTimeout(()=>setFlash(null),2200); };
 
   const handleMoveTop=(id,z2)=>{
-    const q=[...queue];
-    const i=q.indexOf(id); if(i<=0) return;
-    q.splice(i,1); q.unshift(id);
-    onReorderQ(z2,q);
+    const q=[...queue]; const i=q.indexOf(id); if(i<=0) return;
+    q.splice(i,1); q.unshift(id); onReorderQ(z2,q);
   };
   const handleMoveBottom=(id,z2)=>{
-    const q=[...queue];
-    const i=q.indexOf(id); if(i<0||i===q.length-1) return;
-    q.splice(i,1); q.push(id);
-    onReorderQ(z2,q);
+    const q=[...queue]; const i=q.indexOf(id); if(i<0||i===q.length-1) return;
+    q.splice(i,1); q.push(id); onReorderQ(z2,q);
   };
 
   // Ne PAS appeler onResult ici: on diffère l'écriture jusqu'à expiration de la
@@ -130,326 +135,318 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
     if(pending) return;
     startPending([winner],"EQUIPE "+winner+" GAGNE!");
   };
-  const cancelPending=()=>{ setPending(null); }; // onResult jamais appelé → rien écrit
+  const cancelPending=()=>{ setPending(null); };
 
+  const arenaTone = arenaStatus==="active"?"live":arenaStatus==="paused"?"paused":arenaStatus==="ended"?"ended":undefined;
+  const arenaLabel = arenaStatus==="active"?t.statusActive:arenaStatus==="paused"?t.statusPaused:arenaStatus==="ended"?t.statusEnded:t.statusWaiting;
 
-
+  // ---- Disabled zone ---------------------------------------------------------
   if(disabled) return(
-    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif",
-      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,padding:24}}>
-      <style>{FONTS}</style>
-      <div style={{fontSize:56,opacity:0.3}}>{z.icon}</div>
-      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:22,color:"#374151",textAlign:"center"}}>
-        {t.stationDisabled}
+    <div style={{minHeight:"100svh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"var(--pi-s4)",padding:"var(--pi-s6)"}}>
+      <div style={{fontSize:56,opacity:0.25}}>{z.icon}</div>
+      <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:"var(--pi-fs-title)",color:"var(--pi-text-3)",textAlign:"center"}}>{t.stationDisabled}</div>
+      <div style={{fontSize:"var(--pi-fs-body)",color:"var(--pi-text-3)",textAlign:"center",maxWidth:260}}>{t.stationDisabledDesc}</div>
+      {sessionName&&<Badge>📋 {sessionName}</Badge>}
+      <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s2)",marginTop:"var(--pi-s4)",width:"100%",maxWidth:280}}>
+        <Button variant="secondary" block onClick={onBack||onLogout}>{t.backToStations}</Button>
+        {onGoAdmin&&<Button variant="primary" block onClick={onGoAdmin}>{fromPlayerId?t.goPlayer:t.goAdmin}</Button>}
+        <Button variant="ghost" size="sm" block onClick={onLogout}>{t.disconnect}</Button>
       </div>
-      <div style={{fontSize:13,color:"#4b5563",textAlign:"center",maxWidth:260}}>
-        {t.stationDisabledDesc}
-      </div>
-      {sessionName&&<div style={{fontSize:11,color:"#374151",fontWeight:600}}>📋 {sessionName}</div>}
-      <button onClick={onBack||onLogout} style={{marginTop:16,...S.btn(),padding:"8px 20px",fontSize:13}}>{t.backToStations}</button>
-      {onGoAdmin&&<button onClick={onGoAdmin} style={{marginTop:8,...S.btn("#84cc16"),padding:"8px 20px",fontSize:13,color:"#000"}}>{fromPlayerId?t.goPlayer:t.goAdmin}</button>}
-      <button onClick={onLogout} style={{marginTop:8,background:"none",border:"none",color:"#4b5563",fontSize:12,cursor:"pointer"}}>{t.disconnect}</button>
     </div>
   );
 
   return(<>
-    <div style={{minHeight:"100vh",background:"#06070f",fontFamily:"'DM Sans',sans-serif"}}>
-      <style>{FONTS}</style>
+    <div style={{minHeight:"100svh",display:"flex",flexDirection:"column"}}>
 
-      {flash&&(
-        <div style={{position:"fixed",inset:0,zIndex:50,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
-          <div className="anim-pop" style={{padding:"28px 44px",textAlign:"center",background:z.bg,border:"2px solid "+z.color,
-            clipPath:S.clip(18),filter:"drop-shadow(0 0 30px "+z.color+"66)",
-            backgroundImage:`repeating-linear-gradient(0deg, transparent 0 3px, ${z.color}08 3px 4px)`}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:40,letterSpacing:.5,color:"#fff"}}>{flash}</div>
-            <div style={{fontSize:18,marginTop:4,color:z.color}}>🎉</div>
-          </div>
-        </div>
-      )}
+      {/* ================= BROADCAST HEADER ================= */}
+      <header style={{position:"sticky",top:0,zIndex:"var(--pi-z-sticky)",background:"var(--pi-bg)",
+        borderBottom:`1px solid ${z.color}33`,
+        paddingTop:"calc(env(safe-area-inset-top) + 12px)",paddingBottom:12,paddingLeft:"var(--pi-gutter)",paddingRight:"var(--pi-gutter)"}}>
+        <div style={{maxWidth:"var(--pi-w-wide)",margin:"0 auto",display:"flex",alignItems:"center",gap:"var(--pi-s3)"}}>
 
-      {/* Bannière d'annulation façon Gmail — résultat déclaré, en attente */}
-      {pending&&(
-        <div style={{position:"fixed",left:0,right:0,bottom:0,zIndex:60,
-          padding:"12px 16px calc(env(safe-area-inset-bottom) + 12px)",
-          display:"flex",justifyContent:"center",pointerEvents:"none"}}>
-          <div style={{pointerEvents:"auto",display:"flex",alignItems:"center",gap:14,
-            width:"100%",maxWidth:560,background:z.bg,border:"1px solid "+z.color,
-            clipPath:S.clip(12),padding:"12px 14px 12px 16px",
-            filter:"drop-shadow(0 10px 24px rgba(0,0,0,.6)) drop-shadow(0 0 12px "+z.color+"40)"}}>
-            <div style={{width:44,height:44,flexShrink:0,borderRadius:"50%",
-              display:"flex",alignItems:"center",justifyContent:"center",
-              background:z.color+"22",border:"2px solid "+z.color,
-              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:20,color:z.color}}>
-              {undoLeft}
-            </div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:18,
-                color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pending.label}</div>
-              <div style={{fontSize:11,color:z.color}}>{t.resultIn} {undoLeft}s…</div>
-            </div>
-            <button onClick={cancelPending}
-              style={{flexShrink:0,minHeight:44,padding:"10px 20px",borderRadius:12,cursor:"pointer",
-                border:"2px solid "+z.color,background:"transparent",color:"#fff",
-                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,letterSpacing:1}}>
-              ↺ {t.undoBtn}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Header */}
-      <div style={{position:"sticky",top:0,zIndex:10,paddingTop:"calc(env(safe-area-inset-top) + 16px)",paddingBottom:"12px",paddingLeft:"16px",paddingRight:"16px",background:"#06070f",borderBottom:"1px solid "+z.color+"25"}}>
-        <div style={{...S.row(),justifyContent:"space-between",marginBottom:12}}>
-          <div style={{...S.row()}}>
-            <div style={{width:44,height:44,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,background:z.bg,border:"1px solid "+z.border}}>{z.icon}</div>
-            <div>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,color:"#fff"}}>{zl.name.toUpperCase()}</div>
-              <div style={{color:z.color,fontSize:12,fontWeight:600}}>{z.minP} joueurs minimum</div>
-              {sessionName&&<div style={{fontSize:10,color:"#4b5563",marginTop:2,fontWeight:600,display:"flex",gap:6,alignItems:"center"}}>
-                <span>📋 {sessionName}</span>
-                {sessionCode&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,color:"#84cc16",letterSpacing:2}}>{sessionCode}</span>}
-              </div>}
-            </div>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{...S.tag(z.color)}}>{qPlayers.length} en file</div>
-            {arenaState&&<div style={{textAlign:"center",minWidth:52}}>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,
-                color:arenaStatus==="active"?"#84cc16":arenaStatus==="paused"?"#f97316":arenaStatus==="ended"?"#dc2626":"#374151",
-                lineHeight:1}}>{arenaTimer}</div>
-              <div style={{fontSize:9,color:"#4b5563"}}>
-                {arenaStatus==="active"?t.statusActive:arenaStatus==="paused"?t.statusPaused:arenaStatus==="ended"?t.statusEnded:t.statusWaiting}
-              </div>
-            </div>}
-            <button onClick={onBack||onLogout} style={{padding:"8px 14px",borderRadius:10,background:"#111827",color:"#e5e7eb",border:"1px solid #374151",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,letterSpacing:1,display:"flex",alignItems:"center",gap:6}}>🏠 Home</button>
-          </div>
-        </div>
-        <div style={{display:"flex",gap:4,alignItems:"center",justifyContent:"space-between"}}>
-          {[["game",t.tabGame],["rules",t.tabRules]].map(([t,l])=>(
-            <button key={t} onClick={()=>setTab(t)} style={{
-              padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
-              background:tab===t?z.color:"#0d0f1a",color:tab===t?"#000":"#6b7280"}}>
-              {l}
-            </button>
-          ))}
-          <div style={{display:"flex",gap:4,marginLeft:"auto"}}>
-            <button onClick={()=>setShowRoster(true)} style={{
-              padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",cursor:"pointer",
-              background:"#1f2937",color:"#9ca3af"}}>
-              👥 {t.participants} ({players.length})
-            </button>
-            {onGoAdmin&&<button onClick={onGoAdmin} title={fromPlayerId?t.returnAsPlayer:t.switchToAdmin}
-              style={{padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:700,border:"1px solid #84cc1640",cursor:"pointer",
-                background:"#111827",color:"#84cc16"}}>
-              {fromPlayerId?t.goPlayer:t.goAdmin}
-            </button>}
-          </div>
-        </div>
-      </div>
-
-      {/* Overlay liste des participants */}
-      {showRoster&&(
-        <div style={{position:"fixed",inset:0,zIndex:50,background:"rgba(0,0,0,.88)",
-          display:"flex",flexDirection:"column"}} onClick={()=>setShowRoster(false)}>
-          <div style={{background:"#06070f",paddingTop:"calc(env(safe-area-inset-top) + 16px)",
-            paddingBottom:12,paddingLeft:16,paddingRight:16,
-            borderBottom:"1px solid #1f2937",display:"flex",alignItems:"center",justifyContent:"space-between"}}
-            onClick={e=>e.stopPropagation()}>
-            <div>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:18,color:"#fff"}}>
-                👥 Participants
-              </div>
-              <div style={{fontSize:11,color:"#4b5563"}}>
-                {sessionName}{sessionCode&&<span style={{color:"#84cc16",fontWeight:700,letterSpacing:2,marginLeft:8}}>{sessionCode}</span>} · {players.length} joueurs
+          {/* Zone identity */}
+          <div style={{display:"flex",alignItems:"center",gap:"var(--pi-s3)",minWidth:0,flex:1}}>
+            <div style={{width:48,height:48,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,
+              background:z.bg,border:`1px solid ${z.color}55`,
+              clipPath:"polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px)"}}>{z.icon}</div>
+            <div style={{minWidth:0}}>
+              <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:20,lineHeight:1,color:"#fff",
+                letterSpacing:".01em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{zl.name.toUpperCase()}</div>
+              <div style={{display:"flex",alignItems:"center",gap:"var(--pi-s2)",marginTop:3}}>
+                {activeGame ? <LiveIndicator/> : <span style={{fontSize:"var(--pi-fs-meta)",fontWeight:700,letterSpacing:".12em",textTransform:"uppercase",color:"var(--pi-text-3)"}}>Prêt</span>}
+                {sessionCode&&<span style={{fontSize:"var(--pi-fs-meta)",color:"var(--pi-text-4)"}}>·</span>}
+                {sessionCode&&<span style={{fontFamily:"var(--pi-font-display)",fontWeight:700,fontSize:12,color:"var(--pi-lime)",letterSpacing:".12em"}}>{sessionCode}</span>}
               </div>
             </div>
-            <button onClick={()=>setShowRoster(false)}
-              style={{padding:8,borderRadius:10,background:"#111827",color:"#6b7280",border:"none",cursor:"pointer",fontSize:16}}>×</button>
           </div>
-          <div style={{overflowY:"auto",flex:1,padding:16}} onClick={e=>e.stopPropagation()}>
-            <div style={{display:"flex",flexDirection:"column",gap:4}}>
-              {[...players].sort((a,b)=>a.number-b.number).map(p=>(
-                <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,
-                  padding:"8px 12px",borderRadius:10,background:"#0d0f1a",border:"1px solid #1f2937"}}>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
-                    color:"#84cc16",width:32,flexShrink:0}}>#{p.number}</div>
-                  <span style={{flex:1,color:"#fff",fontWeight:600,fontSize:14}}>{p.name}</span>
-                  <span style={{fontSize:11,color:"#4b5563"}}>{p.gender==="F"?"F":"H"}</span>
-                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"#6b7280"}}>{p.globalPoints} pts</span>
-                </div>
-              ))}
-            </div>
+
+          {/* Arena clock — the scoreboard telemetry */}
+          {arenaState&&<div style={{textAlign:"center",flexShrink:0,paddingLeft:"var(--pi-s3)",paddingRight:"var(--pi-s3)",
+            borderLeft:"1px solid var(--pi-line)",borderRight:"1px solid var(--pi-line)"}}>
+            <Timer value={arenaTimer} tone={arenaTone} size={26} className={arenaStatus==="active"?"pi-pulse":undefined}/>
+            <div style={{fontSize:"var(--pi-fs-meta)",fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:"var(--pi-text-3)",marginTop:2}}>{arenaLabel}</div>
+          </div>}
+
+          {/* Queue count — hidden on mobile (the queue section below already owns it) */}
+          <div className="pi-hide-mobile" style={{textAlign:"center",flexShrink:0}}>
+            <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:26,lineHeight:1,color:qPlayers.length>=minToShow?"var(--pi-lime)":"var(--pi-text-3)"}}>{qPlayers.length}</div>
+            <div style={{fontSize:"var(--pi-fs-meta)",fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:"var(--pi-text-3)",marginTop:2}}>en file</div>
+          </div>
+
+          <IconButton label="Accueil" onClick={onBack||onLogout}>🏠</IconButton>
+        </div>
+
+        {/* Tab + quick actions row */}
+        <div style={{maxWidth:"var(--pi-w-wide)",margin:"10px auto 0",display:"flex",alignItems:"center",gap:"var(--pi-s2)"}}>
+          <div style={{flex:"0 0 auto",width:220,maxWidth:"55%"}}>
+            <Tabs items={[{id:"game",label:t.tabGame},{id:"rules",label:t.tabRules}]} value={tab} onChange={setTab}/>
+          </div>
+          <div style={{marginLeft:"auto",display:"flex",gap:"var(--pi-s2)"}}>
+            <Button variant="ghost" size="sm" onClick={()=>setShowRoster(true)}>👥 {players.length}</Button>
+            {onGoAdmin&&<Button variant="outline" size="sm" onClick={onGoAdmin}>{fromPlayerId?t.goPlayer:t.goAdmin}</Button>}
           </div>
         </div>
-      )}
+      </header>
 
-      <div style={{padding:16}}>
-        {tab==="rules"&&<RulesCard zone={zone}/>}
+      {/* ================= CONTENT ================= */}
+      <main style={{flex:1,width:"100%",maxWidth:"var(--pi-w-wide)",margin:"0 auto",padding:"var(--pi-s4) var(--pi-gutter)"}}>
+        {tab==="rules"&&<div style={{maxWidth:"var(--pi-w-content)"}}><RulesCard zone={zone}/></div>}
 
         {tab==="game"&&(
-          <div className="anim-up">
-            {/* ACTIVE GAME */}
+          <div className="pi-anim-up pi-station-grid">
+            {/* ===== PRIMARY COLUMN — the action ===== */}
+            <div className={activeGame?undefined:"pi-station-primary--setup"}>
             {activeGame?(
+              /* ---------- LIVE MATCH ---------- */
               <div>
-                {onCancelGame&&<button onClick={()=>{if(!pending&&window.confirm(t.returnToQueueConfirm))onCancelGame(zone);}}
-                  style={{...S.btn(),width:"100%",padding:"8px",fontSize:12,marginBottom:10,
-                    border:"1px solid #374151",color:"#9ca3af",display:"flex",alignItems:"center",justifyContent:"center",gap:6,
-                    opacity:pending?0.4:1,pointerEvents:pending?"none":"auto"}}>
-                  {t.returnToQueue}
-                </button>}
+                {/* No title/LIVE badge here: the header already shows zone-level LIVE
+                    and each game sub-view renders its own titled live header. */}
+                {onCancelGame&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:"var(--pi-s2)"}}>
+                  <Button variant="ghost" size="sm" disabled={!!pending}
+                    onClick={()=>{if(!pending&&window.confirm(t.returnToQueueConfirm))onCancelGame(zone);}}>
+                    {t.returnToQueue}
+                  </Button>
+                </div>}
                 {z.gameStyle==="sprint"?(
-                <SprintGameView game={activeGame} players={players} zone={zone} locked={!!pending}
-                  onWinner={handleWinner}
-                  onRemove={(id)=>onRemoveFromGame(zone,id)}
-                  onReplace={()=>onReplaceInGame(zone)}/>
-              ):z.gameStyle==="team"?(
-                <TeamGameView game={activeGame} players={players} zone={zone} locked={!!pending}
-                  onResult={handleTeamResult}
-                  onRemove={(id)=>onRemoveFromGame(zone,id)}
-                  onReplace={()=>onReplaceInGame(zone)}/>
-              ):(
-                <IndividualGameView game={activeGame} players={players} zone={zone} locked={!!pending}
-                  onWinner={handleWinner}
-                  onRemove={(id)=>onRemoveFromGame(zone,id)}
-                  onReplace={()=>onReplaceInGame(zone)}/>
-              )}
-              </div>
-            ):(
-              <div>
-                {/* Sprint size selector */}
-                {zone==="speed"&&(
-                  <div style={{borderRadius:14,padding:12,marginBottom:12,background:z.bg,border:"1px solid "+z.border}}>
-                    <div style={{...S.label(),color:z.color,marginBottom:10}}>{t.raceGroupSize}</div>
-                    {qPlayers.length<4
-                      ?<div style={{fontSize:12,color:"#4b5563",textAlign:"center"}}>Minimum 4 joueurs requis</div>
-                      :<div>
-                        <div style={{display:"flex",gap:6,marginBottom:10}}>
-                          {[4,10,15,"tous"].map(s=>{
-                            const effectiveSize=s==="tous"?qPlayers.length:s;
-                            const disabled=s!=="tous"&&qPlayers.length<s;
-                            const isSelected=sprintSize===s;
-                            return(
-                              <button key={s} onClick={()=>!disabled&&setSprintSize(s)}
-                                style={{flex:1,padding:"8px 4px",borderRadius:10,border:"none",
-                                  cursor:disabled?"not-allowed":"pointer",
-                                  fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,
-                                  background:isSelected?z.color:disabled?"#111827":"#1f2937",
-                                  color:isSelected?"#000":disabled?"#374151":"#9ca3af",
-                                  opacity:disabled?0.4:1}}>
-                                {s==="tous"?"Tous\n("+qPlayers.length+")":s}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <div style={{fontSize:11,color:"#4b5563"}}>
-                          {(()=>{
-                            const eff=sprintSize==="tous"?qPlayers.length:sprintSize;
-                            return"Course de "+eff+" · Groupe A (avant): "+Math.floor(eff/2)+" · Groupe B (arrière): "+(eff-Math.floor(eff/2));
-                          })()}
-                        </div>
-                      </div>
-                    }
-                  </div>
+                  <SprintGameView game={activeGame} players={players} zone={zone} locked={!!pending}
+                    onWinner={handleWinner} onRemove={(id)=>onRemoveFromGame(zone,id)} onReplace={()=>onReplaceInGame(zone)}/>
+                ):z.gameStyle==="team"?(
+                  <TeamGameView game={activeGame} players={players} zone={zone} locked={!!pending}
+                    onResult={handleTeamResult} onRemove={(id)=>onRemoveFromGame(zone,id)} onReplace={()=>onReplaceInGame(zone)}/>
+                ):(
+                  <IndividualGameView game={activeGame} players={players} zone={zone} locked={!!pending}
+                    onWinner={handleWinner} onRemove={(id)=>onRemoveFromGame(zone,id)} onReplace={()=>onReplaceInGame(zone)}/>
                 )}
-
-                {/* Generate */}
-                <div style={{...S.card(),marginBottom:12,textAlign:"center"}}>
-                  {canGen?(
-                    <div>
-                      <div style={{fontSize:13,color:"#6b7280",marginBottom:12}}>
-                        {zone==="speed"?(()=>{const eff=sprintSize==="tous"?qPlayers.length:sprintSize; return qPlayers.length+" "+t.playersInQueue+" — "+t.raceOf+" "+eff;})()
-                          :qPlayers.length+" "+t.playersInQueue}
-                      </div>
-                      {!hasIdeal&&zone!=="speed"&&!confirmShortGame&&(
-                        <div style={{background:"#f9731615",border:"1px solid #f9731650",borderRadius:12,
-                          padding:"12px 14px",marginBottom:12}}>
-                          <div style={{fontSize:13,color:"#f97316",fontWeight:700,marginBottom:10}}>
-                            ⚠️ {t.missingPlayers} {idealCount-qPlayers.length} {t.playAnyway}
-                          </div>
-                          <div style={{display:"flex",gap:8}}>
-                            <button onClick={()=>onGenerate(null,true)}
-                              style={{flex:1,padding:"10px",borderRadius:10,border:"none",cursor:"pointer",
-                                background:z.color,color:"#000",fontWeight:700,fontSize:14}}>
-                              {t.yesPlay}
-                            </button>
-                            <button onClick={()=>setConfirmShortGame(true)}
-                              style={{flex:1,padding:"10px",borderRadius:10,cursor:"pointer",
-                                background:"#1f2937",color:"#9ca3af",border:"1px solid #374151",fontSize:14}}>
-                              {t.noPlay}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                      {(hasIdeal||zone==="speed")&&(
-                        // Secondaire: en flux normal l'auto-génération prend le relais,
-                        // ce bouton ne sert qu'aux cas limites (1er match, edge cases).
-                        <button onClick={()=>onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):null)}
-                          style={{padding:"9px 22px",borderRadius:10,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,background:"transparent",border:"1.5px solid "+z.color,color:z.color}}>
-                          {zone==="speed"?t.launchRace+" ("+(sprintSize==="tous"?qPlayers.length:sprintSize)+")":t.generateTeams}
-                        </button>
-                      )}
-                    </div>
+              </div>
+            ):teamModeActive?(
+              /* ---------- SETUP / GENERATE — mode équipes manuel ---------- */
+              <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s3)"}}>
+                <Panel variant="raised" style={{padding:"var(--pi-s5)"}}>
+                  <Eyebrow style={{marginBottom:"var(--pi-s3)"}}>{t.teamsLabel} · {z.teamSize} {t.teamPerTeamSuffix}</Eyebrow>
+                  {teamsList.length===0?(
+                    <div style={{fontSize:"var(--pi-fs-body)",color:"var(--pi-text-3)"}}>{t.noTeamsRegistered}</div>
                   ):(
-                    <div>
-                      <div style={{color:"#4b5563",fontSize:13,marginBottom:8}}>{t.emptyQueue}</div>
-                      <div style={{color:z.color,fontSize:12,marginBottom:8}}>
-                        {qPlayers.length}/{minToShow} {t.minPlayers}
-                      </div>
-                      <div style={{height:6,borderRadius:4,maxWidth:160,margin:"0 auto",background:"#1f2937"}}>
-                        <div style={{height:"100%",borderRadius:4,background:z.color,
-                          width:Math.min(100,(qPlayers.length/z.minP)*100)+"%",transition:"width .5s"}}/>
-                      </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s2)",marginBottom:"var(--pi-s4)"}}>
+                      {teamsList.map(tm=>{
+                        const count=(tm.memberIds||[]).length;
+                        const ready=count>=z.teamSize;
+                        return(
+                          <div key={tm.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+                            padding:"10px 14px",borderRadius:"var(--pi-r-md)",
+                            border:`1px solid ${ready?"var(--pi-lime-line)":"var(--pi-line)"}`,
+                            background:ready?"var(--pi-lime-wash)":"var(--pi-surface-2)"}}>
+                            <span style={{color:"#fff",fontWeight:600,fontSize:"var(--pi-fs-body)"}}>{tm.name}</span>
+                            <span style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
+                              color:ready?"var(--pi-lime)":"var(--pi-text-3)"}}>{count}/{z.teamSize}{ready?" ✓":""}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
-                </div>
-
-                {/* Sprint lineup preview */}
-                {zone==="speed"&&sprintLine.length>0&&(
-                  <div style={{borderRadius:12,padding:10,marginBottom:10,background:z.bg,border:"1px solid "+z.border}}>
-                    <div style={{...S.label(),color:z.color,marginBottom:8}}>{t.sprintOrder}</div>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                      {sprintLine.map((p,i)=>(
-                        <div key={p.id} style={{...S.row(),padding:"3px 7px",borderRadius:7,background:"#1f2937",gap:4}}>
-                          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:11,color:z.color}}>{i+1}</span>
-                          <TierBadge score={(p.zoneScores||{}).speed||50}/>
-                          <span style={{fontSize:11,color:"#fff"}}>{p.name.split(" ")[0]}</span>
-                        </div>
-                      ))}
+                  <Button variant="primary" size="xl" cut block disabled={!canGenTeamMatch} onClick={onGenerateTeamMatch}>
+                    {t.generateNextMatch}
+                  </Button>
+                  {!canGenTeamMatch&&teamsList.length>0&&(
+                    <div style={{fontSize:"var(--pi-fs-label)",color:"var(--pi-text-3)",marginTop:"var(--pi-s2)",textAlign:"center"}}>
+                      {t.needTwoReadyTeams} ({z.teamSize}+ {t.playersEachSuffix})
                     </div>
-                  </div>
+                  )}
+                </Panel>
+              </div>
+            ):(
+              /* ---------- SETUP / GENERATE ---------- */
+              <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s3)"}}>
+
+                {/* Sprint size selector */}
+                {zone==="speed"&&qPlayers.length>=4&&(
+                  <Panel variant="raised">
+                    <Eyebrow style={{marginBottom:"var(--pi-s3)"}}>{t.raceGroupSize}</Eyebrow>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"var(--pi-s2)",marginBottom:"var(--pi-s3)"}}>
+                      {[4,10,15,"tous"].map(s=>{
+                        const dis=s!=="tous"&&qPlayers.length<s;
+                        const sel=sprintSize===s;
+                        return(
+                          <button key={s} onClick={()=>!dis&&setSprintSize(s)} disabled={dis}
+                            className={sel?"pi-tab is-active":"pi-tab"}
+                            style={{minHeight:44,fontFamily:"var(--pi-font-display)",fontStyle:"italic",fontSize:16,opacity:dis?0.35:1}}>
+                            {s==="tous"?`TOUS ${qPlayers.length}`:s}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{fontSize:"var(--pi-fs-label)",color:"var(--pi-text-3)"}}>
+                      {(()=>{const eff=sprintSize==="tous"?qPlayers.length:sprintSize;return`Course de ${eff} · Avant ${Math.floor(eff/2)} · Arrière ${eff-Math.floor(eff/2)}`;})()}
+                    </div>
+                  </Panel>
                 )}
 
-                {/* Queue */}
-                <div>
-                  <div style={{...S.row(),justifyContent:"space-between",marginBottom:8}}>
-                    <div style={{...S.label()}}>{t.queue} ({qPlayers.length})</div>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      {onFillQueue&&<button onClick={onFillQueue}
-                        style={{padding:"4px 10px",borderRadius:8,border:"1px solid #84cc1640",
-                          background:"#111827",color:"#84cc16",cursor:"pointer",fontSize:11,fontWeight:700}}>
-                        🔀 Remplir tout
-                      </button>}
-                      <div style={{fontSize:11,color:"#374151"}}>Min.{z.minP} · Max.{z.maxP}</div>
+                {/* Primary generate action */}
+                {canGen?(
+                  <Panel variant="hero" style={{textAlign:"center",padding:"var(--pi-s5)"}}>
+                    {/* Lead with the match about to be generated, not a restatement
+                        of the queue count already shown in the header. */}
+                    <Eyebrow>Prochain match</Eyebrow>
+                    <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:"var(--pi-fs-score)",lineHeight:1,color:"#fff",margin:"var(--pi-s1) 0 var(--pi-s1)"}}>
+                      {zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):idealCount}
+                      <span style={{fontSize:"0.36em",color:"var(--pi-text-3)",marginLeft:8}}>{zone==="speed"?"COUREURS":"JOUEURS"}</span>
                     </div>
-                  </div>
-                  <div style={{display:"flex",gap:8,marginBottom:10}}>
-                    <input type="number" min="1" max="999" placeholder="# Joueur"
-                      value={numInput} onChange={e=>setNumInput(e.target.value)}
-                      onKeyDown={e=>{if(e.key==="Enter")handleAdd();}}
-                      style={{flex:1,padding:"8px 12px",borderRadius:10,border:"1px solid #1f2937",background:"#0d0f1a",color:"#fff",fontSize:13,outline:"none"}}/>
-                    <button onClick={handleAdd} style={{...S.btn(z.color),padding:"8px 14px"}}>{t.addPlayer}</button>
-                  </div>
-                  <QueueList zone={zone} qPlayers={qPlayers}
-                    onMoveTop={handleMoveTop} onMoveBottom={handleMoveBottom}
-                    onRemove={onRemoveQ} onReorder={onReorderQ} highlightId={highlightId}/>
-                </div>
+                    <div style={{fontSize:"var(--pi-fs-label)",color:"var(--pi-text-3)",marginBottom:"var(--pi-s4)"}}>
+                      sur {qPlayers.length} en file
+                    </div>
+
+                    {!hasIdeal&&zone!=="speed"&&!confirmShortGame?(
+                      <div>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,color:"var(--pi-warn)",fontSize:"var(--pi-fs-body)",fontWeight:700,marginBottom:"var(--pi-s3)"}}>
+                          ⚠ {t.missingPlayers} {idealCount-qPlayers.length} {t.playAnyway}
+                        </div>
+                        <div style={{display:"flex",gap:"var(--pi-s2)"}}>
+                          <Button variant="primary" size="lg" block onClick={()=>onGenerate(null,true)}>{t.yesPlay}</Button>
+                          <Button variant="secondary" size="lg" onClick={()=>setConfirmShortGame(true)}>{t.noPlay}</Button>
+                        </div>
+                      </div>
+                    ):(hasIdeal||zone==="speed")&&(
+                      <Button variant="primary" size="xl" cut block
+                        onClick={()=>onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):null)}>
+                        {zone==="speed"?`${t.launchRace} (${sprintSize==="tous"?qPlayers.length:sprintSize})`:t.generateTeams}
+                      </Button>
+                    )}
+                  </Panel>
+                ):(
+                  <Panel style={{textAlign:"center",padding:"var(--pi-s6) var(--pi-s4)"}}>
+                    <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:"var(--pi-fs-score)",lineHeight:1,color:"var(--pi-text-3)"}}>
+                      {qPlayers.length}<span style={{fontSize:"0.42em",margin:"0 4px"}}>/</span>{minToShow}
+                    </div>
+                    <div style={{fontSize:"var(--pi-fs-body)",color:"var(--pi-text-3)",margin:"var(--pi-s2) 0 var(--pi-s3)"}}>{t.emptyQueue}</div>
+                    <div style={{height:6,borderRadius:"var(--pi-r-pill)",maxWidth:200,margin:"0 auto",background:"var(--pi-surface-2)",overflow:"hidden"}}>
+                      <div style={{height:"100%",background:"var(--pi-lime)",width:Math.min(100,(qPlayers.length/minToShow)*100)+"%",transition:"width .4s var(--pi-ease-out)"}}/>
+                    </div>
+                  </Panel>
+                )}
               </div>
             )}
+            </div>
+
+            {/* ===== RAIL — queue stays visible during live play ===== */}
+            <aside className="pi-station-rail" style={{display:"flex",flexDirection:"column",gap:"var(--pi-s3)"}}>
+              {/* Sprint lineup preview — desktop context, not worth the mobile fold */}
+              {zone==="speed"&&!activeGame&&sprintLine.length>0&&(
+                <Panel variant="raised" className="pi-hide-mobile">
+                  <Eyebrow style={{marginBottom:"var(--pi-s2)"}}>{t.sprintOrder}</Eyebrow>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:"var(--pi-s1)"}}>
+                    {sprintLine.map((p,i)=>(
+                      <div key={p.id} style={{display:"flex",alignItems:"center",gap:5,padding:"3px 7px",borderRadius:"var(--pi-r-sm)",background:"var(--pi-surface-3)"}}>
+                        <span style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:12,color:"var(--pi-lime)"}}>{i+1}</span>
+                        <TierBadge score={(p.zoneScores||{}).speed||50}/>
+                        <span style={{fontSize:12,color:"#fff"}}>{p.name.split(" ")[0]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Panel>
+              )}
+
+              {/* Queue management */}
+              <div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"var(--pi-s2)",gap:"var(--pi-s2)"}}>
+                  <Eyebrow>{t.queue} · {qPlayers.length}</Eyebrow>
+                  {onFillQueue&&<Button variant="outline" size="sm" onClick={onFillQueue}>Remplir</Button>}
+                </div>
+                <div style={{display:"flex",gap:"var(--pi-s2)",marginBottom:"var(--pi-s3)"}}>
+                  <input type="number" min="1" max="999" placeholder="# Joueur" className="pi-input"
+                    value={numInput} onChange={e=>setNumInput(e.target.value)}
+                    onKeyDown={e=>{if(e.key==="Enter")handleAdd();}} style={{flex:1}}/>
+                  <Button variant="primary" onClick={handleAdd}>{t.addPlayer}</Button>
+                </div>
+                <QueueList zone={zone} qPlayers={qPlayers}
+                  onMoveTop={handleMoveTop} onMoveBottom={handleMoveBottom}
+                  onRemove={onRemoveQ} onReorder={onReorderQ} highlightId={highlightId}/>
+                <div style={{fontSize:"var(--pi-fs-meta)",color:"var(--pi-text-4)",marginTop:"var(--pi-s2)",textAlign:"right"}}>Min {z.minP} · Max {z.maxP}</div>
+              </div>
+            </aside>
           </div>
         )}
-      </div>
+      </main>
     </div>
-    {/* Masqué pendant la fenêtre d'annulation: le sélecteur fixe passait par-dessus le bandeau */}
+
+    {/* ================= WINNER FLASH ================= */}
+    {flash&&(
+      <div style={{position:"fixed",inset:0,zIndex:"var(--pi-z-overlay)",display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",padding:"var(--pi-s4)"}}>
+        <div className="pi-anim-pop" style={{padding:"28px 44px",textAlign:"center",background:z.bg,border:`2px solid ${z.color}`,
+          clipPath:"polygon(18px 0,100% 0,100% calc(100% - 18px),calc(100% - 18px) 100%,0 100%,0 18px)",
+          filter:`drop-shadow(0 0 40px ${z.color}66)`,
+          backgroundImage:`repeating-linear-gradient(0deg,transparent 0 3px,${z.color}0f 3px 4px)`}}>
+          <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:42,letterSpacing:".01em",color:"#fff"}}>{flash}</div>
+          <div style={{fontSize:18,marginTop:4,color:z.color}}>🎉</div>
+        </div>
+      </div>
+    )}
+
+    {/* ================= PENDING / UNDO CHYRON ================= */}
+    {pending&&(
+      <div style={{position:"fixed",left:0,right:0,bottom:0,zIndex:"var(--pi-z-toast)",
+        padding:"12px var(--pi-gutter) calc(env(safe-area-inset-bottom) + 12px)",display:"flex",justifyContent:"center",pointerEvents:"none"}}>
+        <div style={{pointerEvents:"auto",display:"flex",alignItems:"center",gap:14,width:"100%",maxWidth:560,
+          background:z.bg,border:`1px solid ${z.color}`,padding:"12px 14px 12px 16px",
+          clipPath:"polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)",
+          filter:`drop-shadow(0 12px 28px rgba(0,0,0,.6)) drop-shadow(0 0 14px ${z.color}40)`}}>
+          <div style={{width:46,height:46,flexShrink:0,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",
+            background:z.color+"22",border:`2px solid ${z.color}`,
+            fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:21,color:z.color}}>{undoLeft}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:18,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pending.label}</div>
+            <div style={{fontSize:"var(--pi-fs-label)",color:z.color}}>{t.resultIn} {undoLeft}s…</div>
+          </div>
+          <button onClick={cancelPending} style={{flexShrink:0,minHeight:44,padding:"10px 20px",cursor:"pointer",
+            border:`2px solid ${z.color}`,background:"transparent",color:"#fff",borderRadius:"var(--pi-r-md)",
+            fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:16,letterSpacing:".04em"}}>
+            ↺ {t.undoBtn}
+          </button>
+        </div>
+      </div>
+    )}
+
+    {/* ================= PARTICIPANTS DRAWER ================= */}
+    <Modal open={showRoster} onClose={()=>setShowRoster(false)} labelledBy="roster-title" className="pi-modal--roster">
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:"var(--pi-s4)"}}>
+        <div>
+          <h2 id="roster-title" style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:"var(--pi-fs-section)",color:"#fff"}}>PARTICIPANTS</h2>
+          <div style={{fontSize:"var(--pi-fs-label)",color:"var(--pi-text-3)",marginTop:2}}>
+            {sessionName}{sessionCode&&<span style={{color:"var(--pi-lime)",fontWeight:700,letterSpacing:".1em",marginLeft:8}}>{sessionCode}</span>} · {players.length} joueurs
+          </div>
+        </div>
+        <IconButton label="Fermer" onClick={()=>setShowRoster(false)}>×</IconButton>
+      </div>
+      <div style={{maxHeight:"60vh",overflowY:"auto",display:"flex",flexDirection:"column",gap:"var(--pi-s1)"}}>
+        {[...players].sort((a,b)=>a.number-b.number).map(p=>(
+          <div key={p.id} style={{display:"flex",alignItems:"center",gap:"var(--pi-s3)",padding:"8px 12px",borderRadius:"var(--pi-r-sm)",background:"var(--pi-surface-2)"}}>
+            <span style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:16,color:"var(--pi-lime)",width:34,flexShrink:0}}>#{p.number}</span>
+            <span style={{flex:1,color:"#fff",fontWeight:600,fontSize:"var(--pi-fs-body)"}}>{p.name}</span>
+            <span style={{fontSize:"var(--pi-fs-label)",color:"var(--pi-text-4)"}}>{p.gender==="F"?"F":"H"}</span>
+            <span style={{fontFamily:"var(--pi-font-display)",fontWeight:700,fontStyle:"italic",fontSize:14,color:"var(--pi-text-2)"}}>{p.globalPoints} pts</span>
+          </div>
+        ))}
+      </div>
+    </Modal>
+
     {!pending&&<LangFooter/>}
   </>);
 }
