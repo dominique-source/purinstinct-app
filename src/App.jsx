@@ -6,7 +6,7 @@ import { S } from "./components/shared/styles.js";
 import { INITIAL_ROSTERS } from "./config/rosters.js";
 import { T } from "./config/translations.js";
 import { LangContext } from "./hooks/useLang.js";
-import { MODES, classifyModeRoute } from "./config/modes.js";
+import { MODES, classifyModeRoute, resolveMode } from "./config/modes.js";
 import { ModeContext } from "./hooks/useMode.js";
 import { shuffle, getStatus, createPlayersFromRoster, makeEmptyGames, makeEmptyQueues, computeTeamResult, computeIndividualResult, refillQueues, buildInitialQueues } from "./lib/game-logic.js";
 import { assertAllowedCapture } from "./lib/playerCapture.js";
@@ -583,6 +583,54 @@ export default function PurInstinctApp(){
   // Always returns to test landing when in test mode
   const testHome=()=>setView({type:"testLogin"});
 
+  // Résout un code (4 chiffres) vers son mode et route en conséquence — logique
+  // partagée entre le pavé numérique de ModeSelectView et le lien direct ?code=XXXX
+  // (ex. QR code pointant vers une zone d'inscription précise).
+  const handleSelectMode=(modeKey)=>{
+    syncActivationMode(modeKey);
+    const routeKind=classifyModeRoute(modeKey);
+    // "live" (games) = comportement Live actuel, référence — ne jamais régresser.
+    if(routeKind==="live"){
+      fbSet("liveMode",true);setIsTestMode(false);setWinnersPublished(false);
+      fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());
+      setView({type:"liveLogin"});
+      return;
+    }
+    // "admin" = raccourci caché, tout débloqué — reprend l'ancien TEST MODE.
+    if(routeKind==="admin"){
+      fbSet("liveMode",false);
+      setIsTestMode(true);
+      const testQ={};
+      ZK.forEach(zk=>{testQ[zk]=TEST_PLAYERS.map(p=>p.id);});
+      setQueues(testQ);
+      const testAug={};
+      AUG_GAMES.forEach(g=>{testAug[g.id]={queue:TEST_PLAYERS.map(p=>p.name),activeMatch:null};});
+      setAugState(testAug);
+      setView({type:"testLogin"});
+      return;
+    }
+    // "kiosk": festival/parc (kioskDefault, comme ?kiosk=1 aujourd'hui) et
+    // corporate/ecole (prereg-checkin/roster-team, même KioskView étendue par
+    // captureFields/teamMode) — piloté par la config, pas le nom du mode.
+    if(routeKind==="kiosk"){
+      setView({type:"kiosk",zone:null});
+      return;
+    }
+    // "stub": mode valide sans vue dédiée pour l'instant.
+    setView({type:"modeStub",mode:modeKey});
+  };
+
+  // Lien direct ?code=XXXX (ex. QR code affiché sur place) : saute le pavé
+  // numérique et route directement, une seule fois au chargement.
+  useEffect(()=>{
+    if(!fbReady||view.type!=="login") return;
+    const code=new URLSearchParams(window.location.search).get("code");
+    if(!code) return;
+    const modeKey=resolveMode(code);
+    if(modeKey) setTimeout(()=>handleSelectMode(modeKey),0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[fbReady]);
+
   // --- Routing ---
   let content=null;
   if(!fbReady){
@@ -592,40 +640,7 @@ export default function PurInstinctApp(){
       </div>
     );
   } else if(view.type==="login") content=(
-    <ModeSelectView
-      onSelectMode={(modeKey)=>{
-        syncActivationMode(modeKey);
-        const routeKind=classifyModeRoute(modeKey);
-        // "live" (games) = comportement Live actuel, référence — ne jamais régresser.
-        if(routeKind==="live"){
-          fbSet("liveMode",true);setIsTestMode(false);setWinnersPublished(false);
-          fbSet("winnersPublished",false);syncQueues(makeEmptyQueues());
-          setView({type:"liveLogin"});
-          return;
-        }
-        // "admin" = raccourci caché, tout débloqué — reprend l'ancien TEST MODE.
-        if(routeKind==="admin"){
-          fbSet("liveMode",false);
-          setIsTestMode(true);
-          const testQ={};
-          ZK.forEach(zk=>{testQ[zk]=TEST_PLAYERS.map(p=>p.id);});
-          setQueues(testQ);
-          const testAug={};
-          AUG_GAMES.forEach(g=>{testAug[g.id]={queue:TEST_PLAYERS.map(p=>p.name),activeMatch:null};});
-          setAugState(testAug);
-          setView({type:"testLogin"});
-          return;
-        }
-        // "kiosk": festival/parc (kioskDefault, comme ?kiosk=1 aujourd'hui) et
-        // corporate/ecole (prereg-checkin/roster-team, même KioskView étendue par
-        // captureFields/teamMode) — piloté par la config, pas le nom du mode.
-        if(routeKind==="kiosk"){
-          setView({type:"kiosk",zone:null});
-          return;
-        }
-        // "stub": mode valide sans vue dédiée pour l'instant.
-        setView({type:"modeStub",mode:modeKey});
-      }}/>
+    <ModeSelectView onSelectMode={handleSelectMode}/>
   );
 
   else if(view.type==="modeStub") content=(
