@@ -31,6 +31,10 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
   // non-null, onResult n'a PAS été appelé — rien n'est écrit dans Firebase.
   const [pending,setPending]=useState(null);
   const [undoLeft,setUndoLeft]=useState(0);
+  const UNDO_WINDOW_MS=10000;
+  // Progression 0 -> 1 sur la fenêtre d'annulation, pour rendre le bouton
+  // "Annuler" de plus en plus visible (opacité) à mesure que le temps presse.
+  const [undoProgress,setUndoProgress]=useState(0);
   // onResult change d'identité à chaque render (arrow inline dans App.jsx). Le
   // garder dans une ref permet au timer de commit de toujours appeler la
   // dernière version SANS remettre l'effet (et donc le compte à rebours) à zéro.
@@ -64,11 +68,14 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
   // commit passent par le callback de l'intervalle.
   useEffect(()=>{
     if(!pending) return;
-    const deadline=Date.now()+10000;
+    const start=Date.now();
+    const deadline=start+UNDO_WINDOW_MS;
     const iv=setInterval(()=>{
-      const left=Math.max(0,Math.ceil((deadline-Date.now())/1000));
+      const remaining=deadline-Date.now();
+      const left=Math.max(0,Math.ceil(remaining/1000));
       setUndoLeft(left);
-      if(left<=0){
+      setUndoProgress(Math.min(1,Math.max(0,(Date.now()-start)/UNDO_WINDOW_MS)));
+      if(remaining<=0){
         clearInterval(iv);
         autoGenArmedRef.current=true; // arme l'auto-génération pour ce commit
         onResultRef.current(...pending.args);
@@ -123,7 +130,8 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
   const startPending=(args,label)=>{
     if(navigator.vibrate) navigator.vibrate(40);
     handleFlashResult(label);
-    setUndoLeft(10);
+    setUndoLeft(Math.ceil(UNDO_WINDOW_MS/1000));
+    setUndoProgress(0);
     setPending({args,label});
   };
   const handleWinner=(id,secondId=null)=>{
@@ -417,7 +425,8 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
           </div>
           <button onClick={cancelPending} style={{flexShrink:0,minHeight:44,padding:"10px 20px",cursor:"pointer",
             border:`2px solid ${z.color}`,background:"transparent",color:"#fff",borderRadius:"var(--pi-r-md)",
-            fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:16,letterSpacing:".04em"}}>
+            fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:16,letterSpacing:".04em",
+            opacity:0.32+0.68*undoProgress,transition:"opacity 180ms linear"}}>
             ↺ {t.undoBtn}
           </button>
         </div>
