@@ -53,7 +53,7 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
   const zn=useZn();
   const t=useT();
   const {modeConfig}=useMode();
-  const [mode,setMode]=useState("idle"); // idle | zone | team | identify | confirm
+  const [mode,setMode]=useState("idle"); // idle | leaderboard | zone | team | identify | confirm
   const [zone,setZone]=useState(lockedZone||null);
   const [search,setSearch]=useState("");
   const [gender,setGender]=useState("M");
@@ -172,33 +172,71 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
       style={{minHeight:"100svh",background:"var(--pi-bg)",
         touchAction:"manipulation",overscrollBehavior:"none",userSelect:"none"}}>
 
-      {/* ================= IDLE — spectator broadcast board ================= */}
+      {/* ================= IDLE — écran divisé: s'inscrire / classement ================= */}
       {mode==="idle"&&(
-        <div onClick={wake} style={{minHeight:"100svh",display:"flex",flexDirection:"column",
-          alignItems:"center",justifyContent:"center",padding:"var(--pi-s8) var(--pi-s6)",cursor:"pointer"}}>
+        <div style={{minHeight:"100svh",display:"flex",flexDirection:"column"}}>
 
-          <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
-            fontSize:"clamp(40px,7vw,68px)",letterSpacing:"-0.02em",lineHeight:1,marginBottom:"var(--pi-s3)",
-            textShadow:"0 0 40px var(--pi-lime-glow)"}}>
-            <span style={{color:"var(--pi-lime)"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
+          {/* Moitié haute — inscription (comportement inchangé: wake() -> zone/team/identify) */}
+          <div onClick={wake} style={{flex:1,display:"flex",flexDirection:"column",
+            alignItems:"center",justifyContent:"center",padding:"var(--pi-s6)",cursor:"pointer",
+            borderBottom:"1px dashed var(--pi-line)"}}>
+
+            <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
+              fontSize:"clamp(32px,6vw,52px)",letterSpacing:"-0.02em",lineHeight:1,marginBottom:"var(--pi-s4)",
+              textShadow:"0 0 40px var(--pi-lime-glow)"}}>
+              <span style={{color:"var(--pi-lime)"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
+            </div>
+
+            <div className="pi-pulse" style={{display:"flex",alignItems:"center",gap:"var(--pi-s2)",
+              color:"var(--pi-lime)",fontSize:"var(--pi-fs-body)",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase"}}>
+              🖐️ Touchez ici pour vous inscrire
+            </div>
           </div>
 
-          <div style={{display:"flex",alignItems:"center",gap:"var(--pi-s2)",marginBottom:"var(--pi-s8)"}}>
-            <span className="pi-pulse" style={{width:8,height:8,borderRadius:"50%",background:"var(--pi-lime)",
-              boxShadow:"0 0 12px var(--pi-lime-glow)"}}/>
-            <Eyebrow style={{color:"var(--pi-lime)",letterSpacing:"0.24em"}}>Classement en direct</Eyebrow>
-          </div>
+          {/* Moitié basse — aperçu du classement, tap pour la vue complète */}
+          <div onClick={()=>{bump();setMode("leaderboard");}} style={{flex:1,display:"flex",flexDirection:"column",
+            alignItems:"center",justifyContent:"center",padding:"var(--pi-s5) var(--pi-s6)",cursor:"pointer",
+            background:"var(--pi-surface-1)"}}>
 
-          {/* Wider on big displays: the idle board doubles as a spectator screen */}
-          <div style={{width:"100%",maxWidth:"min(92vw, 720px)",display:"flex",flexDirection:"column",gap:"var(--pi-s2)"}}>
-            {sorted.length===0
-              ? <EmptyState icon="🏟️" title="EN ATTENTE">Les premiers scores apparaîtront ici dès le début de la session.</EmptyState>
-              : sorted.map((p,i)=><KioskRow key={p.id} p={p} i={i}/>)}
-          </div>
+            <div style={{display:"flex",alignItems:"center",gap:"var(--pi-s2)",marginBottom:"var(--pi-s4)"}}>
+              <span className="pi-pulse" style={{width:8,height:8,borderRadius:"50%",background:"var(--pi-lime)",
+                boxShadow:"0 0 12px var(--pi-lime-glow)"}}/>
+              <Eyebrow style={{color:"var(--pi-lime)",letterSpacing:"0.24em"}}>Classement en direct</Eyebrow>
+            </div>
 
-          <div className="pi-pulse" style={{marginTop:"var(--pi-s10)",display:"flex",alignItems:"center",gap:"var(--pi-s2)",
-            color:"var(--pi-lime)",fontSize:"var(--pi-fs-body)",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase"}}>
-            👆 Touchez l'écran pour vous inscrire
+            <div style={{width:"100%",maxWidth:"min(92vw, 640px)",display:"flex",flexDirection:"column",gap:"var(--pi-s2)"}}>
+              {sorted.length===0
+                ? <EmptyState icon="🏟️" title="EN ATTENTE">Les premiers scores apparaîtront ici dès le début de la session.</EmptyState>
+                : sorted.slice(0,5).map((p,i)=><KioskRow key={p.id} p={p} i={i}/>)}
+            </div>
+
+            {sorted.length>0&&(
+              <div style={{marginTop:"var(--pi-s4)",fontSize:"var(--pi-fs-label)",color:"var(--pi-text-3)",fontWeight:600}}>
+                Voir le classement complet ↓
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= LEADERBOARD — vue complète (depuis la moitié basse de idle) ================= */}
+      {mode==="leaderboard"&&(
+        <div className="pi-anim-up" style={{minHeight:"100svh",display:"flex",flexDirection:"column",
+          alignItems:"center",padding:"var(--pi-s6) var(--pi-s6) var(--pi-s8)"}}>
+          <div style={{width:"100%",maxWidth:"min(92vw, 720px)"}}>
+            <Button variant="ghost" size="sm" onClick={()=>{bump();reset();}} style={{marginBottom:"var(--pi-s5)"}}>← Retour</Button>
+
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",marginBottom:"var(--pi-s6)"}}>
+              <span className="pi-pulse" style={{width:8,height:8,borderRadius:"50%",background:"var(--pi-lime)",
+                boxShadow:"0 0 12px var(--pi-lime-glow)"}}/>
+              <Eyebrow style={{color:"var(--pi-lime)",letterSpacing:"0.24em"}}>Classement en direct</Eyebrow>
+            </div>
+
+            <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s2)"}}>
+              {sorted.length===0
+                ? <EmptyState icon="🏟️" title="EN ATTENTE">Les premiers scores apparaîtront ici dès le début de la session.</EmptyState>
+                : sorted.map((p,i)=><KioskRow key={p.id} p={p} i={i}/>)}
+            </div>
           </div>
         </div>
       )}
@@ -206,6 +244,7 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
       {/* ================= STEP 1 — zone ================= */}
       {mode==="zone"&&(
         <div className="pi-anim-up" style={{minHeight:"100svh",display:"flex",flexDirection:"column",padding:"var(--pi-s6)"}}>
+          <Button variant="ghost" size="sm" onClick={()=>{bump();reset();}}>← Retour</Button>
           <div style={{textAlign:"center",margin:"var(--pi-s6) 0 var(--pi-s8)"}}>
             <Eyebrow style={{marginBottom:"var(--pi-s2)"}}>Étape 1 sur {teamMode?3:2}</Eyebrow>
             <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
