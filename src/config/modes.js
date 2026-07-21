@@ -68,13 +68,16 @@ export function resolveMode(code){
 // même logique que le dispatcher réel, sans dupliquer les branches.
 //   "live"  → games, flux Live actuel (référence, zéro régression)
 //   "admin" → mode caché, tout débloqué (reprend l'ancien TEST MODE)
-//   "kiosk" → kioskDefault: bascule direct en KioskView (comme ?kiosk=1)
-//   "stub"  → mode valide sans vue dédiée pour l'instant (corporate/ecole)
+//   "kiosk" → bascule direct en KioskView: kioskDefault (festival/parc, comme
+//             ?kiosk=1) ou entryFlow prereg-checkin/roster-team (corporate/ecole,
+//             qui réutilisent la même vue étendue par captureFields/teamMode)
+//   "stub"  → mode valide sans vue dédiée pour l'instant
 //   null    → clé de mode inconnue
 export function classifyModeRoute(modeKey){
   if(modeKey==="games") return "live";
   if(modeKey==="admin") return "admin";
   if(MODES[modeKey]?.kioskDefault) return "kiosk";
+  if(modeKey==="corporate"||modeKey==="ecole") return "kiosk";
   if(MODES[modeKey]) return "stub";
   return null;
 }

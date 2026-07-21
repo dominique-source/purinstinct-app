@@ -10,6 +10,7 @@ import { MODES, classifyModeRoute } from "./config/modes.js";
 import { ModeContext } from "./hooks/useMode.js";
 import { shuffle, getStatus, createPlayersFromRoster, makeEmptyGames, makeEmptyQueues, computeTeamResult, computeIndividualResult, refillQueues, buildInitialQueues } from "./lib/game-logic.js";
 import { assertAllowedCapture } from "./lib/playerCapture.js";
+import { joinOrCreateTeam, pickTeamMatchup, formTeamMatch, pairKey } from "./lib/teamMatch.js";
 import { LangFooter } from "./components/shared/LangFooter.jsx";
 import { AdminView } from "./components/admin/AdminView.jsx";
 import { StationView } from "./components/game/StationView.jsx";
@@ -44,6 +45,12 @@ export default function PurInstinctApp(){
   const [winnersPublished,setWinnersPublished]=useState(false);
   const [rosterCodes,setRosterCodes]=useState({});
   const [pendingSessions,setPendingSessions]=useState([]);
+  // Mode équipes manuel (corporate/ecole): { [zone]: { [teamId]: {name,memberIds} } } —
+  // voir src/lib/teamMatch.js.
+  const [teams,setTeams]=useState({});
+  // Rotation équitable: { [zone]: { "teamIdA|teamIdB": count } } — nombre de fois
+  // que chaque paire d'équipes s'est déjà affrontée dans cette zone.
+  const [teamPairCounts,setTeamPairCounts]=useState({});
   // Borne fixe: ?kiosk=1 (option &zone=X pour verrouiller une borne à une seule
   // zone) bascule directement en mode kiosque, sans passer par l'écran PIN.
   const [view,setView]=useState(()=>{
@@ -135,6 +142,8 @@ export default function PurInstinctApp(){
       }
       if(data.activeRosterId) setActiveRosterId(data.activeRosterId);
       if(data.activationMode) setActivationMode(data.activationMode);
+      setTeams(data.teams||{});
+      setTeamPairCounts(data.teamPairCounts||{});
       if(data.extraRosters) setRosters([...INITIAL_ROSTERS,...Object.values(data.extraRosters).map(r=>({...r,entries:r.entries||[]}))]);
 
       setFbReady(true);
@@ -224,6 +233,7 @@ export default function PurInstinctApp(){
       groupId,
       age:"",email:safeExtra.email||"",instagram:"",tiktok:"",snapchat:"",
       marketingConsent:!!safeExtra.marketingConsent,
+      company:safeExtra.company||"",class:safeExtra.class||"",
       photoConsent:false,videoConsent:false,profilePhoto:null,highlights:[]};
     setPlayers(ps=>[...ps,newPlayer]);
     fbUpdate({["state/players/"+newId]:newPlayer});
@@ -250,12 +260,81 @@ export default function PurInstinctApp(){
     syncZoneQueue(zone,[...queues[zone],id]);
   };
 
+  // Mode équipes manuel: rejoint (ou crée, si teamChoice.teamId est vide) une équipe
+  // nommée pour cette zone. Résolu ici (pas côté KioskView) contre le `teams` le plus
+  // à jour, pour limiter le risque de doublon si deux bornes créent la même équipe
+  // au même instant — même compromis que le reste du code (pas de transaction
+  // Firebase ici, comme addToQueue/syncZoneQueue).
+  const joinTeam=(zone,teamChoice,playerId)=>{
+    const teamsForZone=teams[zone]||{};
+    let teamId=teamChoice.teamId;
+    let base=teamsForZone;
+    if(!teamId){
+      const resolved=joinOrCreateTeam(teamsForZone,teamChoice.name);
+      teamId=resolved.teamId;
+      if(resolved.isNew) base={...teamsForZone,[teamId]:{name:resolved.name,memberIds:[]}};
+    }
+    const existing=base[teamId]||{name:teamChoice.name,memberIds:[]};
+    if((existing.memberIds||[]).includes(playerId)) return;
+    const newTeam={name:existing.name,memberIds:[...(existing.memberIds||[]),playerId]};
+    setTeams(prev=>({...prev,[zone]:{...(prev[zone]||{}),[teamId]:newTeam}}));
+    fbUpdate({["state/teams/"+zone+"/"+teamId]:newTeam});
+  };
+
+  // Interrupteur global du mode équipes manuel (onglet admin "Équipes").
+  const onToggleTeamMode=()=>syncArena({...arenaState,teamMode:!arenaState.teamMode});
+
+  // Assignation manuelle par un responsable/professeur: comme joinTeam, mais
+  // retire d'abord le joueur de toute autre équipe de la même zone (un
+  // responsable réassigne, il ne fait pas que rejoindre) avant de
+  // rejoindre-ou-créer l'équipe visée par nom.
+  const assignPlayerToTeam=(zone,playerId,teamName)=>{
+    const teamsForZone=teams[zone]||{};
+    const cleaned={};
+    Object.entries(teamsForZone).forEach(([id,tm])=>{
+      cleaned[id]={...tm,memberIds:(tm.memberIds||[]).filter(pid=>pid!==playerId)};
+    });
+    const {teamId,name,isNew}=joinOrCreateTeam(cleaned,teamName);
+    const existing=isNew?{name,memberIds:[]}:cleaned[teamId];
+    const newTeamsForZone={...cleaned,[teamId]:{name:existing.name,memberIds:[...(existing.memberIds||[]),playerId]}};
+    setTeams(prev=>({...prev,[zone]:newTeamsForZone}));
+    fbSet("teams/"+zone,newTeamsForZone);
+  };
+
+  const removeTeamMember=(zone,teamId,playerId)=>{
+    const team=(teams[zone]||{})[teamId];
+    if(!team) return;
+    const newTeam={...team,memberIds:(team.memberIds||[]).filter(id=>id!==playerId)};
+    setTeams(prev=>({...prev,[zone]:{...(prev[zone]||{}),[teamId]:newTeam}}));
+    fbUpdate({["state/teams/"+zone+"/"+teamId]:newTeam});
+  };
+
+  const renameTeam=(zone,teamId,newName)=>{
+    const team=(teams[zone]||{})[teamId];
+    if(!team||!newName.trim()) return;
+    const newTeam={...team,name:newName.trim()};
+    setTeams(prev=>({...prev,[zone]:{...(prev[zone]||{}),[teamId]:newTeam}}));
+    fbUpdate({["state/teams/"+zone+"/"+teamId]:newTeam});
+  };
+
   // Borne kiosque: inscription (ou joueur déjà connu) + entrée directe dans la
-  // file de la zone choisie, en un seul geste. force=true comme pour l'ajout
-  // manuel côté StationView — la borne agit comme un responsable de plateau.
+  // file de la zone choisie, en un seul geste — sauf en mode équipes manuel, où le
+  // joueur rejoint directement son équipe au lieu d'une file (extra.team présent).
+  // force=true comme pour l'ajout manuel côté StationView — la borne agit comme un
+  // responsable de plateau.
   const kioskRegister=(zone,name,gender,existingId,onDone,extra)=>{
-    if(existingId){ addToQueue(existingId,zone,true); onDone(); return; }
-    addPlayerToSession(name,gender,(newId)=>{ addToQueue(newId,zone,true); onDone(); },activeRosterId,extra);
+    const teamChoice=extra?.team;
+    if(existingId){
+      if(teamChoice) joinTeam(zone,teamChoice,existingId);
+      else addToQueue(existingId,zone,true);
+      onDone();
+      return;
+    }
+    addPlayerToSession(name,gender,(newId)=>{
+      if(teamChoice) joinTeam(zone,teamChoice,newId);
+      else addToQueue(newId,zone,true);
+      onDone();
+    },activeRosterId,extra);
   };
 
   const updatePlayer=(updated)=>syncOnePlayer(updated);
@@ -358,6 +437,29 @@ export default function PurInstinctApp(){
     fbUpdate({
       ["state/queues/"+zone]:newQ.length>0?newQ:null,
       ["state/activeGames/"+zone]:gameData
+    });
+  };
+
+  // Mode équipes manuel: choisit la paire d'équipes la moins souvent jouée
+  // ensemble (rotation équitable) et forme le match à partir de leurs membres
+  // prêts — voir src/lib/teamMatch.js. Ne touche jamais queues[zone] (les
+  // équipes ne sont pas des files) ni le chemin generateTeams (zéro impact sur
+  // le mode compétitif existant).
+  const generateTeamMatch=(zone)=>{
+    const z=ZONES[zone];
+    if(z.gameStyle!=="team") return;
+    const teamsForZone=teams[zone]||{};
+    const pairCountsForZone=teamPairCounts[zone]||{};
+    const matchup=pickTeamMatchup(teamsForZone,activeGames,z.teamSize,pairCountsForZone);
+    if(!matchup) return;
+    const gameData=formTeamMatch(teamsForZone[matchup.teamAId],teamsForZone[matchup.teamBId],z.teamSize,activeGames);
+    const key=pairKey(matchup.teamAId,matchup.teamBId);
+    const newPairCounts={...pairCountsForZone,[key]:(pairCountsForZone[key]||0)+1};
+    setActiveGames(g=>({...g,[zone]:gameData}));
+    setTeamPairCounts(prev=>({...prev,[zone]:newPairCounts}));
+    fbUpdate({
+      ["state/activeGames/"+zone]:gameData,
+      ["state/teamPairCounts/"+zone]:newPairCounts,
     });
   };
 
@@ -514,15 +616,14 @@ export default function PurInstinctApp(){
           setView({type:"testLogin"});
           return;
         }
-        // "kiosk" (festival/parc, kioskDefault): bascule direct en kiosque,
-        // comme ?kiosk=1 aujourd'hui — piloté par la config, pas le nom du mode.
+        // "kiosk": festival/parc (kioskDefault, comme ?kiosk=1 aujourd'hui) et
+        // corporate/ecole (prereg-checkin/roster-team, même KioskView étendue par
+        // captureFields/teamMode) — piloté par la config, pas le nom du mode.
         if(routeKind==="kiosk"){
           setView({type:"kiosk",zone:null});
           return;
         }
-        // "stub" (corporate/ecole): pas encore de vue dédiée (entryFlow
-        // prereg-checkin / roster-team) — capture de données déjà paramétrable
-        // depuis l'étape 4, vue dédiée à construire dans un futur incrément.
+        // "stub": mode valide sans vue dédiée pour l'instant.
         setView({type:"modeStub",mode:modeKey});
       }}/>
   );
@@ -550,6 +651,8 @@ export default function PurInstinctApp(){
     <KioskView players={players.filter(p=>(p.groupId||"main")===activeRosterId)}
       disabledZones={arenaState.disabledZones||[]}
       lockedZone={view.zone}
+      teamMode={!!arenaState.teamMode}
+      teams={teams}
       onRegister={kioskRegister}/>
   );
 
@@ -655,6 +758,11 @@ export default function PurInstinctApp(){
       if(ZK.some(zk=>{const g=activeGames[zk];if(!g)return false;const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(p.id);})) return true;
       return false;
     })} allPlayers={isTestMode?TEST_PLAYERS:players} queues={queues} activeGames={activeGames} arenaState={arenaState} lastResultAt={lastResultAt} rosters={rosters} activeRosterId={activeRosterId} initialTab={view.tab}
+      teams={teams}
+      onToggleTeamMode={onToggleTeamMode}
+      onAssignPlayer={assignPlayerToTeam}
+      onRemoveTeamMember={removeTeamMember}
+      onRenameTeam={renameTeam}
       onStart={(mins)=>syncArena({...arenaState,active:true,ended:false,paused:false,startTime:Date.now(),sessionMins:mins||75})}
       onEnd={()=>syncArena({active:false,ended:false,paused:false,startTime:null,pausedRemaining:null,disabledZones:arenaState.disabledZones||[],sessionMins:arenaState.sessionMins||75})}
       onPause={()=>{
@@ -757,6 +865,9 @@ export default function PurInstinctApp(){
       arenaState={arenaState}
       sessionName={(rosters.find(r=>r.id===activeRosterId)||{name:"Session Standard"}).name}
       sessionCode={(rosterCodes||{})[activeRosterId]||null}
+      teamMode={!!arenaState.teamMode}
+      teams={teams[view.id]||{}}
+      onGenerateTeamMatch={()=>generateTeamMatch(view.id)}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onGenerate={(p,force)=>generateTeams(view.id,p,force)}
       onResult={(w,second)=>submitResult(view.id,w,second)}

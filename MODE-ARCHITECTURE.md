@@ -161,9 +161,6 @@ de type, au même titre que `activeRosterId`. Aucune règle existante relâchée
   aucune régression ajoutée à aucune étape).
 
 ## 6. Ce qui reste optionnel / hors scope
-- **Vues dédiées corporate/ecole** (`prereg-checkin`, `roster-team`) — la capture de
-  données est déjà paramétrable (§5.4), mais aucun écran n'est monté dans
-  `App.jsx` ; ces deux codes affichent l'écran stub "CODE RECONNU".
 - **Import de liste RH** (mode corporate) — chargement d'une liste d'employés
   pré-inscrits, non traité.
 - **Compteurs de débit / limite de capacité** (mode parc) — pas de gestion de flux
@@ -174,3 +171,62 @@ de type, au même titre que `activeRosterId`. Aucune règle existante relâchée
   le projet Firebase réel.
 - **Émulateur Firebase RTDB** — le test des règles est un simulateur JS léger, pas
   le véritable émulateur (`firebase-tools` + JVM non installés dans ce projet).
+
+## 7. Vues dédiées corporate/ecole + mode équipes manuel (branche `feat/manual-teams`)
+
+Fait suite à §6 : corporate et ecole ont maintenant une vue d'inscription réelle
+(`classifyModeRoute` route ces deux codes vers `"kiosk"`, `src/config/modes.js:76-83`),
+et un responsable (corporate) ou professeur (ecole) peut basculer entre deux modes de
+formation d'équipe pour les zones de type équipe (`gameStyle==="team"` :
+`purinstinct`, `handAgility`, `generalAgility`, `iq` — `footAgility` a `teamSize:1`
+mais `gameStyle:"duel"`, donc n'est **pas** concernée).
+
+### 7.1 Modèle de données
+- `state/teams/{zone}/{teamId}: {name, memberIds:[playerId,...]}` — équipe nommée,
+  créée à la volée (jointure insensible à la casse ou création si le nom ne matche
+  aucune équipe existante). **Zone-scoped, pas mode-scoped** : une équipe créée en
+  mode corporate est visible et rejoignable en mode ecole pour la même zone (décision
+  produit validée — l'affiliation d'équipe peut varier par zone, pas par mode).
+- `state/teamPairCounts/{zone}: {"teamIdA|teamIdB": count}` — mémoire des paires déjà
+  jouées, pour la rotation équitable (`src/lib/teamMatch.js`).
+- `state/arenaState.teamMode` (booléen, réglage par session, absent/`false` par
+  défaut) — bascule compétitif ↔ manuel, gérée depuis l'onglet admin "Équipes".
+
+### 7.2 Mode compétitif (inchangé) vs mode manuel
+- **Compétitif** (`teamMode` absent/`false`) : comportement historique
+  strictement inchangé — file d'attente par zone, `generateTeams` (tirage
+  équilibré). Vérifié octet-identique en session (aucune étape du kiosque ni du
+  poste de jeu ne change de comportement quand `teamMode` est faux).
+- **Manuel** (`teamMode:true`) : au kiosque, une étape "Choisissez votre équipe"
+  s'insère entre zone et identification (uniquement pour les zones équipe) ;
+  `KioskView.finish()` appelle `joinOrCreateTeam` au lieu d'`addToQueue`. Au poste
+  de jeu (`StationView`), un bouton "Générer le prochain match" remplace la
+  génération automatique par file et appelle `pickTeamMatchup`/`formTeamMatch`
+  (rotation équitable : paire la moins jouée en premier). Le résultat est soumis
+  de façon identique à un match par file (`{type:"team", teamA, teamB}` — même
+  forme que `generateTeams`, aucun changement requis côté affichage/soumission).
+
+### 7.3 Gestion admin — onglet "Équipes"
+`src/components/admin/tabs/TeamsTab.jsx` : interrupteur `teamMode`, sélecteur de
+zone équipe, liste des équipes par zone (renommer, retirer un membre), formulaire
+"Assigner un joueur" (numéro + nom d'équipe) — couvre le cas où un responsable ou
+professeur inscrit les équipes lui-même sans dépendre du self-service au kiosque.
+
+### 7.4 Règles Firebase + traductions
+`.validate` de type sur `state/teams` et `state/teamPairCounts` (non déployé,
+même statut que §5.5). Couverture FR/EN complète de toutes les nouvelles chaînes
+(inscription équipe, onglet admin, génération de match).
+
+### 7.5 Tests et QA
+- `src/lib/teamMatch.test.js` (11 tests) : rotation équitable, seuil `teamSize`,
+  jointure/création par nom, exclusion des joueurs déjà en jeu.
+- `src/lib/databaseRules.test.js` étendu (+6 tests) pour `teams`/`teamPairCounts`.
+- Total : **59/59 tests verts**, lint 21 erreurs/1 warning (baseline pré-existante
+  inchangée), build production réussi.
+- QA e2e en navigateur (session dev Firebase, données de test nettoyées après
+  coup) : corporate et ecole confirmés en mode compétitif (inchangé) et en mode
+  manuel sur `handAgility` (teamSize 3) — création de 2 équipes multi-joueurs
+  partagées entre les deux modes, génération de match, soumission de résultat
+  avec mise à jour correcte des scores, incrémentation de `teamPairCounts`.
+  `games`/`admin` reconfirmés inchangés (aucune trace de `teamMode` dans leurs
+  écrans, routing `classifyModeRoute` intact).

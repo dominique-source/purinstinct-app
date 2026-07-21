@@ -14,7 +14,7 @@ import { Button, IconButton, Panel, Eyebrow, Badge, LiveIndicator, Tabs, Timer, 
 // Flagship live-station console. Presentation is design-system-driven; the
 // pending/undo state machine, auto-generation and queue logic are preserved
 // verbatim from the previous implementation.
-export function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId,onFillQueue}){
+export function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,teamMode,teams,onGenerateTeamMatch,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId,onFillQueue}){
   const t=useT();
   const zn=useZn();
   const z=ZONES[zone];
@@ -46,6 +46,16 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
   const minToShow=z.teamSize?2:z.minP;
   const canGen=!activeGame&&qPlayers.length>=minToShow;
   const hasIdeal=qPlayers.length>=idealCount;
+  // Mode équipes manuel: pas de file, les joueurs rejoignent une équipe nommée
+  // directement (voir teamMatch.js / App.jsx generateTeamMatch). Cette liste ne
+  // sert qu'à l'affichage — l'exclusion des joueurs déjà en jeu ailleurs se fait
+  // côté App.jsx (seul endroit qui connaît activeGames pour toutes les zones).
+  // gameStyle==="team" précisément — footAgility a teamSize:1 (truthy) mais
+  // gameStyle:"duel" (1v1 individuel), pas une vraie zone équipe.
+  const teamModeActive=!!(teamMode&&z.gameStyle==="team");
+  const teamsList=Object.entries(teams||{}).map(([id,tm])=>({id,...tm}));
+  const readyTeamsCount=teamsList.filter(tm=>(tm.memberIds||[]).length>=z.teamSize).length;
+  const canGenTeamMatch=!activeGame&&readyTeamsCount>=2;
   // Remettre à false à chaque changement du nombre de joueurs en file
   useEffect(()=>{setConfirmShortGame(false);},[qPlayers.length]);
 
@@ -74,9 +84,13 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
   useEffect(()=>{
     if(activeGame||!autoGenArmedRef.current) return;
     autoGenArmedRef.current=false;
+    // Mode équipes manuel: jamais d'auto-génération depuis la file — les
+    // joueurs ne s'y trouvent pas (ils rejoignent une équipe), et le
+    // responsable déclenche "Générer le prochain match" lui-même.
+    if(teamModeActive) return;
     if(canGen&&(hasIdeal||zone==="speed"))
       onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):null);
-  },[activeGame,canGen,hasIdeal,zone,sprintSize,qPlayers.length,onGenerate]);
+  },[activeGame,canGen,hasIdeal,zone,sprintSize,qPlayers.length,onGenerate,teamModeActive]);
   const sprintLine=[...qPlayers].sort((a,b)=>((a.zoneScores||{}).speed||50)-((b.zoneScores||{}).speed||50));
 
   const handleAdd=()=>{
@@ -223,6 +237,41 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
                   <IndividualGameView game={activeGame} players={players} zone={zone} locked={!!pending}
                     onWinner={handleWinner} onRemove={(id)=>onRemoveFromGame(zone,id)} onReplace={()=>onReplaceInGame(zone)}/>
                 )}
+              </div>
+            ):teamModeActive?(
+              /* ---------- SETUP / GENERATE — mode équipes manuel ---------- */
+              <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s3)"}}>
+                <Panel variant="raised" style={{padding:"var(--pi-s5)"}}>
+                  <Eyebrow style={{marginBottom:"var(--pi-s3)"}}>{t.teamsLabel} · {z.teamSize} {t.teamPerTeamSuffix}</Eyebrow>
+                  {teamsList.length===0?(
+                    <div style={{fontSize:"var(--pi-fs-body)",color:"var(--pi-text-3)"}}>{t.noTeamsRegistered}</div>
+                  ):(
+                    <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s2)",marginBottom:"var(--pi-s4)"}}>
+                      {teamsList.map(tm=>{
+                        const count=(tm.memberIds||[]).length;
+                        const ready=count>=z.teamSize;
+                        return(
+                          <div key={tm.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+                            padding:"10px 14px",borderRadius:"var(--pi-r-md)",
+                            border:`1px solid ${ready?"var(--pi-lime-line)":"var(--pi-line)"}`,
+                            background:ready?"var(--pi-lime-wash)":"var(--pi-surface-2)"}}>
+                            <span style={{color:"#fff",fontWeight:600,fontSize:"var(--pi-fs-body)"}}>{tm.name}</span>
+                            <span style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
+                              color:ready?"var(--pi-lime)":"var(--pi-text-3)"}}>{count}/{z.teamSize}{ready?" ✓":""}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <Button variant="primary" size="xl" cut block disabled={!canGenTeamMatch} onClick={onGenerateTeamMatch}>
+                    {t.generateNextMatch}
+                  </Button>
+                  {!canGenTeamMatch&&teamsList.length>0&&(
+                    <div style={{fontSize:"var(--pi-fs-label)",color:"var(--pi-text-3)",marginTop:"var(--pi-s2)",textAlign:"center"}}>
+                      {t.needTwoReadyTeams} ({z.teamSize}+ {t.playersEachSuffix})
+                    </div>
+                  )}
+                </Panel>
               </div>
             ):(
               /* ---------- SETUP / GENERATE ---------- */
