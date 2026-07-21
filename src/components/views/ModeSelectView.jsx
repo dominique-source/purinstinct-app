@@ -29,6 +29,15 @@ export function ModeSelectView({onSelectMode}){
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
       justifyContent:"center",padding:"32px 16px",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
+      <a href="/" className="anim-pop" style={{position:"fixed",top:20,left:20,zIndex:10,
+        display:"flex",alignItems:"center",gap:10,padding:"12px 22px",borderRadius:14,
+        background:"#111827",border:"2px solid #B8E02050",color:"#B8E020",textDecoration:"none",
+        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:17,letterSpacing:.5,
+        transition:"all .15s"}}
+        onMouseEnter={e=>{e.currentTarget.style.background="#1a2233";e.currentTarget.style.borderColor="#B8E020";}}
+        onMouseLeave={e=>{e.currentTarget.style.background="#111827";e.currentTarget.style.borderColor="#B8E02050";}}>
+        <span style={{fontSize:20,lineHeight:1}}>←</span>{t.backToSite}
+      </a>
       {/* Logo */}
       <div className="anim-pop" style={{textAlign:"center",marginBottom:48}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:72,letterSpacing:-2,lineHeight:1,
