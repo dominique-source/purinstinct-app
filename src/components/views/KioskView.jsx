@@ -47,8 +47,10 @@ const CONFIRM_MS = 3000;     // durée d'affichage de l'écran de confirmation
 const EXTRA_TEXT_FIELDS=["company","class"];
 
 // Bouton retour de la borne: cible tactile large (~3x la taille "sm" du design
-// system), en variant outline pour rester visible sur fond sombre.
-const BACK_BTN_STYLE={minHeight:108,padding:"0 32px",fontSize:24,fontWeight:700};
+// system), fond teinté lime (pas juste une bordure) pour rester visible et
+// tactile sur fond sombre même sans état hover.
+const BACK_BTN_STYLE={minHeight:108,padding:"0 32px",fontSize:24,fontWeight:700,
+  background:"var(--pi-lime-wash)"};
 
 // Borne fixe et publique: écran d'accueil = classement en boucle, jamais de
 // session affichée trop longtemps. Inscription en 3 taps (2 en mode équipes): zone →
