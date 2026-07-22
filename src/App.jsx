@@ -1020,7 +1020,6 @@ export default function PurInstinctApp(){
           winnersPublished={winnersPublished}
           onJoin={addToQueue} onLeave={removeFromQueue}
           onLogout={()=>isTestMode?testHome():setView({type:"liveLogin"})}
-          onBecomeStation={()=>isTestMode?testHome():setView({type:"stationPick",fromPlayerId:view.id})}
           onUpdatePlayer={updatePlayer}
           onAddComment={(text)=>{const p=players.find(px=>px.id===view.id);if(p)addComment(p.id,p.name,p.number,text);}}/>
       );
