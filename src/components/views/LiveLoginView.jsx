@@ -152,6 +152,14 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
   return(<>
     <div style={{minHeight:"100svh",display:"flex",flexDirection:"column",alignItems:"center",
       justifyContent:"center",padding:"var(--pi-s8) var(--pi-gutter)"}}>
+      <a href="/" style={{position:"fixed",top:16,left:16,zIndex:10,
+        display:"flex",alignItems:"center",gap:10,padding:"12px 22px",borderRadius:"var(--pi-r-lg)",
+        background:"var(--pi-surface-1)",border:"2px solid var(--pi-lime-line)",color:"var(--pi-lime)",textDecoration:"none",
+        fontFamily:"var(--pi-font-display)",fontWeight:800,fontSize:17,letterSpacing:.5}}
+        onMouseEnter={e=>{e.currentTarget.style.background="var(--pi-surface-2)";}}
+        onMouseLeave={e=>{e.currentTarget.style.background="var(--pi-surface-1)";}}>
+        <span style={{fontSize:20,lineHeight:1}}>←</span>Retour au site
+      </a>
       {onGoTest&&<button onClick={()=>setTestUnavailable(true)}
         style={{position:"fixed",bottom:16,right:16,fontSize:10,color:"var(--pi-text-3)",
           background:"none",border:"1px solid var(--pi-line)",borderRadius:"var(--pi-r-sm)",padding:"4px 8px",cursor:"pointer"}}>
