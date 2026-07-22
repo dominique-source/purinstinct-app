@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ZONES, ZK, zn } from "../../config/zones.js";
 import { LangFooter } from "../shared/LangFooter.jsx";
-import { ADMIN_PIN, STATION_PIN } from "../../config/pins.js";
+import { ADMIN_PIN, STATION_PIN, DEV_PIN } from "../../config/pins.js";
 import { Button } from "../ui/Button.jsx";
 import { Panel, Eyebrow } from "../ui/Panel.jsx";
 import { Modal } from "../ui/Modal.jsx";
@@ -52,7 +52,7 @@ function Wordmark(){
   );
 }
 
-export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCodes,onAddPlayer,onRequestSolo}){
+export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCodes,onAddPlayer,onRequestSolo,onDevMode}){
   // Détecter le code de session dans l'URL (?session= ou ?code=)
   const _params=new URLSearchParams(window.location.search);
   const urlCode=_params.get("session")||_params.get("code")||null;
@@ -111,6 +111,10 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
   // Valider le code de session
   const handleSessionCode=(code)=>{
     const c=code||sessionCode;
+    if(c===DEV_PIN){
+      onDevMode&&onDevMode();
+      return;
+    }
     if(c==="0000"){
       setSoloUnavailable(true); setSessionCodeError(false); setSessionCode(""); return;
     }

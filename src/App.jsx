@@ -22,6 +22,8 @@ import { LoginView } from "./components/views/LoginView.jsx";
 import { LiveLoginView } from "./components/views/LiveLoginView.jsx";
 import { PlayerView } from "./components/views/PlayerView.jsx";
 import { KioskView } from "./components/views/KioskView.jsx";
+import { DevHub } from "./components/views/DevHub.jsx";
+import { DEV_PIN } from "./config/pins.js";
 
 // ================================================================
 // PURINSTINCT ARENA v3  –  75 min  |  Dynamic rosters  |  5 tiers
@@ -62,6 +64,10 @@ export default function PurInstinctApp(){
   const [fbReady,setFbReady]=useState(false);
   const [lang,setLang]=useState("fr");
   const [isTestMode,setIsTestMode]=useState(false);
+  // true dès qu'on est entré via le Mode Développeur (DevHub) — affiche un
+  // bouton de sortie flottant sur les écrans qui n'ont normalement aucune
+  // sortie (ex. KioskView, conçu pour tourner en permanence sur une borne).
+  const [devMode,setDevMode]=useState(false);
   // Mode d'activation courant (clé de MODES: "games","corporate","ecole",
   // "festival","parc","admin") — null tant qu'aucun code n'a été résolu.
   const [activationMode,setActivationMode]=useState(null);
@@ -580,13 +586,26 @@ export default function PurInstinctApp(){
 
   const onLangToggle=()=>setLang(l=>l==="fr"?"en":"fr");
 
-  // Always returns to test landing when in test mode
-  const testHome=()=>setView({type:"testLogin"});
+  // Always returns to the Dev Hub when in test/dev-preview mode.
+  const testHome=()=>setView({type:"devHub"});
+
+  // Seed les files/augState avec TEST_PLAYERS (jamais synced à Firebase) —
+  // partagé entre le raccourci ADMIN_PIN caché et le Mode Développeur (DevHub).
+  const seedTestPlayers=()=>{
+    setIsTestMode(true);
+    const testQ={};
+    ZK.forEach(zk=>{testQ[zk]=TEST_PLAYERS.map(p=>p.id);});
+    setQueues(testQ);
+    const testAug={};
+    AUG_GAMES.forEach(g=>{testAug[g.id]={queue:TEST_PLAYERS.map(p=>p.name),activeMatch:null};});
+    setAugState(testAug);
+  };
 
   // Résout un code (4 chiffres) vers son mode et route en conséquence — logique
   // partagée entre le pavé numérique de ModeSelectView et le lien direct ?code=XXXX
   // (ex. QR code pointant vers une zone d'inscription précise).
   const handleSelectMode=(modeKey)=>{
+    setDevMode(false);
     syncActivationMode(modeKey);
     const routeKind=classifyModeRoute(modeKey);
     // "live" (games) = comportement Live actuel, référence — ne jamais régresser.
@@ -599,13 +618,7 @@ export default function PurInstinctApp(){
     // "admin" = raccourci caché, tout débloqué — reprend l'ancien TEST MODE.
     if(routeKind==="admin"){
       fbSet("liveMode",false);
-      setIsTestMode(true);
-      const testQ={};
-      ZK.forEach(zk=>{testQ[zk]=TEST_PLAYERS.map(p=>p.id);});
-      setQueues(testQ);
-      const testAug={};
-      AUG_GAMES.forEach(g=>{testAug[g.id]={queue:TEST_PLAYERS.map(p=>p.name),activeMatch:null};});
-      setAugState(testAug);
+      seedTestPlayers();
       setView({type:"testLogin"});
       return;
     }
@@ -618,6 +631,22 @@ export default function PurInstinctApp(){
     }
     // "stub": mode valide sans vue dédiée pour l'instant.
     setView({type:"modeStub",mode:modeKey});
+  };
+
+  // Mode Développeur (DEV_PIN, config/pins.js) — aperçu local de chaque
+  // mode/rôle. Contrairement à handleSelectMode (chemin de production), ne
+  // touche jamais liveMode ni activationMode dans Firebase: activationMode
+  // est mis à jour seulement en local (setActivationMode, pas syncActivationMode)
+  // pour que KioskView affiche les bons captureFields sans rien écrire côté
+  // serveur ni affecter les autres appareils connectés à la vraie session.
+  const enterDevPreview=(kind)=>{
+    setDevMode(true);
+    if(kind==="admin"){ seedTestPlayers(); setView({type:"adminHome"}); return; }
+    if(kind==="station"){ seedTestPlayers(); setView({type:"stationPick"}); return; }
+    if(kind==="zones"){ setView({type:"testLogin"}); return; }
+    if(kind==="games"){ setView({type:"liveLogin"}); return; }
+    setActivationMode(kind);
+    setView({type:"kiosk",zone:null});
   };
 
   // Lien direct ?code=XXXX (ex. QR code affiché sur place) : saute le pavé
@@ -640,7 +669,12 @@ export default function PurInstinctApp(){
       </div>
     );
   } else if(view.type==="login") content=(
-    <ModeSelectView onSelectMode={handleSelectMode}/>
+    <ModeSelectView onSelectMode={handleSelectMode} onDevMode={()=>setView({type:"devHub"})}/>
+  );
+
+  else if(view.type==="devHub") content=(
+    <DevHub onPreview={enterDevPreview}
+      onExit={()=>{setDevMode(false);setIsTestMode(false);setView({type:liveMode?"liveLogin":"login"});}}/>
   );
 
   else if(view.type==="modeStub") content=(
@@ -662,14 +696,20 @@ export default function PurInstinctApp(){
     </div>
   );
 
-  else if(view.type==="kiosk") content=(
+  else if(view.type==="kiosk") content=(<>
     <KioskView players={players.filter(p=>(p.groupId||"main")===activeRosterId)}
       disabledZones={arenaState.disabledZones||[]}
       lockedZone={view.zone}
       teamMode={!!arenaState.teamMode}
       teams={teams}
       onRegister={kioskRegister}/>
-  );
+    {devMode&&<button onClick={()=>{setDevMode(false);setView({type:"devHub"});}}
+      style={{position:"fixed",top:12,right:12,zIndex:999,padding:"8px 14px",borderRadius:10,
+        background:"#111827",border:"1px solid #B8E02060",color:"#B8E020",cursor:"pointer",
+        fontSize:11,fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:.5}}>
+      🛠️ Quitter (Dev)
+    </button>}
+  </>);
 
   else if(view.type==="liveLogin") content=(
     <LiveLoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
@@ -693,7 +733,8 @@ export default function PurInstinctApp(){
           },soloGroupId);
         }}
         onLogin={(t,id)=>setView({type:t,id})}
-        onGoTest={()=>{fbSet("liveMode",false);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(buildInitialQueues(players));setView({type:"login"});}}/>
+        onGoTest={()=>{fbSet("liveMode",false);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(buildInitialQueues(players));setView({type:"login"});}}
+        onDevMode={()=>setView({type:"devHub"})}/>
   );
 
   else if(view.type==="testLogin") content=(
