@@ -45,18 +45,9 @@ function NumPad({value,onChange,onComplete,maxLen=4}){
 // Wordmark — module-scope, no props/state.
 function Wordmark(){
   return(
-    <div style={{textAlign:"center",marginBottom:"var(--pi-s8)"}}>
-      <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:64,letterSpacing:-2,lineHeight:1,
-        textShadow:"0 0 40px var(--pi-lime-glow)"}}>
-        <span style={{color:"var(--pi-lime)"}}>PUR</span><span style={{color:"var(--pi-text)"}}>INSTINCT</span>
-      </div>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",marginTop:6}}>
-        <span style={{width:24,height:2,background:"var(--pi-lime)",transform:"skewX(-20deg)"}}/>
-        <span style={{color:"var(--pi-lime)",fontSize:12,letterSpacing:3,textTransform:"uppercase",fontWeight:700}}>
-          PurInstinct Games
-        </span>
-        <span style={{width:24,height:2,background:"var(--pi-lime)",transform:"skewX(-20deg)"}}/>
-      </div>
+    <div style={{textAlign:"center",marginBottom:"var(--pi-s6)"}}>
+      <img src={import.meta.env.BASE_URL+"purinstinct-games-logo.png"} alt="PürInstinct Games"
+        style={{width:160,height:"auto",filter:"drop-shadow(0 0 40px var(--pi-lime-glow))"}}/>
     </div>
   );
 }
