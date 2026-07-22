@@ -31,7 +31,7 @@ export const AGE_CATEGORIES = [
 const AVATAR_CATALOG = {
   enfant: { male: [], female: [] },
   ado: { male: [], female: [] },
-  adulte: { male: buildLooks("adult-male", 9), female: [] },
+  adulte: { male: buildLooks("adult-male", 10), female: buildLooks("adult-female", 10) },
 };
 
 export function getAvatarLooks(ageCategoryKey, gender) {
