@@ -4,19 +4,26 @@ import { ZONES, ZK } from "../../../config/zones.js";
 import { useZn, useT } from "../../../hooks/useLang.js";
 import { BASE_URL } from "../../../config/constants.js";
 import { SKIN_TONES, HAIR_COLORS, MORPHO_LABELS } from "../../../config/avatarOptions.js";
+import { AGE_CATEGORIES, getAvatarLooks } from "../../../config/avatarCatalog.js";
 import { PlayerAvatar } from "../../shared/PlayerAvatar.jsx";
+import { PortraitOption } from "../../shared/PortraitOption.jsx";
 import { TierBadge } from "../../shared/TierBadge.jsx";
 import { Panel, Eyebrow } from "../../ui/Panel.jsx";
 import { Button } from "../../ui/Button.jsx";
 import { Modal } from "../../ui/Modal.jsx";
 import { ScoreDisplay } from "../../ui/Numerals.jsx";
 
-export function PlayerStatsTab({player,playerId,players,hubPts,rank,activeZones,elig,disabledZones,activeGames,inQueues,playingAt,canJoin,onJoin,onLeave,rosterCodes,sessionRosterId,skinIdx,hairIdx,morphology,onSetSkinIdx,onSetHairIdx,onSetMorphology}){
+export function PlayerStatsTab({player,playerId,players,hubPts,rank,activeZones,elig,disabledZones,activeGames,inQueues,playingAt,canJoin,onJoin,onLeave,rosterCodes,sessionRosterId,skinIdx,hairIdx,morphology,onSetSkinIdx,onSetHairIdx,onSetMorphology,ageCategory,onSetAgeCategory,lookId,onSetLookId}){
   const t=useT();
   const zn=useZn();
   const [sessionQR,setSessionQR]=useState(null);
   const [showQR,setShowQR]=useState(false);
   const code=rosterCodes&&sessionRosterId?rosterCodes[sessionRosterId]:null;
+
+  // Looks (vraies photos) disponibles pour la combinaison âge × genre courante.
+  // Vide -> repli sur l'avatar SVG existant (Peau/Cheveux restent visibles).
+  const looks=getAvatarLooks(ageCategory,player.gender);
+  const activeLook=looks.find(l=>l.id===lookId)||looks[0]||null;
 
   const openQR=async()=>{
     if(!sessionQR&&code){
@@ -30,56 +37,106 @@ export function PlayerStatsTab({player,playerId,players,hubPts,rank,activeZones,
   return(
     <div className="pi-anim-up">
 
-      {/* ── AVATAR + SCORE CARD ── */}
-      <Panel flush style={{marginBottom:"var(--pi-s4)"}}>
-        <div style={{display:"flex",alignItems:"stretch"}}>
-          <div style={{width:130,flexShrink:0,padding:"var(--pi-s3) var(--pi-s1) 0 var(--pi-s3)"}}>
-            <PlayerAvatar gender={player.gender} skinColor={SKIN_TONES[skinIdx]} hairColor={HAIR_COLORS[hairIdx]} morphology={morphology}/>
-          </div>
-          <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"var(--pi-s4) var(--pi-s4) var(--pi-s4) var(--pi-s2)"}}>
-            <Eyebrow>Score</Eyebrow>
-            <ScoreDisplay value={hubPts} size={54} style={{letterSpacing:-2,textShadow:"0 0 32px var(--pi-lime-glow)"}}/>
-            <Eyebrow style={{marginTop:"var(--pi-s3)"}}>Rang</Eyebrow>
-            <div style={{display:"flex",alignItems:"baseline",gap:4}}>
-              <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:32,color:"var(--pi-text)",lineHeight:1}}>#{rank}</div>
-              <div style={{fontSize:"var(--pi-fs-meta)",color:"var(--pi-text-3)"}}>/ {players.length}</div>
+      {/* ── AVATAR + ÉTAPE D'ÂGE + PERSONNALISATION ── */}
+      <div className="pi-profile-grid" style={{marginBottom:"var(--pi-s4)"}}>
+
+        {/* Colonne gauche — grand avatar + score/rang */}
+        <Panel flush>
+          <div className="pi-profile-hero">
+            <div className="pi-profile-hero__glow" aria-hidden="true"/>
+            <div className="pi-profile-hero__avatar">
+              {activeLook ? (
+                <img src={activeLook.fullBodySrc} alt=""
+                  style={{width:"100%",height:"auto",display:"block"}}/>
+              ) : (
+                <PlayerAvatar gender={player.gender} skinColor={SKIN_TONES[skinIdx]} hairColor={HAIR_COLORS[hairIdx]} morphology={morphology}/>
+              )}
             </div>
           </div>
+          <div style={{padding:"var(--pi-s4)",borderTop:"1px solid var(--pi-line)",display:"flex",gap:"var(--pi-s6)"}}>
+            <div>
+              <Eyebrow>Score</Eyebrow>
+              <ScoreDisplay value={hubPts} size={44} style={{letterSpacing:-2,textShadow:"0 0 32px var(--pi-lime-glow)"}}/>
+            </div>
+            <div>
+              <Eyebrow>Rang</Eyebrow>
+              <div style={{display:"flex",alignItems:"baseline",gap:4}}>
+                <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:28,color:"var(--pi-text)",lineHeight:1}}>#{rank}</div>
+                <div style={{fontSize:"var(--pi-fs-meta)",color:"var(--pi-text-3)"}}>/ {players.length}</div>
+              </div>
+            </div>
+          </div>
+        </Panel>
+
+        {/* Colonne droite — étape d'âge, galerie de looks, personnalisation */}
+        <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s4)"}}>
+          <Panel>
+            <Eyebrow style={{marginBottom:"var(--pi-s3)"}}>Étape d'âge</Eyebrow>
+            <div style={{display:"flex",justifyContent:"space-around"}}>
+              {AGE_CATEGORIES.map(cat=>{
+                const catLooks=getAvatarLooks(cat.key,player.gender);
+                return(
+                  <PortraitOption key={cat.key}
+                    imgSrc={catLooks[0]?.portraitSrc}
+                    label={cat.label}
+                    selected={ageCategory===cat.key}
+                    onSelect={()=>onSetAgeCategory(cat.key)}
+                    size={64}/>
+                );
+              })}
+            </div>
+          </Panel>
+
+          {looks.length>0&&(
+            <Panel>
+              <Eyebrow style={{marginBottom:"var(--pi-s3)"}}>Choisis ton look</Eyebrow>
+              <div className="pi-avatar-gallery">
+                {looks.map(look=>(
+                  <PortraitOption key={look.id} imgSrc={look.portraitSrc}
+                    label={null} selected={activeLook?.id===look.id}
+                    onSelect={()=>onSetLookId(look.id)} size={56}/>
+                ))}
+              </div>
+            </Panel>
+          )}
+
+          <Panel style={{display:"flex",flexDirection:"column",gap:"var(--pi-s3)"}}>
+            {looks.length===0&&(<>
+              <div style={{display:"flex",alignItems:"center",gap:"var(--pi-s3)"}}>
+                <Eyebrow style={{width:58,flexShrink:0}}>Peau</Eyebrow>
+                <div style={{flex:1,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  {SKIN_TONES.map((c,i)=>(
+                    <button key={i} onClick={()=>onSetSkinIdx(i)} aria-label={"Teint "+(i+1)} aria-pressed={skinIdx===i} style={{
+                      width:skinIdx===i?30:22,height:skinIdx===i?30:22,borderRadius:"50%",background:c,cursor:"pointer",
+                      border:skinIdx===i?"3px solid var(--pi-lime)":"2px solid var(--pi-line-strong)",
+                      transition:"all var(--pi-dur-fast)",outline:"none"}}/>
+                  ))}
+                </div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:"var(--pi-s3)"}}>
+                <Eyebrow style={{width:58,flexShrink:0}}>Cheveux</Eyebrow>
+                <div style={{flex:1,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  {HAIR_COLORS.map((c,i)=>(
+                    <button key={i} onClick={()=>onSetHairIdx(i)} aria-label={"Couleur de cheveux "+(i+1)} aria-pressed={hairIdx===i} style={{
+                      width:hairIdx===i?28:20,height:hairIdx===i?28:20,borderRadius:"50%",background:c,cursor:"pointer",
+                      border:hairIdx===i?"3px solid var(--pi-lime)":"2px solid var(--pi-line-strong)",
+                      transition:"all var(--pi-dur-fast)",outline:"none"}}/>
+                  ))}
+                </div>
+              </div>
+            </>)}
+            <div style={{display:"flex",alignItems:"center",gap:"var(--pi-s3)"}}>
+              <Eyebrow style={{width:58,flexShrink:0}}>Corps</Eyebrow>
+              <div style={{flex:1,display:"flex",gap:"var(--pi-s2)"}} role="group" aria-label="Corps">
+                {MORPHO_LABELS.map((label,i)=>(
+                  <button key={i} onClick={()=>onSetMorphology(i)} aria-pressed={morphology===i}
+                    className={morphology===i?"pi-tab is-active":"pi-tab"} style={{flex:1}}>{label}</button>
+                ))}
+              </div>
+            </div>
+          </Panel>
         </div>
-        {/* Sliders */}
-        <div style={{padding:"var(--pi-s3) var(--pi-s3) var(--pi-s3)",borderTop:"1px solid var(--pi-line)",display:"flex",flexDirection:"column",gap:"var(--pi-s3)"}}>
-          <div style={{display:"flex",alignItems:"center",gap:"var(--pi-s3)"}}>
-            <Eyebrow style={{width:58,flexShrink:0}}>Peau</Eyebrow>
-            <div style={{flex:1,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              {SKIN_TONES.map((c,i)=>(
-                <button key={i} onClick={()=>onSetSkinIdx(i)} aria-label={"Teint "+(i+1)} style={{
-                  width:skinIdx===i?30:22,height:skinIdx===i?30:22,borderRadius:"50%",background:c,cursor:"pointer",
-                  border:skinIdx===i?"3px solid var(--pi-lime)":"2px solid var(--pi-line-strong)",
-                  transition:"all var(--pi-dur-fast)",outline:"none"}}/>
-              ))}
-            </div>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:"var(--pi-s3)"}}>
-            <Eyebrow style={{width:58,flexShrink:0}}>Cheveux</Eyebrow>
-            <div style={{flex:1,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              {HAIR_COLORS.map((c,i)=>(
-                <button key={i} onClick={()=>onSetHairIdx(i)} aria-label={"Couleur de cheveux "+(i+1)} style={{
-                  width:hairIdx===i?28:20,height:hairIdx===i?28:20,borderRadius:"50%",background:c,cursor:"pointer",
-                  border:hairIdx===i?"3px solid var(--pi-lime)":"2px solid var(--pi-line-strong)",
-                  transition:"all var(--pi-dur-fast)",outline:"none"}}/>
-              ))}
-            </div>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:"var(--pi-s3)"}}>
-            <Eyebrow style={{width:58,flexShrink:0}}>Corps</Eyebrow>
-            <div style={{flex:1,display:"flex",gap:"var(--pi-s2)"}}>
-              {MORPHO_LABELS.map((label,i)=>(
-                <button key={i} onClick={()=>onSetMorphology(i)} className={morphology===i?"pi-tab is-active":"pi-tab"} style={{flex:1}}>{label}</button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Panel>
+      </div>
 
       {/* LAST ACTIVITY */}
       {player.lastResult&&ZONES[player.lastResult.zone]&&(
@@ -105,14 +162,15 @@ export function PlayerStatsTab({player,playerId,players,hubPts,rank,activeZones,
       {/* STATS GLOBALES */}
       <Panel style={{marginBottom:"var(--pi-s4)"}}>
         <Eyebrow style={{marginBottom:"var(--pi-s3)"}}>Statistiques</Eyebrow>
-        <div style={{display:"flex",gap:"var(--pi-s2)",flexWrap:"wrap"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"var(--pi-s2)"}}>
           {[
-            [player.globalPoints,"Pts globaux","var(--pi-lime)"],
-            [(player.zonesPlayed||[]).length+"/"+activeZones.length,"Zones","var(--pi-lime)"],
-            [(player.history||[]).filter(h=>h.isWin).length,"Victoires","var(--pi-ok)"],
-            [(player.history||[]).filter(h=>!h.isWin&&!h.isSecond).length,"Défaites","var(--pi-danger)"]
-          ].map(([v,lbl,c],i)=>(
-            <div key={i} style={{flex:1,textAlign:"center",padding:"var(--pi-s2) var(--pi-s1)",borderRadius:"var(--pi-r-md)",background:"var(--pi-surface-2)",minWidth:60}}>
+            ["🌐",player.globalPoints,"Pts globaux","var(--pi-lime)"],
+            ["📍",(player.zonesPlayed||[]).length+"/"+activeZones.length,"Zones","var(--pi-lime)"],
+            ["🏆",(player.history||[]).filter(h=>h.isWin).length,"Victoires","var(--pi-ok)"],
+            ["🛡️",(player.history||[]).filter(h=>!h.isWin&&!h.isSecond).length,"Défaites","var(--pi-danger)"]
+          ].map(([icon,v,lbl,c],i)=>(
+            <div key={i} style={{textAlign:"center",padding:"var(--pi-s3) var(--pi-s1)",borderRadius:"var(--pi-r-md)",background:"var(--pi-surface-2)"}}>
+              <div style={{fontSize:16,marginBottom:2}}>{icon}</div>
               <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:24,color:c}}>{v}</div>
               <div style={{fontSize:"var(--pi-fs-meta)",color:"var(--pi-text-3)",marginTop:2,lineHeight:1.2}}>{lbl}</div>
             </div>
