@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/app/assets/(.*)", "destination": "/assets/$1" },
     { "source": "/app/purinstinct-games-logo.png", "destination": "/purinstinct-games-logo.png" },
+    { "source": "/app/avatars/(.*)", "destination": "/avatars/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

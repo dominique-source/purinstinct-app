@@ -177,6 +177,35 @@
   }
 }
 
+/* ---------- PLAYER PROFILE LAYOUT -------------------------- */
+/* Mobile: avatar hero on top, controls stacked below.
+   Tablet (>=768px): avatar keeps a fixed comfortable width, controls fill the rest.
+   Desktop (>=1024px): same two columns with more breathing room. */
+.pi-profile-grid { display: grid; gap: var(--pi-s4); align-items: start; }
+@media (min-width: 768px) {
+  .pi-profile-grid { grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: var(--pi-s5); }
+}
+@media (min-width: 1024px) {
+  .pi-profile-grid { grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: var(--pi-s6); }
+}
+
+.pi-profile-hero {
+  position: relative; display: flex; align-items: flex-end; justify-content: center;
+  min-height: 260px; padding: var(--pi-s5) var(--pi-s4) 0;
+  background: var(--pi-surface-1);
+  overflow: hidden;
+}
+.pi-profile-hero__glow {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 50% 40%, var(--pi-lime-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+.pi-profile-hero__avatar { position: relative; width: 100%; max-width: 220px; }
+
+.pi-avatar-gallery {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: var(--pi-s3);
+}
+
 /* ---------- FIELD / INPUT --------------------------------- */
 .pi-field { display: flex; flex-direction: column; gap: var(--pi-s2); }
 .pi-field__label {

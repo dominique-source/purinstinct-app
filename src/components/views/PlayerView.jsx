@@ -26,6 +26,8 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
   const [skinIdx,setSkinIdx]=useState(2);
   const [hairIdx,setHairIdx]=useState(3);
   const [morphology,setMorphology]=useState(1);
+  const [ageCategory,setAgeCategory]=useState("adulte");
+  const [lookId,setLookId]=useState(null);
   const hubPts=useCountUp(player?.globalPoints||0); // avant le early-return: règle des hooks
   if(!player) return null;
 
@@ -111,14 +113,16 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
       </header>
 
       <main style={{flex:1,padding:"var(--pi-s4) var(--pi-gutter)"}}>
-        <div style={{maxWidth:"var(--pi-w-content)",margin:"0 auto"}}>
+        <div style={{maxWidth:tab==="stats"?"var(--pi-w-wide)":"var(--pi-w-content)",margin:"0 auto"}}>
         {tab==="stats"&&(
           <PlayerStatsTab player={player} playerId={playerId} players={players} hubPts={hubPts} rank={rank}
             activeZones={activeZones} elig={elig} disabledZones={disabledZones} activeGames={activeGames}
             inQueues={inQueues} playingAt={playingAt} canJoin={canJoin} onJoin={onJoin} onLeave={onLeave}
             rosterCodes={rosterCodes} sessionRosterId={sessionRosterId}
             skinIdx={skinIdx} hairIdx={hairIdx} morphology={morphology}
-            onSetSkinIdx={setSkinIdx} onSetHairIdx={setHairIdx} onSetMorphology={setMorphology}/>
+            onSetSkinIdx={setSkinIdx} onSetHairIdx={setHairIdx} onSetMorphology={setMorphology}
+            ageCategory={ageCategory} onSetAgeCategory={setAgeCategory}
+            lookId={lookId} onSetLookId={setLookId}/>
         )}
         {tab==="leaderboard"&&<PlayerLeaderboardTab sorted={sorted} playerId={playerId}/>}
         {tab==="rules"&&<PlayerRulesView/>}
