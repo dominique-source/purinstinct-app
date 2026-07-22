@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/app/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/app/purinstinct-games-logo.png", "destination": "/purinstinct-games-logo.png" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
