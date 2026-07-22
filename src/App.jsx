@@ -641,6 +641,12 @@ export default function PurInstinctApp(){
   // serveur ni affecter les autres appareils connectés à la vraie session.
   const enterDevPreview=(kind)=>{
     setDevMode(true);
+    if(kind==="user"){
+      seedTestPlayers();
+      const p=TEST_PLAYERS[Math.floor(Math.random()*TEST_PLAYERS.length)];
+      setView({type:"player",id:p.id});
+      return;
+    }
     if(kind==="admin"){ seedTestPlayers(); setView({type:"adminHome"}); return; }
     if(kind==="station"){ seedTestPlayers(); setView({type:"stationPick"}); return; }
     if(kind==="zones"){ setView({type:"testLogin"}); return; }

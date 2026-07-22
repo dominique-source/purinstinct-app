@@ -3,6 +3,7 @@ import { FONTS } from "../../config/fonts.js";
 // Aperçu local (jamais synced à Firebase) de chaque mode/rôle — ouvert via le
 // code DEV_PIN (config/pins.js) tapé sur ModeSelectView ou LiveLoginView.
 const TILES=[
+  {key:"user",icon:"👤",label:"Joueur",sub:"Vue joueur, un clic"},
   {key:"games",icon:"🕹️",label:"Games (Arène)",sub:"Flux live actuel"},
   {key:"corporate",icon:"🏢",label:"Corporate",sub:"Pré-inscription + check-in"},
   {key:"ecole",icon:"🏫",label:"École",sub:"Inscription par équipe"},
