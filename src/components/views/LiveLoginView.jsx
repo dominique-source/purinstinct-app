@@ -52,13 +52,15 @@ function Wordmark(){
   );
 }
 
-export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCodes,onAddPlayer,onRequestSolo,onDevMode}){
+export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,rosterCodes,onAddPlayer,onRequestSolo,onDevMode,skipSessionCode}){
   // Détecter le code de session dans l'URL (?session= ou ?code=)
   const _params=new URLSearchParams(window.location.search);
   const urlCode=_params.get("session")||_params.get("code")||null;
 
+  // skipSessionCode (Mode Développeur): saute directement à la recherche de
+  // joueur, aucun code à saisir — players vient alors de TEST_PLAYERS.
   // screen: "sessionCode" | "player" | "newPlayer" | "admin" | "station" | "stationPick"
-  const [screen,setScreen]=useState(urlCode?"player":"sessionCode");
+  const [screen,setScreen]=useState(urlCode||skipSessionCode?"player":"sessionCode");
   const [sessionCode,setSessionCode]=useState(urlCode||"");
   const [sessionCodeError,setSessionCodeError]=useState(false);
   const [search,setSearch]=useState("");
@@ -260,7 +262,7 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
       {/* ÉTAPE 2 — Recherche joueur */}
       {screen==="player"&&(
         <div className="pi-anim-up" style={{width:"100%",maxWidth:380}}>
-          {!urlCode&&<Button variant="ghost" size="sm" style={{marginBottom:"var(--pi-s4)"}}
+          {!urlCode&&!skipSessionCode&&<Button variant="ghost" size="sm" style={{marginBottom:"var(--pi-s4)"}}
             onClick={()=>{setScreen("sessionCode");setSearch("");}}>
             ← Retour
           </Button>}
