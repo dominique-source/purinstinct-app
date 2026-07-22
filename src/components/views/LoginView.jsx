@@ -14,13 +14,8 @@ export function LoginView({players,queues,onLogin,disabledZones,onGoLive}){
       padding:"40px 16px",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif"}}>
       <style>{FONTS}</style>
       <div className="anim-pop" style={{marginBottom:32,textAlign:"center"}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:72,letterSpacing:-2,lineHeight:1}}>
-          <span style={{color:"#B8E020"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
-        </div>
-        <div style={{color:"#B8E020",fontSize:13,letterSpacing:3,textTransform:"uppercase",marginTop:4,fontWeight:700}}>
-          PurInstinct Games
-        </div>
-        <div style={{color:"#4b5563",fontSize:11,letterSpacing:2,textTransform:"uppercase",marginTop:4,fontWeight:600}}>
+        <img src={import.meta.env.BASE_URL+"purinstinct-games-logo.png"} alt="PürInstinct Games" style={{width:180,height:"auto"}}/>
+        <div style={{color:"#4b5563",fontSize:11,letterSpacing:2,textTransform:"uppercase",marginTop:8,fontWeight:600}}>
           Jeux Sportifs
         </div>
       </div>

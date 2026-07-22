@@ -39,18 +39,9 @@ export function ModeSelectView({onSelectMode}){
         <span style={{fontSize:20,lineHeight:1}}>←</span>{t.backToSite}
       </a>
       {/* Logo */}
-      <div className="anim-pop" style={{textAlign:"center",marginBottom:48}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:72,letterSpacing:-2,lineHeight:1,
-          textShadow:"0 0 40px #B8E02030"}}>
-          <span style={{color:"#B8E020"}}>PUR</span><span style={{color:"#fff"}}>INSTINCT</span>
-        </div>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginTop:8}}>
-          <span style={{width:28,height:2,background:"#B8E020",transform:"skewX(-20deg)"}}/>
-          <span style={{color:"#B8E020",fontSize:13,letterSpacing:3,textTransform:"uppercase",fontWeight:700}}>
-            PurInstinct Games
-          </span>
-          <span style={{width:28,height:2,background:"#B8E020",transform:"skewX(-20deg)"}}/>
-        </div>
+      <div className="anim-pop" style={{textAlign:"center",marginBottom:32}}>
+        <img src={import.meta.env.BASE_URL+"purinstinct-games-logo.png"} alt="PürInstinct Games"
+          style={{width:180,height:"auto",filter:"drop-shadow(0 0 40px #B8E02030)"}}/>
       </div>
 
       {/* Code entry */}
