@@ -644,7 +644,7 @@ export default function PurInstinctApp(){
     if(kind==="admin"){ seedTestPlayers(); setView({type:"adminHome"}); return; }
     if(kind==="station"){ seedTestPlayers(); setView({type:"stationPick"}); return; }
     if(kind==="zones"){ setView({type:"testLogin"}); return; }
-    if(kind==="games"){ setView({type:"liveLogin"}); return; }
+    if(kind==="games"){ seedTestPlayers(); setView({type:"liveLogin",devPreview:true}); return; }
     setActivationMode(kind);
     setView({type:"kiosk",zone:null});
   };
@@ -711,9 +711,10 @@ export default function PurInstinctApp(){
     </button>}
   </>);
 
-  else if(view.type==="liveLogin") content=(
-    <LiveLoginView players={players} queues={queues} disabledZones={arenaState.disabledZones||[]}
+  else if(view.type==="liveLogin") content=(<>
+    <LiveLoginView players={view.devPreview?TEST_PLAYERS:players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         rosterCodes={rosterCodes}
+        skipSessionCode={!!view.devPreview}
         onAddPlayer={addPlayerToSession}
         onRequestSolo={(name,gender,callback)=>{
           const soloGroupId="solo_"+Date.now();
@@ -735,7 +736,13 @@ export default function PurInstinctApp(){
         onLogin={(t,id)=>setView({type:t,id})}
         onGoTest={()=>{fbSet("liveMode",false);setWinnersPublished(false);fbSet("winnersPublished",false);syncQueues(buildInitialQueues(players));setView({type:"login"});}}
         onDevMode={()=>setView({type:"devHub"})}/>
-  );
+    {devMode&&view.devPreview&&<button onClick={()=>{setDevMode(false);setView({type:"devHub"});}}
+      style={{position:"fixed",top:12,right:12,zIndex:999,padding:"8px 14px",borderRadius:10,
+        background:"#111827",border:"1px solid #B8E02060",color:"#B8E020",cursor:"pointer",
+        fontSize:11,fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:.5}}>
+      🛠️ Quitter (Dev)
+    </button>}
+  </>);
 
   else if(view.type==="testLogin") content=(
     <TestLanding onEnter={(zk)=>{
@@ -994,9 +1001,10 @@ export default function PurInstinctApp(){
   );
 
   else if(view.type==="player"){
-    const p=players.find(px=>px.id===view.id);
+    const playerPool=isTestMode?TEST_PLAYERS:players;
+    const p=playerPool.find(px=>px.id===view.id);
     if(p){
-      const groupPlayers=players.filter(px=>px.groupId===(p.groupId||"main"));
+      const groupPlayers=playerPool.filter(px=>px.groupId===(p.groupId||"main"));
       content=(
         <PlayerView playerId={view.id} players={groupPlayers} queues={queues} activeGames={activeGames}
           disabledZones={arenaState.disabledZones||[]}
