@@ -3,10 +3,12 @@ import { FONTS } from "../../config/fonts.js";
 import { useT } from "../../hooks/useLang.js";
 import { LangFooter } from "../shared/LangFooter.jsx";
 import { resolveMode } from "../../config/modes.js";
+import { DEV_PIN } from "../../config/pins.js";
 
 // Saisie d'un code d'entrée (4 chiffres) → resolveMode → onSelectMode(modeKey).
 // Le code ADMIN_PIN est un raccourci caché qui débloque tous les modes.
-export function ModeSelectView({onSelectMode}){
+// Le code DEV_PIN ouvre le Mode Développeur (onDevMode) — voir DevHub.jsx.
+export function ModeSelectView({onSelectMode,onDevMode}){
   const t=useT();
   const [code,setCode]=useState("");
   const [error,setError]=useState(false);
@@ -14,6 +16,11 @@ export function ModeSelectView({onSelectMode}){
   const handleDigit=(val)=>{
     setCode(val);
     if(val.length===4){
+      if(val===DEV_PIN){
+        setError(false);
+        setTimeout(()=>{ onDevMode&&onDevMode(); },150);
+        return;
+      }
       const modeKey=resolveMode(val);
       if(modeKey){
         setError(false);
