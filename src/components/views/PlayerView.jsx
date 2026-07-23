@@ -25,7 +25,6 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
   const [showHub,setShowHub]=useState(true);
   const [skinIdx,setSkinIdx]=useState(2);
   const [hairIdx,setHairIdx]=useState(3);
-  const [morphology,setMorphology]=useState(1);
   const [ageCategory,setAgeCategory]=useState("adulte");
   const [lookId,setLookId]=useState(null);
   const hubPts=useCountUp(player?.globalPoints||0); // avant le early-return: règle des hooks
@@ -119,8 +118,8 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
             activeZones={activeZones} elig={elig} disabledZones={disabledZones} activeGames={activeGames}
             inQueues={inQueues} playingAt={playingAt} canJoin={canJoin} onJoin={onJoin} onLeave={onLeave}
             rosterCodes={rosterCodes} sessionRosterId={sessionRosterId}
-            skinIdx={skinIdx} hairIdx={hairIdx} morphology={morphology}
-            onSetSkinIdx={setSkinIdx} onSetHairIdx={setHairIdx} onSetMorphology={setMorphology}
+            skinIdx={skinIdx} hairIdx={hairIdx}
+            onSetSkinIdx={setSkinIdx} onSetHairIdx={setHairIdx}
             ageCategory={ageCategory} onSetAgeCategory={setAgeCategory}
             lookId={lookId} onSetLookId={setLookId}/>
         )}

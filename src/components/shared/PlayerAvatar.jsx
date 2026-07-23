@@ -1,6 +1,6 @@
-export function PlayerAvatar({gender,skinColor,hairColor,morphology}){
+export function PlayerAvatar({gender,skinColor,hairColor}){
   const cx=50;
-  const bw=[28,36,46][morphology]||36;
+  const bw=36;
   const bl=cx-bw/2, br=cx+bw/2;
   const acc="#B8E020";
   const darkSkin=(s)=>s.replace(/#/,"");
