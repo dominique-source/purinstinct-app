@@ -29,7 +29,7 @@ export const AGE_CATEGORIES = [
 // { [ageCategoryKey]: { male: AvatarLook[], female: AvatarLook[] } }
 // Tableaux vides = pas encore de photos pour ce combo (repli SVG).
 const AVATAR_CATALOG = {
-  enfant: { male: [], female: [] },
+  enfant: { male: buildLooks("child-male", 10), female: buildLooks("child-female", 10) },
   ado: { male: buildLooks("teen-male", 10), female: buildLooks("teen-female", 10) },
   adulte: { male: buildLooks("adult-male", 10), female: buildLooks("adult-female", 10) },
 };
