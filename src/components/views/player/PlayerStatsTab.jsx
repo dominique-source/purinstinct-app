@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useId } from "react";
 import QRCode from "qrcode";
 import { ZONES, ZK } from "../../../config/zones.js";
 import { useZn, useT } from "../../../hooks/useLang.js";
@@ -7,11 +7,22 @@ import { SKIN_TONES, HAIR_COLORS } from "../../../config/avatarOptions.js";
 import { AGE_CATEGORIES, getAvatarLooks } from "../../../config/avatarCatalog.js";
 import { PlayerAvatar } from "../../shared/PlayerAvatar.jsx";
 import { PortraitOption } from "../../shared/PortraitOption.jsx";
+import { RotaryDial } from "../../shared/RotaryDial.jsx";
 import { TierBadge } from "../../shared/TierBadge.jsx";
 import { Panel, Eyebrow } from "../../ui/Panel.jsx";
 import { Button } from "../../ui/Button.jsx";
 import { Modal } from "../../ui/Modal.jsx";
 import { ScoreDisplay } from "../../ui/Numerals.jsx";
+
+// Roulette — attributs pilotables en direct sur la vraie photo, sans nouvel
+// asset: teinte de peau (filtre SVG restreint aux tons chair, voir le
+// <filter> ci-dessous) et inclinaison de pose (simple rotate() CSS). La
+// longueur des cheveux etc. demanderait des variantes photo du meme
+// personnage qu'on n'a pas — voir avatarCatalog.js.
+const DIAL_ATTRS = [
+  { key: "peau", icon: "🎨", label: "Peau", min: -20, max: 20, unit: "°" },
+  { key: "pose", icon: "🔄", label: "Pose", min: -8, max: 8, unit: "°" },
+];
 
 export function PlayerStatsTab({player,playerId,players,hubPts,rank,activeZones,elig,disabledZones,activeGames,inQueues,playingAt,canJoin,onJoin,onLeave,rosterCodes,sessionRosterId,skinIdx,hairIdx,onSetSkinIdx,onSetHairIdx,ageCategory,onSetAgeCategory,lookId,onSetLookId}){
   const t=useT();
@@ -24,6 +35,15 @@ export function PlayerStatsTab({player,playerId,players,hubPts,rank,activeZones,
   // Vide -> repli sur l'avatar SVG existant (Peau/Cheveux restent visibles).
   const looks=getAvatarLooks(ageCategory,player.gender);
   const activeLook=looks.find(l=>l.id===lookId)||looks[0]||null;
+
+  // Roulette — état local (non persisté, même convention que skinIdx/hairIdx).
+  const [activeDial,setActiveDial]=useState("peau");
+  const [skinTint,setSkinTint]=useState(0);   // degrés hueRotate, filtre SVG ci-dessous
+  const [poseTilt,setPoseTilt]=useState(0);   // degrés, rotate() CSS
+  const skinFilterId=useId();
+  const dialValues={peau:skinTint,pose:poseTilt};
+  const dialSetters={peau:setSkinTint,pose:setPoseTilt};
+  const activeAttr=DIAL_ATTRS.find(a=>a.key===activeDial);
 
   const openQR=async()=>{
     if(!sessionQR&&code){
@@ -42,12 +62,37 @@ export function PlayerStatsTab({player,playerId,players,hubPts,rank,activeZones,
 
         {/* Colonne gauche — grand avatar + score/rang */}
         <Panel flush>
+          {/* Filtre SVG teinte de peau — restreint aux tons chair (bande de
+              luminance moyenne) via un masque d'alpha, pour ne pas décaler le
+              kit noir ni l'accent lime. `values` de la 2e feColorMatrix suit
+              skinTint en direct (React re-render à chaque pointermove). */}
+          <svg width="0" height="0" style={{position:"absolute"}} aria-hidden="true">
+            <defs>
+              <filter id={skinFilterId} colorInterpolationFilters="sRGB">
+                <feColorMatrix in="SourceGraphic" type="matrix"
+                  values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.33 0.33 0.33 0 0" result="lumaAlpha"/>
+                <feComponentTransfer in="lumaAlpha" result="mask">
+                  <feFuncA type="table" tableValues="0 0 0.35 0.9 1 0.9 0.35 0 0"/>
+                </feComponentTransfer>
+                <feColorMatrix in="SourceGraphic" type="hueRotate" values={skinTint} result="shifted"/>
+                <feComposite in="shifted" in2="mask" operator="in" result="shiftedMasked"/>
+                <feComposite in="SourceGraphic" in2="mask" operator="out" result="baseUnmasked"/>
+                <feMerge>
+                  <feMergeNode in="baseUnmasked"/>
+                  <feMergeNode in="shiftedMasked"/>
+                </feMerge>
+              </filter>
+            </defs>
+          </svg>
           <div className="pi-profile-hero">
             <div className="pi-profile-hero__glow" aria-hidden="true"/>
             <div className="pi-profile-hero__avatar">
               {activeLook ? (
                 <img src={activeLook.fullBodySrc} alt=""
-                  style={{width:"100%",height:"auto",display:"block"}}/>
+                  style={{width:"100%",height:"auto",display:"block",
+                    filter:`url(#${skinFilterId})`,
+                    transform:`rotate(${poseTilt}deg)`,
+                    transition:"transform 60ms linear"}}/>
               ) : (
                 <PlayerAvatar gender={player.gender} skinColor={SKIN_TONES[skinIdx]} hairColor={HAIR_COLORS[hairIdx]}/>
               )}
@@ -97,6 +142,28 @@ export function PlayerStatsTab({player,playerId,players,hubPts,rank,activeZones,
                     onSelect={()=>onSetLookId(look.id)} size={56}/>
                 ))}
               </div>
+            </Panel>
+          )}
+
+          {looks.length>0&&(
+            <Panel style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"var(--pi-s4)"}}>
+              <div style={{display:"flex",gap:"var(--pi-s2)"}} role="tablist" aria-label="Attribut à ajuster">
+                {DIAL_ATTRS.map(a=>(
+                  <button key={a.key} type="button" role="tab" aria-selected={activeDial===a.key}
+                    className={activeDial===a.key?"pi-attr-tab is-active":"pi-attr-tab"}
+                    onClick={()=>setActiveDial(a.key)}>
+                    <span>{a.icon}</span>
+                    <span>{a.label}</span>
+                  </button>
+                ))}
+              </div>
+              <RotaryDial
+                key={activeDial}
+                value={dialValues[activeDial]}
+                min={activeAttr.min} max={activeAttr.max}
+                label={activeAttr.label} unit={activeAttr.unit} icon={activeAttr.icon}
+                continuous haptic size={200}
+                onChange={dialSetters[activeDial]}/>
             </Panel>
           )}
 
