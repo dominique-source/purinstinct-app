@@ -71,7 +71,7 @@ export function PlayerStatsTab({player,playerId,players,hubPts,rank,activeZones,
         {/* Colonne droite — étape d'âge, galerie de looks, personnalisation */}
         <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s4)"}}>
           <Panel>
-            <Eyebrow style={{marginBottom:"var(--pi-s3)"}}>Étape d'âge</Eyebrow>
+            <Eyebrow style={{marginBottom:"var(--pi-s3)"}}>Es-tu un?</Eyebrow>
             <div style={{display:"flex",justifyContent:"space-around"}}>
               {AGE_CATEGORIES.map(cat=>{
                 const catLooks=getAvatarLooks(cat.key,player.gender);
