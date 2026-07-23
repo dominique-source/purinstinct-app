@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import { ZONES, ZK } from "../../../config/zones.js";
 import { useZn, useT } from "../../../hooks/useLang.js";
 import { BASE_URL } from "../../../config/constants.js";
-import { SKIN_TONES, HAIR_COLORS, MORPHO_LABELS } from "../../../config/avatarOptions.js";
+import { SKIN_TONES, HAIR_COLORS } from "../../../config/avatarOptions.js";
 import { AGE_CATEGORIES, getAvatarLooks } from "../../../config/avatarCatalog.js";
 import { PlayerAvatar } from "../../shared/PlayerAvatar.jsx";
 import { PortraitOption } from "../../shared/PortraitOption.jsx";
@@ -13,7 +13,7 @@ import { Button } from "../../ui/Button.jsx";
 import { Modal } from "../../ui/Modal.jsx";
 import { ScoreDisplay } from "../../ui/Numerals.jsx";
 
-export function PlayerStatsTab({player,playerId,players,hubPts,rank,activeZones,elig,disabledZones,activeGames,inQueues,playingAt,canJoin,onJoin,onLeave,rosterCodes,sessionRosterId,skinIdx,hairIdx,morphology,onSetSkinIdx,onSetHairIdx,onSetMorphology,ageCategory,onSetAgeCategory,lookId,onSetLookId}){
+export function PlayerStatsTab({player,playerId,players,hubPts,rank,activeZones,elig,disabledZones,activeGames,inQueues,playingAt,canJoin,onJoin,onLeave,rosterCodes,sessionRosterId,skinIdx,hairIdx,onSetSkinIdx,onSetHairIdx,ageCategory,onSetAgeCategory,lookId,onSetLookId}){
   const t=useT();
   const zn=useZn();
   const [sessionQR,setSessionQR]=useState(null);
@@ -49,7 +49,7 @@ export function PlayerStatsTab({player,playerId,players,hubPts,rank,activeZones,
                 <img src={activeLook.fullBodySrc} alt=""
                   style={{width:"100%",height:"auto",display:"block"}}/>
               ) : (
-                <PlayerAvatar gender={player.gender} skinColor={SKIN_TONES[skinIdx]} hairColor={HAIR_COLORS[hairIdx]} morphology={morphology}/>
+                <PlayerAvatar gender={player.gender} skinColor={SKIN_TONES[skinIdx]} hairColor={HAIR_COLORS[hairIdx]}/>
               )}
             </div>
           </div>
@@ -100,8 +100,8 @@ export function PlayerStatsTab({player,playerId,players,hubPts,rank,activeZones,
             </Panel>
           )}
 
-          <Panel style={{display:"flex",flexDirection:"column",gap:"var(--pi-s3)"}}>
-            {looks.length===0&&(<>
+          {looks.length===0&&(
+            <Panel style={{display:"flex",flexDirection:"column",gap:"var(--pi-s3)"}}>
               <div style={{display:"flex",alignItems:"center",gap:"var(--pi-s3)"}}>
                 <Eyebrow style={{width:58,flexShrink:0}}>Peau</Eyebrow>
                 <div style={{flex:1,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -124,17 +124,8 @@ export function PlayerStatsTab({player,playerId,players,hubPts,rank,activeZones,
                   ))}
                 </div>
               </div>
-            </>)}
-            <div style={{display:"flex",alignItems:"center",gap:"var(--pi-s3)"}}>
-              <Eyebrow style={{width:58,flexShrink:0}}>Corps</Eyebrow>
-              <div style={{flex:1,display:"flex",gap:"var(--pi-s2)"}} role="group" aria-label="Corps">
-                {MORPHO_LABELS.map((label,i)=>(
-                  <button key={i} onClick={()=>onSetMorphology(i)} aria-pressed={morphology===i}
-                    className={morphology===i?"pi-tab is-active":"pi-tab"} style={{flex:1}}>{label}</button>
-                ))}
-              </div>
-            </div>
-          </Panel>
+            </Panel>
+          )}
         </div>
       </div>
 
