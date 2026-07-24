@@ -192,15 +192,21 @@ export function LiveLoginView({players,queues,onLogin,disabledZones,onGoTest,ros
           </div>}
           <NumPad value={sessionCode} onChange={v=>{setSessionCode(v);setSessionCodeError(false);setSoloUnavailable(false);}}
             onComplete={handleSessionCode}/>
-          {/* Boutons Admin + Station discrets en bas */}
-          <div style={{display:"flex",gap:"var(--pi-s2)",marginTop:"var(--pi-s6)",justifyContent:"center"}}>
-            <Button variant="ghost" size="sm" onClick={()=>{setScreen("admin");setPin("");setPinError(false);}}>
-              🛡️ Admin
-            </Button>
-            <Button variant="ghost" size="sm" onClick={()=>setScreen("stationPick")}>
-              📍 Responsable de plateau
-            </Button>
-          </div>
+        </div>
+      )}
+
+      {/* Boutons Admin + Station — fixes en bas, toujours visibles et tapables
+          sans scroll (avant: dans le flux centré, poussés hors écran sur
+          petits viewports / avec clavier ouvert). */}
+      {screen==="sessionCode"&&(
+        <div style={{position:"fixed",left:0,right:0,bottom:"calc(64px + env(safe-area-inset-bottom))",
+          display:"flex",gap:"var(--pi-s2)",justifyContent:"center",padding:"0 var(--pi-gutter)",zIndex:10}}>
+          <Button variant="ghost" size="sm" onClick={()=>{setScreen("admin");setPin("");setPinError(false);}}>
+            🛡️ Admin
+          </Button>
+          <Button variant="ghost" size="sm" onClick={()=>setScreen("stationPick")}>
+            📍 Responsable de plateau
+          </Button>
         </div>
       )}
 
