@@ -11,6 +11,7 @@ import { ModeContext } from "./hooks/useMode.js";
 import { shuffle, getStatus, createPlayersFromRoster, makeEmptyGames, makeEmptyQueues, computeTeamResult, computeIndividualResult, refillQueues, buildInitialQueues } from "./lib/game-logic.js";
 import { assertAllowedCapture } from "./lib/playerCapture.js";
 import { joinOrCreateTeam, pickTeamMatchup, formTeamMatch, pairKey } from "./lib/teamMatch.js";
+import { planRound } from "./lib/smallGroup.js";
 import { LangFooter } from "./components/shared/LangFooter.jsx";
 import { AdminView } from "./components/admin/AdminView.jsx";
 import { StationView } from "./components/game/StationView.jsx";
@@ -53,6 +54,9 @@ export default function PurInstinctApp(){
   // Rotation équitable: { [zone]: { "teamIdA|teamIdB": count } } — nombre de fois
   // que chaque paire d'équipes s'est déjà affrontée dans cette zone.
   const [teamPairCounts,setTeamPairCounts]=useState({});
+  // Mode Petit Groupe: état de la manche en cours — voir src/lib/smallGroup.js
+  // et launchSmallGroupRound ci-dessous.
+  const [smallGroup,setSmallGroup]=useState({roundStatus:"idle",roundNumber:0,secondaryZoneUsage:{}});
   // Borne fixe: ?kiosk=1 (option &zone=X pour verrouiller une borne à une seule
   // zone) bascule directement en mode kiosque, sans passer par l'écran PIN.
   const [view,setView]=useState(()=>{
@@ -150,6 +154,7 @@ export default function PurInstinctApp(){
       if(data.activationMode) setActivationMode(data.activationMode);
       setTeams(data.teams||{});
       setTeamPairCounts(data.teamPairCounts||{});
+      if(data.smallGroup) setSmallGroup(data.smallGroup);
       if(data.extraRosters) setRosters([...INITIAL_ROSTERS,...Object.values(data.extraRosters).map(r=>({...r,entries:r.entries||[]}))]);
 
       setFbReady(true);
@@ -158,6 +163,23 @@ export default function PurInstinctApp(){
 
     return()=>{cancelled=true;if(stateRef)off(stateRef);};
   },[]);
+
+  // Mode Petit Groupe: dès que toutes les zones de la manche ont terminé leur
+  // match en cours (plus aucun activeGames dans smallGroup.roundZones), la
+  // manche passe à "roundEnded" — l'admin doit ensuite déclencher la manche
+  // suivante explicitement. Effet racine (toujours monté), contrairement à
+  // StationView qui peut être fermé sur certains postes.
+  useEffect(()=>{
+    if(activationMode!=="petitGroupe"||smallGroup.roundStatus!=="wrapping") return;
+    const stillRunning=(smallGroup.roundZones||[]).some(zk=>!!activeGames[zk]);
+    if(stillRunning) return;
+    // setState dans un callback (pas synchrone dans le corps de l'effet) —
+    // même technique que le minuteur d'annulation de StationView.jsx.
+    queueMicrotask(()=>{
+      setSmallGroup(sg=>({...sg,roundStatus:"roundEnded"}));
+      fbUpdate({["state/smallGroup/roundStatus"]:"roundEnded"});
+    });
+  },[activationMode,smallGroup.roundStatus,smallGroup.roundZones,activeGames]);
 
   // ── Helpers écriture Firebase ───────────────────────────────────
   const fbSet=(path,value)=>set(fbRef("state/"+path),value);
@@ -469,6 +491,52 @@ export default function PurInstinctApp(){
     });
   };
 
+  // Mode Petit Groupe: lance une manche — sélectionne jusqu'à 12 joueurs pour
+  // PurInstinct (priorité aux jamais-joué), puis répartit le reste dans les
+  // zones secondaires choisies (ou dans une course vitesse unique si
+  // speedMode) — voir src/lib/smallGroup.js:planRound. Chaque manche vide
+  // d'abord les 6 files (repart d'une feuille blanche) via syncQueues/
+  // syncGames, les mêmes helpers "opération globale volontaire" déjà utilisés
+  // par activateRoster.
+  const launchSmallGroupRound=({headcount,zoneCount,speedMode})=>{
+    const sessionPlayers=players.filter(p=>(p.groupId||"main")===activeRosterId);
+    const availableIds=sessionPlayers
+      .filter(p=>getStatus(p.id,queues,activeGames).playingAt===null)
+      .map(p=>p.id);
+    const pMap={}; sessionPlayers.forEach(p=>{pMap[p.id]=p;});
+
+    const plan=planRound({availableIds,pMap,zoneCount,speedMode,secondaryZoneUsage:smallGroup.secondaryZoneUsage||{}});
+
+    const newQueues=makeEmptyQueues();
+    const newGames=makeEmptyGames();
+    newGames.purinstinct={type:"team",teamA:plan.purinstinct.teamA,teamB:plan.purinstinct.teamB};
+
+    let roundZones;
+    if(speedMode){
+      newQueues.speed=plan.speedQueue;
+      roundZones=["purinstinct","speed"];
+    } else {
+      plan.secondaryZones.forEach(z=>{newQueues[z]=plan.secondaryAssignments[z]||[];});
+      roundZones=["purinstinct",...plan.secondaryZones];
+    }
+
+    const nextRound={
+      roundStatus:"active",
+      roundNumber:(smallGroup.roundNumber||0)+1,
+      headcount, zoneCount, speedMode,
+      secondaryZones:speedMode?[]:plan.secondaryZones,
+      roundZones,
+      secondaryZoneUsage:plan.updatedZoneUsage,
+      launchedAt:Date.now(),
+      wrappingStartedAt:null,
+    };
+
+    syncQueues(newQueues);
+    syncGames(newGames);
+    setSmallGroup(nextRound);
+    fbSet("smallGroup",nextRound);
+  };
+
   // --- Cancel game: remettre les joueurs en tête de file dans le même ordre ---
   const cancelGame=(zone)=>{
     const game=activeGames[zone];
@@ -501,7 +569,18 @@ export default function PurInstinctApp(){
       updated=computeIndividualResult(players,game.participants||[],winner,zone,secondId);
     }
     const newGames={...activeGames,[zone]:null};
-    const refilled=refillQueues(updated,queues,newGames);
+    let refilled=refillQueues(updated,queues,newGames);
+    // Mode Petit Groupe: refillQueues redistribue génériquement vers TOUTE
+    // zone sous QUEUE_MIN, sans notion de "manche en cours" — ça polluerait
+    // les zones hors smallGroup.roundZones. On ne garde le refill que pour
+    // les zones de la manche active ; les autres restent telles qu'avant
+    // l'appel (vides, comme les a laissées launchSmallGroupRound).
+    if(activationMode==="petitGroupe"){
+      const roundZones=new Set(smallGroup.roundZones||[]);
+      const scoped={...queues};
+      roundZones.forEach(zk=>{scoped[zk]=refilled[zk];});
+      refilled=scoped;
+    }
     // Mise à jour locale immédiate
     const stamp=Date.now();
     setPlayers(updated);
@@ -523,6 +602,15 @@ export default function PurInstinctApp(){
     });
     // Chevauche l'écriture atomique existante (jamais un fbUpdate séparé)
     writes["state/lastResultAt/"+zone]=stamp;
+    // Mode Petit Groupe: le résultat PurInstinct signale aux autres plateaux
+    // "c'est la dernière partie" — ils terminent leur match en cours (déjà
+    // clôturé plus haut si c'était eux) mais n'en génèrent plus de nouveau
+    // (voir suppressAutoGen sur StationView) jusqu'à la manche suivante.
+    if(activationMode==="petitGroupe"&&zone==="purinstinct"&&smallGroup.roundStatus==="active"){
+      writes["state/smallGroup/roundStatus"]="wrapping";
+      writes["state/smallGroup/wrappingStartedAt"]=stamp;
+      setSmallGroup(sg=>({...sg,roundStatus:"wrapping",wrappingStartedAt:stamp}));
+    }
     fbUpdate(writes);
   };
 
@@ -620,6 +708,15 @@ export default function PurInstinctApp(){
       fbSet("liveMode",false);
       seedTestPlayers();
       setView({type:"testLogin"});
+      return;
+    }
+    // "smallGroupAdmin" (petitGroupe) = le poste qui entre ce code pilote les
+    // manches — route direct vers l'onglet admin dédié (données réelles, pas
+    // TEST_PLAYERS). L'inscription des joueurs se fait séparément, sur
+    // d'autres tablettes, via le bypass ?kiosk=1 déjà existant.
+    if(routeKind==="smallGroupAdmin"){
+      fbSet("liveMode",false);
+      setView({type:"admin",tab:"smallGroup"});
       return;
     }
     // "kiosk": festival/parc (kioskDefault, comme ?kiosk=1 aujourd'hui) et
@@ -828,6 +925,9 @@ export default function PurInstinctApp(){
       return false;
     })} allPlayers={isTestMode?TEST_PLAYERS:players} queues={queues} activeGames={activeGames} arenaState={arenaState} lastResultAt={lastResultAt} rosters={rosters} activeRosterId={activeRosterId} initialTab={view.tab}
       teams={teams}
+      activationMode={activationMode}
+      smallGroup={smallGroup}
+      onLaunchSmallGroupRound={launchSmallGroupRound}
       onToggleTeamMode={onToggleTeamMode}
       onAssignPlayer={assignPlayerToTeam}
       onRemoveTeamMember={removeTeamMember}
@@ -936,6 +1036,7 @@ export default function PurInstinctApp(){
       sessionCode={(rosterCodes||{})[activeRosterId]||null}
       teamMode={!!arenaState.teamMode}
       teams={teams[view.id]||{}}
+      suppressAutoGen={activationMode==="petitGroupe"&&smallGroup.roundStatus!=="active"}
       onGenerateTeamMatch={()=>generateTeamMatch(view.id)}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
       onGenerate={(p,force)=>generateTeams(view.id,p,force)}

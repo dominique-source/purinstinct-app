@@ -14,7 +14,7 @@ import { Button, IconButton, Panel, Eyebrow, Badge, LiveIndicator, Tabs, Timer, 
 // Flagship live-station console. Presentation is design-system-driven; the
 // pending/undo state machine, auto-generation and queue logic are preserved
 // verbatim from the previous implementation.
-export function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,teamMode,teams,onGenerateTeamMatch,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId,onFillQueue}){
+export function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,teamMode,teams,suppressAutoGen=false,onGenerateTeamMatch,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId,onFillQueue}){
   const t=useT();
   const zn=useZn();
   const z=ZONES[zone];
@@ -95,9 +95,13 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
     // joueurs ne s'y trouvent pas (ils rejoignent une équipe), et le
     // responsable déclenche "Générer le prochain match" lui-même.
     if(teamModeActive) return;
+    // Mode Petit Groupe hors manche active ("wrapping"/"roundEnded"): le
+    // résultat PurInstinct vient de signaler la fin de la manche — cette
+    // zone termine son match en cours mais n'en génère plus de nouveau.
+    if(suppressAutoGen) return;
     if(canGen&&(hasIdeal||zone==="speed"))
       onGenerate(zone==="speed"?(sprintSize==="tous"?qPlayers.length:sprintSize):null);
-  },[activeGame,canGen,hasIdeal,zone,sprintSize,qPlayers.length,onGenerate,teamModeActive]);
+  },[activeGame,canGen,hasIdeal,zone,sprintSize,qPlayers.length,onGenerate,teamModeActive,suppressAutoGen]);
   const sprintLine=[...qPlayers].sort((a,b)=>((a.zoneScores||{}).speed||50)-((b.zoneScores||{}).speed||50));
 
   const handleAdd=()=>{
