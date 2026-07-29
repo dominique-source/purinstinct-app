@@ -40,6 +40,14 @@
         "$zone": {
           "$pairKey": { ".validate": "newData.isNumber()" }
         }
+      },
+
+      "smallGroup": {
+        "roundStatus": { ".validate": "newData.isString()" },
+        "roundNumber": { ".validate": "newData.isNumber()" },
+        "headcount":   { ".validate": "newData.isNumber()" },
+        "zoneCount":   { ".validate": "newData.isNumber()" },
+        "speedMode":   { ".validate": "newData.isBoolean()" }
       }
     }
   }
