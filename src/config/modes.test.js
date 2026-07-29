@@ -2,19 +2,25 @@ import { describe, it, expect } from "vitest";
 import { MODES, resolveMode, classifyModeRoute } from "./modes.js";
 
 describe("MODES", () => {
-  it("defines the 5 public modes plus a hidden admin mode", () => {
+  it("defines the 6 public modes plus a hidden admin mode", () => {
     expect(Object.keys(MODES).sort()).toEqual(
-      ["admin", "corporate", "ecole", "festival", "games", "parc"].sort(),
+      ["admin", "corporate", "ecole", "festival", "games", "parc", "petitGroupe"].sort(),
     );
   });
 
   it("admin mode is hidden and unlocks the union of every view", () => {
     expect(MODES.admin.hidden).toBe(true);
-    for (const key of ["games", "corporate", "ecole", "festival", "parc"]) {
+    for (const key of ["games", "corporate", "ecole", "festival", "parc", "petitGroupe"]) {
       for (const view of MODES[key].enabledViews) {
         expect(MODES.admin.enabledViews).toContain(view);
       }
     }
+  });
+
+  it("petitGroupe mode does not default to kiosk (the entry code routes to the admin dashboard instead)", () => {
+    expect(MODES.petitGroupe.kioskDefault).toBe(false);
+    expect(MODES.petitGroupe.enabledViews).toContain("smallGroupAdmin");
+    expect(MODES.petitGroupe.enabledViews).toContain("kiosk");
   });
 
   it("games mode matches the reference/RFID config (no regression)", () => {
@@ -44,6 +50,7 @@ describe("resolveMode", () => {
     expect(resolveMode("0002")).toBe("ecole");
     expect(resolveMode("0003")).toBe("festival");
     expect(resolveMode("0004")).toBe("parc");
+    expect(resolveMode("0005")).toBe("petitGroupe");
   });
 
   it("resolves the admin PIN to the admin mode", () => {
@@ -74,6 +81,7 @@ describe("mode switching (smoke test)", () => {
     "0002": { mode: "ecole", route: "kiosk" },
     "0003": { mode: "festival", route: "kiosk" },
     "0004": { mode: "parc", route: "kiosk" },
+    "0005": { mode: "petitGroupe", route: "smallGroupAdmin" },
     "1111": { mode: "admin", route: "admin" },
   };
 
@@ -91,5 +99,11 @@ describe("mode switching (smoke test)", () => {
 
   it("an unknown code never resolves to a route", () => {
     expect(classifyModeRoute(resolveMode("9999"))).toBeNull();
+  });
+
+  it("petitGroupe routes to its own distinct destination, not kiosk/admin/live/stub", () => {
+    const route = classifyModeRoute(resolveMode("0005"));
+    expect(route).toBe("smallGroupAdmin");
+    expect(["kiosk", "admin", "live", "stub", null]).not.toContain(route);
   });
 });
