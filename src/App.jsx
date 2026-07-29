@@ -513,7 +513,12 @@ export default function PurInstinctApp(){
 
     let roundZones;
     if(speedMode){
-      newQueues.speed=plan.speedQueue;
+      // Course unique avec tout le surplus, écrite directement dans
+      // activeGames (comme purinstinct) plutôt que via la file: le
+      // sélecteur de taille de course du plateau vitesse défaut à 4
+      // (StationView.jsx sprintSize), pas "tous" — passer par la file
+      // laisserait la première course ne prendre que 4 joueurs.
+      newGames.speed={type:"sprint",participants:plan.speedQueue};
       roundZones=["purinstinct","speed"];
     } else {
       plan.secondaryZones.forEach(z=>{newQueues[z]=plan.secondaryAssignments[z]||[];});
