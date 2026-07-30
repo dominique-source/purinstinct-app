@@ -560,6 +560,35 @@ export default function PurInstinctApp(){
     });
   };
 
+  // Outil Mode Développeur: arrête TOUTES les parties actives en ce moment,
+  // sur toutes les zones, en une seule écriture atomique — même logique que
+  // cancelGame (joueurs remis en tête de file dans le même ordre) répétée
+  // pour chaque zone concernée. Écrit pour de vrai sur Firebase (contrairement
+  // au reste du Mode Développeur, purement local) — l'appelant (DevHub) doit
+  // confirmer avant d'invoquer cette fonction.
+  const deactivateAllLiveGames=()=>{
+    const newQueues={...queues};
+    const newGames={...activeGames};
+    const writes={};
+    ZK.forEach(zone=>{
+      const game=activeGames[zone];
+      if(!game) return;
+      const inGame=game.type==="team"
+        ?[...(game.teamA||[]),...(game.teamB||[])]
+        :(game.participants||[]);
+      const existing=(queues[zone]||[]).filter(id=>!inGame.includes(id));
+      const newQ=[...inGame,...existing];
+      newQueues[zone]=newQ;
+      newGames[zone]=null;
+      writes["state/queues/"+zone]=newQ.length>0?newQ:null;
+      writes["state/activeGames/"+zone]=null;
+    });
+    if(Object.keys(writes).length===0) return;
+    setQueues(newQueues);
+    setActiveGames(newGames);
+    fbUpdate(writes);
+  };
+
   // --- Submit result ---
   const submitResult=(zone,winner,secondId=null)=>{
     const game=activeGames[zone];
@@ -789,7 +818,9 @@ export default function PurInstinctApp(){
 
   else if(view.type==="devHub") content=(
     <DevHub onPreview={enterDevPreview}
-      onExit={()=>{setDevMode(false);setIsTestMode(false);setView({type:liveMode?"liveLogin":"login"});}}/>
+      onExit={()=>{setDevMode(false);setIsTestMode(false);setView({type:liveMode?"liveLogin":"login"});}}
+      onDeactivateAllGames={deactivateAllLiveGames}
+      activeGamesCount={ZK.filter(zk=>activeGames[zk]).length}/>
   );
 
   else if(view.type==="modeStub") content=(
