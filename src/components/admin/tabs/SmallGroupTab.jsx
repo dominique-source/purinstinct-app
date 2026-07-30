@@ -72,7 +72,7 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
   const [speedMode, setSpeedMode] = useState(false);
 
   const status = smallGroup.roundStatus || "idle";
-  const canLaunch = !previewOnly && (status === "idle" || status === "roundEnded");
+  const canLaunch = status === "idle" || status === "roundEnded";
   const availableCount = players.filter((p) => !isPlaying(p.id, activeGames)).length;
   const boardZones = status === "idle" ? [] : (smallGroup.roundZones || []).filter((z) => z !== "purinstinct");
 
@@ -116,7 +116,11 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
               {Array.from({ length: MAX_SECONDARY_ZONES }, (_, i) => i + 1).map((n) => (
                 <button key={n} onClick={() => setZoneCount(n)} disabled={speedMode}
                   className={zoneCount === n && !speedMode ? "pi-tab is-active" : "pi-tab"}
-                  style={{ minWidth: 40, opacity: speedMode ? 0.5 : 1 }}>
+                  style={speedMode ? {
+                    minWidth: 40, cursor: "not-allowed", opacity: 0.35,
+                    background: "var(--pi-surface-1)", color: "var(--pi-text-4)",
+                    textDecoration: "line-through", filter: "grayscale(1)",
+                  } : { minWidth: 40 }}>
                   {n}
                 </button>
               ))}
@@ -137,11 +141,11 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
             {status === "roundEnded" ? `🚀 Lancer la manche ${(smallGroup.roundNumber || 0) + 1}` : t.smallGroupLaunchBtn}
           </Button>
           {previewOnly && (
-            <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-warn)" }}>
-              ⚠️ Aperçu — lancement désactivé pour ne pas affecter une vraie session en cours.
+            <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)" }}>
+              🧪 Aperçu — joueurs de test uniquement, aucune écriture sur la vraie session.
             </div>
           )}
-          {!previewOnly && !canLaunch && (
+          {!canLaunch && (
             <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)" }}>
               Manche {smallGroup.roundNumber} en cours…
             </div>
