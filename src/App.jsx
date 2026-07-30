@@ -498,8 +498,12 @@ export default function PurInstinctApp(){
   // d'abord les 6 files (repart d'une feuille blanche) via syncQueues/
   // syncGames, les mêmes helpers "opération globale volontaire" déjà utilisés
   // par activateRoster.
+  // En aperçu Mode Développeur (isTestMode), utilise TEST_PLAYERS (jamais
+  // synced Firebase) au lieu des vrais joueurs inscrits, et n'écrit rien sur
+  // Firebase — état local uniquement, pour que le bouton "Lancer" reste
+  // testable sans jamais toucher une vraie session partagée.
   const launchSmallGroupRound=({headcount,zoneCount,speedMode})=>{
-    const sessionPlayers=players.filter(p=>(p.groupId||"main")===activeRosterId);
+    const sessionPlayers=isTestMode?TEST_PLAYERS:players.filter(p=>(p.groupId||"main")===activeRosterId);
     const availableIds=sessionPlayers
       .filter(p=>getStatus(p.id,queues,activeGames).playingAt===null)
       .map(p=>p.id);
@@ -536,6 +540,12 @@ export default function PurInstinctApp(){
       wrappingStartedAt:null,
     };
 
+    if(isTestMode){
+      setQueues(newQueues);
+      setActiveGames(newGames);
+      setSmallGroup(nextRound);
+      return;
+    }
     syncQueues(newQueues);
     syncGames(newGames);
     setSmallGroup(nextRound);
