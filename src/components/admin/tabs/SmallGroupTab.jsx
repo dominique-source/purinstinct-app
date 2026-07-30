@@ -4,6 +4,9 @@ import { useZn, useT } from "../../../hooks/useLang.js";
 import { Panel, Eyebrow } from "../../ui/Panel.jsx";
 import { Button } from "../../ui/Button.jsx";
 import { SECONDARY_ZONE_CANDIDATES } from "../../../lib/smallGroup.js";
+import { TeamGameView } from "../../game/TeamGameView.jsx";
+import { IndividualGameView } from "../../game/IndividualGameView.jsx";
+import { SprintGameView } from "../../game/SprintGameView.jsx";
 
 // Il n'y a que 4 zones secondaires candidates (speed en est exclue — voir
 // plus bas) — le sélecteur de nombre de zones s'arrête donc à 4, pas 5.
@@ -18,37 +21,25 @@ function isPlaying(playerId, activeGames) {
   });
 }
 
-function ZoneMatchCard({ zone, activeGame, queue, players, zn, t }) {
+// Carte de zone: rend le vrai composant de match interactif (les mêmes que
+// StationView — boutons "retirer un joueur", "remplacer", "déclarer
+// gagnant") dès qu'un match est formé. Simplification volontaire par
+// rapport à StationView: soumission immédiate au clic, pas de fenêtre
+// d'annulation de 10s — acceptable ici puisqu'un seul responsable de
+// confiance pilote tout depuis ce tableau de bord.
+function ZoneMatchCard({ zone, activeGame, queue, players, zn, onResult, onRemove, onReplace }) {
   const z = ZONES[zone];
   const zl = zn(zone);
-  const nameOf = (id) => players.find((p) => p.id === id)?.name || "#" + id;
   return (
     <div style={{ border: "1px solid var(--pi-line)", borderRadius: "var(--pi-r-md)", padding: "var(--pi-s3)", background: "var(--pi-surface-2)" }}>
       <Eyebrow style={{ marginBottom: "var(--pi-s2)" }}>{z.icon} {zl.sn}</Eyebrow>
       {activeGame ? (
         activeGame.type === "team" ? (
-          <div style={{ display: "flex", gap: "var(--pi-s3)" }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)", marginBottom: 4 }}>{t.smallGroupTeamA}</div>
-              {activeGame.teamA.map((id) => (
-                <div key={id} style={{ fontSize: "var(--pi-fs-body)", color: "var(--pi-text)" }}>{nameOf(id)}</div>
-              ))}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)", marginBottom: 4 }}>{t.smallGroupTeamB}</div>
-              {activeGame.teamB.map((id) => (
-                <div key={id} style={{ fontSize: "var(--pi-fs-body)", color: "var(--pi-text)" }}>{nameOf(id)}</div>
-              ))}
-            </div>
-          </div>
+          <TeamGameView game={activeGame} players={players} zone={zone} onResult={onResult} onRemove={onRemove} onReplace={onReplace} />
+        ) : activeGame.type === "sprint" ? (
+          <SprintGameView game={activeGame} players={players} zone={zone} onWinner={onResult} onRemove={onRemove} onReplace={onReplace} />
         ) : (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--pi-s2)" }}>
-            {(activeGame.participants || []).map((id) => (
-              <span key={id} style={{ fontSize: "var(--pi-fs-body)", color: "var(--pi-text)", padding: "2px 8px", borderRadius: "var(--pi-r-pill)", background: "var(--pi-surface-3)" }}>
-                {nameOf(id)}
-              </span>
-            ))}
-          </div>
+          <IndividualGameView game={activeGame} players={players} zone={zone} onWinner={onResult} onRemove={onRemove} onReplace={onReplace} />
         )
       ) : (
         <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)" }}>
@@ -64,7 +55,7 @@ function ZoneMatchCard({ zone, activeGame, queue, players, zn, t }) {
 // des matchs en cours. L'orchestration elle-même (sélection des joueurs,
 // répartition) vit dans src/lib/smallGroup.js et App.jsx:launchSmallGroupRound
 // — ce composant ne fait qu'afficher l'état et déclencher onLaunchRound.
-export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaunchRound, previewOnly = false }) {
+export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaunchRound, onSubmitResult, onRemoveFromGame, onReplaceInGame, previewOnly = false }) {
   const zn = useZn();
   const t = useT();
   const [headcount, setHeadcount] = useState(smallGroup.headcount || 24);
@@ -72,7 +63,11 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
   const [speedMode, setSpeedMode] = useState(false);
 
   const status = smallGroup.roundStatus || "idle";
-  const canLaunch = status === "idle" || status === "roundEnded";
+  // previewOnly (Mode Développeur): désactivé même quand canLaunch serait
+  // sinon vrai — lancer une manche écrit sur l'état partagé queues/
+  // activeGames que d'autres actions non gardées (submitResult,
+  // removeFromGame, generateTeams…) lisent ensuite pour écrire sur Firebase.
+  const canLaunch = !previewOnly && (status === "idle" || status === "roundEnded");
   const availableCount = players.filter((p) => !isPlaying(p.id, activeGames)).length;
   const boardZones = status === "idle" ? [] : (smallGroup.roundZones || []).filter((z) => z !== "purinstinct");
 
@@ -120,7 +115,9 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
                     minWidth: 40, cursor: "not-allowed", opacity: 0.35,
                     background: "var(--pi-surface-1)", color: "var(--pi-text-4)",
                     textDecoration: "line-through", filter: "grayscale(1)",
-                  } : { minWidth: 40 }}>
+                  } : zoneCount === n ? { minWidth: 40 } : {
+                    minWidth: 40, border: "1px solid var(--pi-line-strong)", background: "var(--pi-surface-1)",
+                  }}>
                   {n}
                 </button>
               ))}
@@ -141,8 +138,8 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
             {status === "roundEnded" ? `🚀 Lancer la manche ${(smallGroup.roundNumber || 0) + 1}` : t.smallGroupLaunchBtn}
           </Button>
           {previewOnly && (
-            <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)" }}>
-              🧪 Aperçu — joueurs de test uniquement, aucune écriture sur la vraie session.
+            <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-warn)" }}>
+              ⚠️ Aperçu — lancement désactivé pour ne pas affecter une vraie session en cours.
             </div>
           )}
           {!canLaunch && (
@@ -157,9 +154,15 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
         <Panel>
           <Eyebrow style={{ marginBottom: "var(--pi-s3)" }}>Manche {smallGroup.roundNumber} — {t.smallGroupBoardTitle}</Eyebrow>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--pi-s3)" }}>
-            <ZoneMatchCard zone="purinstinct" activeGame={activeGames.purinstinct} queue={queues.purinstinct} players={players} zn={zn} t={t} />
+            <ZoneMatchCard zone="purinstinct" activeGame={activeGames.purinstinct} queue={queues.purinstinct} players={players} zn={zn}
+              onResult={(winner) => onSubmitResult("purinstinct", winner)}
+              onRemove={(id) => onRemoveFromGame("purinstinct", id)}
+              onReplace={() => onReplaceInGame("purinstinct")} />
             {boardZones.map((zk) => (
-              <ZoneMatchCard key={zk} zone={zk} activeGame={activeGames[zk]} queue={queues[zk]} players={players} zn={zn} t={t} />
+              <ZoneMatchCard key={zk} zone={zk} activeGame={activeGames[zk]} queue={queues[zk]} players={players} zn={zn}
+                onResult={(winner, second) => onSubmitResult(zk, winner, second)}
+                onRemove={(id) => onRemoveFromGame(zk, id)}
+                onReplace={() => onReplaceInGame(zk)} />
             ))}
           </div>
         </Panel>

@@ -4,6 +4,7 @@ import {
   selectPurinstinctPlayers,
   pickSecondaryZones,
   distributeSecondaryZones,
+  formSecondaryMatches,
   formSpeedRace,
   planRound,
 } from "./smallGroup.js";
@@ -104,6 +105,40 @@ describe("distributeSecondaryZones", () => {
   });
 });
 
+describe("formSecondaryMatches", () => {
+  function makePlayers(n) {
+    const pMap = {};
+    for (let i = 1; i <= n; i++) pMap[i] = player(i);
+    return pMap;
+  }
+
+  it("forms a team match (3v3) for a team-style zone and queues the rest", () => {
+    const pMap = makePlayers(9);
+    const assignments = { handAgility: [1, 2, 3, 4, 5, 6, 7, 8, 9] };
+    const { matches, remainingQueues } = formSecondaryMatches(["handAgility"], assignments, pMap);
+    expect(matches.handAgility.type).toBe("team");
+    expect(matches.handAgility.teamA.length).toBe(3);
+    expect(matches.handAgility.teamB.length).toBe(3);
+    expect(remainingQueues.handAgility).toEqual([7, 8, 9]);
+  });
+
+  it("forms a 2-participant duel for footAgility and queues the rest", () => {
+    const pMap = makePlayers(5);
+    const assignments = { footAgility: [1, 2, 3, 4, 5] };
+    const { matches, remainingQueues } = formSecondaryMatches(["footAgility"], assignments, pMap);
+    expect(matches.footAgility).toEqual({ type: "individual", participants: [1, 2] });
+    expect(remainingQueues.footAgility).toEqual([3, 4, 5]);
+  });
+
+  it("returns a null match and keeps everyone queued when too few players for the zone", () => {
+    const pMap = makePlayers(2);
+    const assignments = { handAgility: [1, 2] };
+    const { matches, remainingQueues } = formSecondaryMatches(["handAgility"], assignments, pMap);
+    expect(matches.handAgility).toBeNull();
+    expect(remainingQueues.handAgility).toEqual([1, 2]);
+  });
+});
+
 describe("formSpeedRace", () => {
   it("sorts participants by speed zoneScore ascending", () => {
     const pMap = {
@@ -122,6 +157,18 @@ describe("planRound", () => {
     return pMap;
   }
 
+  // Compte total de joueurs secondaires: ceux placés dans un match formé +
+  // ceux restés en file (secondaryMatches peut être null si trop peu de
+  // joueurs pour cette zone).
+  function assignedTotal(result) {
+    const inMatches = Object.values(result.secondaryMatches).reduce((sum, m) => {
+      if (!m) return sum;
+      return sum + (m.type === "team" ? m.teamA.length + m.teamB.length : m.participants.length);
+    }, 0);
+    const inQueues = Object.values(result.secondaryQueues).flat().length;
+    return inMatches + inQueues;
+  }
+
   it("splits 12 purinstinct players into two teams of 6", () => {
     const pMap = makePlayers(20);
     const result = planRound({
@@ -138,8 +185,21 @@ describe("planRound", () => {
       pMap, zoneCount: 3, speedMode: false, secondaryZoneUsage: {},
     });
     expect(result.secondaryZones).toHaveLength(3);
-    const assignedCount = Object.values(result.secondaryAssignments).flat().length;
-    expect(assignedCount).toBe(24 - 12);
+    expect(assignedTotal(result)).toBe(24 - 12);
+  });
+
+  it("forms a real initial match (not just a queue) for each secondary zone", () => {
+    const pMap = makePlayers(24);
+    const result = planRound({
+      availableIds: Object.keys(pMap).map(Number),
+      pMap, zoneCount: 2, speedMode: false, secondaryZoneUsage: {},
+    });
+    result.secondaryZones.forEach((zone) => {
+      const match = result.secondaryMatches[zone];
+      expect(match).not.toBeNull();
+      const zoneStyle = zone === "footAgility" ? "individual" : "team";
+      expect(match.type).toBe(zoneStyle);
+    });
   });
 
   it("routes everyone but the 12 purinstinct players into a single speed race in speedMode", () => {
@@ -159,7 +219,7 @@ describe("planRound", () => {
       pMap, zoneCount: 1, speedMode: false, secondaryZoneUsage: {},
     });
     expect(result.purinstinct.teamA.length + result.purinstinct.teamB.length).toBe(8);
-    expect(Object.values(result.secondaryAssignments).flat().length).toBe(0);
+    expect(assignedTotal(result)).toBe(0);
   });
 
   it("increments usage counts for the secondary zones it opened", () => {

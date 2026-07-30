@@ -5,6 +5,8 @@
 // volontairement simples (heuristiques gloutonnes, pas d'optimisation
 // combinatoire) — voir le plan pour le compromis assumé.
 
+import { ZONES } from "../config/zones.js";
+
 export const SECONDARY_ZONE_CANDIDATES = ["handAgility", "footAgility", "generalAgility", "iq"];
 
 function lastPlayedTs(player, zone) {
@@ -103,6 +105,39 @@ export function formSpeedRace(remainingIds, pMap) {
   );
 }
 
+// Forme un premier match RÉEL pour chaque zone secondaire (pas seulement une
+// file d'attente) — nécessaire car rien ne garantit qu'un StationView soit
+// ouvert quelque part pour déclencher generateTeams passivement : le
+// responsable pilote tout depuis le tableau de bord Petit Groupe. Zones
+// "team" (handAgility/generalAgility/iq) : snake draft par zoneScores comme
+// generateTeams. Zone "duel" (footAgility) : 2 participants. Le reste des
+// joueurs assignés à la zone qui ne rentrent pas dans ce premier match
+// reste en file (remainingQueues), repris plus tard par la même mécanique
+// d'auto-génération que generateTeams utilise déjà.
+export function formSecondaryMatches(secondaryZones, secondaryAssignments, pMap) {
+  const matches = {};
+  const remainingQueues = {};
+  secondaryZones.forEach((zone) => {
+    const z = ZONES[zone];
+    const ids = secondaryAssignments[zone] || [];
+    if (z.gameStyle === "team" && z.teamSize) {
+      const need = z.teamSize * 2;
+      const pool = ids.slice(0, need);
+      const even = pool.length % 2 === 0 ? pool.length : pool.length - 1;
+      if (even < z.minP) { matches[zone] = null; remainingQueues[zone] = ids; return; }
+      const { teamA, teamB } = snakeDraft(pool.slice(0, even), (id) => pMap[id]?.zoneScores?.[zone] || 50);
+      matches[zone] = { type: "team", teamA, teamB };
+      remainingQueues[zone] = ids.slice(even);
+    } else {
+      const need = z.minP || 2;
+      if (ids.length < need) { matches[zone] = null; remainingQueues[zone] = ids; return; }
+      matches[zone] = { type: "individual", participants: ids.slice(0, need) };
+      remainingQueues[zone] = ids.slice(need);
+    }
+  });
+  return { matches, remainingQueues };
+}
+
 // Fonction chapeau: seule fonction de ce module appelée depuis App.jsx.
 export function planRound({ availableIds, pMap, zoneCount, speedMode, secondaryZoneUsage = {} }) {
   const { selected: purinstinctIds, remaining } = selectPurinstinctPlayers(availableIds, pMap, 12);
@@ -110,13 +145,21 @@ export function planRound({ availableIds, pMap, zoneCount, speedMode, secondaryZ
 
   if (speedMode) {
     const speedQueue = formSpeedRace(remaining, pMap);
-    return { purinstinct, secondaryZones: [], secondaryAssignments: {}, speedQueue, updatedZoneUsage: secondaryZoneUsage };
+    return {
+      purinstinct, secondaryZones: [], secondaryMatches: {}, secondaryQueues: {},
+      speedQueue, updatedZoneUsage: secondaryZoneUsage,
+    };
   }
 
   const secondaryZones = pickSecondaryZones(SECONDARY_ZONE_CANDIDATES, zoneCount, secondaryZoneUsage);
   const secondaryAssignments = distributeSecondaryZones(remaining, secondaryZones, pMap);
+  const { matches: secondaryMatches, remainingQueues: secondaryQueues } =
+    formSecondaryMatches(secondaryZones, secondaryAssignments, pMap);
   const updatedZoneUsage = { ...secondaryZoneUsage };
   secondaryZones.forEach((z) => { updatedZoneUsage[z] = (updatedZoneUsage[z] || 0) + 1; });
 
-  return { purinstinct, secondaryZones, secondaryAssignments, speedQueue: [], updatedZoneUsage };
+  return {
+    purinstinct, secondaryZones, secondaryMatches, secondaryQueues,
+    speedQueue: [], updatedZoneUsage,
+  };
 }
