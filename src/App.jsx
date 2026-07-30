@@ -753,6 +753,13 @@ export default function PurInstinctApp(){
     if(kind==="station"){ seedTestPlayers(); setView({type:"stationPick"}); return; }
     if(kind==="zones"){ setView({type:"testLogin"}); return; }
     if(kind==="games"){ seedTestPlayers(); setView({type:"liveLogin",devPreview:true}); return; }
+    // Aperçu local du tableau de bord Petit Groupe — activationMode mis à jour
+    // seulement en local (jamais syncActivationMode), comme les autres aperçus.
+    // Le bouton "Lancer une partie" de SmallGroupTab est désactivé quand
+    // isTestMode (previewOnly): les écritures Firebase de launchSmallGroupRound
+    // ne sont PAS gardées par isTestMode (contrairement à ce prop d'affichage),
+    // donc les autoriser ici écrirait pour de vrai sur la session partagée.
+    if(kind==="petitGroupe"){ setActivationMode(kind); seedTestPlayers(); setView({type:"admin",tab:"smallGroup"}); return; }
     setActivationMode(kind);
     setView({type:"kiosk",zone:null});
   };
@@ -933,6 +940,7 @@ export default function PurInstinctApp(){
       activationMode={activationMode}
       smallGroup={smallGroup}
       onLaunchSmallGroupRound={launchSmallGroupRound}
+      isTestMode={isTestMode}
       onToggleTeamMode={onToggleTeamMode}
       onAssignPlayer={assignPlayerToTeam}
       onRemoveTeamMember={removeTeamMember}
