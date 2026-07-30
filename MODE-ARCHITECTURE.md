@@ -230,3 +230,87 @@ même statut que §5.5). Couverture FR/EN complète de toutes les nouvelles cha�
   avec mise à jour correcte des scores, incrémentation de `teamPairCounts`.
   `games`/`admin` reconfirmés inchangés (aucune trace de `teamMode` dans leurs
   écrans, routing `classifyModeRoute` intact).
+
+## 8. Mode "Petit Groupe" — orchestration automatique de manches (branche `feat/petit-groupe-mode`)
+
+Nouveau 6e mode (`petitGroupe`), pour un groupe restreint (12 à 50 personnes) piloté
+par un seul responsable. Inscription via kiosque comme corporate/ecole/festival/parc
+(sur des tablettes séparées, `?kiosk=1`), mais le poste qui entre le code PIN dédié
+route directement vers un tableau de bord d'orchestration ("manches") au lieu d'un
+kiosque — `classifyModeRoute("petitGroupe")` retourne `"smallGroupAdmin"`, une
+destination distincte de `"kiosk"`/`"admin"`/`"live"`/`"stub"`.
+
+### 8.1 Concept — une "manche"
+L'admin choisit un effectif indicatif (12-50, juste un repère UI) et un nombre de
+zones secondaires (1-4), ou bascule en configuration "Vitesse" (zone `speed` seule,
+absorbe tout le surplus). Au clic sur "Lancer une partie" :
+- Jusqu'à 12 joueurs disponibles vont à PurInstinct (2 équipes de 6, snake draft par
+  `globalPoints`) — priorité à ceux n'ayant jamais joué `purinstinct`, puis aux plus
+  anciens.
+- Le reste est réparti dans les zones secondaires choisies par le système
+  (least-used-first parmi `handAgility, footAgility, generalAgility, iq` — `speed`
+  n'entre jamais dans cette sélection automatique, uniquement accessible via la
+  bascule manuelle) avec une passe anti-répétition best-effort (évite de renvoyer un
+  joueur dans la zone où il a joué en dernier).
+- Chaque manche vide d'abord les 6 files (repart d'une feuille blanche).
+
+Le résultat PurInstinct signale aux autres plateaux "dernière partie" : ils
+terminent leur match en cours mais n'en régénèrent plus (`suppressAutoGen` sur
+`StationView`) jusqu'à la manche suivante, déclenchée explicitement par l'admin
+(`roundStatus`: `idle → active → wrapping → roundEnded → active...`).
+
+### 8.2 Modèle de données
+- `src/lib/smallGroup.js` (pur, sans Firebase/React) : `selectPurinstinctPlayers`,
+  `pickSecondaryZones`, `distributeSecondaryZones`, `formSpeedRace`, `planRound`
+  (fonction chapeau, seule appelée depuis `App.jsx`).
+- `state/smallGroup: {roundStatus, roundNumber, headcount, zoneCount, speedMode,
+  secondaryZones, roundZones, secondaryZoneUsage, launchedAt, wrappingStartedAt}`.
+- `App.jsx:launchSmallGroupRound` — orchestrateur : calcule le bassin de joueurs
+  disponibles (scopé à `activeRosterId`, comme le reste de l'app), appelle
+  `planRound`, écrit via `syncQueues`/`syncGames` (mêmes helpers "opération globale
+  volontaire" qu'`activateRoster`). La manche vitesse écrit `activeGames.speed`
+  directement (pas via la file — le plateau vitesse démarre par défaut une course de
+  4, pas "tous").
+
+### 8.3 Garde-fous de non-régression
+Chaque nouveau chemin de code est strictement gardé par `activationMode==="petitGroupe"`
+(vérifié ligne par ligne) :
+- `submitResult` : le signal "wrapping" et le filtrage de `refillQueues` (scopé à
+  `smallGroup.roundZones` pour ne pas polluer les zones hors manche) ne s'activent
+  que pour ce mode — comportement octet-identique pour `games` et les autres modes.
+- `StationView` : `suppressAutoGen` (nouvelle prop, défaut `false`) — l'expression
+  passée depuis `App.jsx` vaut toujours `false` hors `petitGroupe`.
+- `AdminView` : l'onglet "🎯 Petit Groupe" n'apparaît dans la barre d'onglets que
+  quand `activationMode==="petitGroupe"` — dérogation volontaire à la convention
+  "tous les onglets sont mode-agnostiques" (justifiée : cet onglet déclenche des
+  actions exclusives à ce contexte, comme le vidage massif des files).
+- `handleSelectMode` : nouvelle branche `routeKind==="smallGroupAdmin"`, insérée
+  après les branches `"live"`/`"admin"` existantes (chacune avec son propre
+  `return`) — inatteignable pour tout autre mode.
+
+### 8.4 Tests et QA
+- `src/lib/smallGroup.test.js` (17 tests) : priorisation PurInstinct, sélection de
+  zones least-used-first, distribution avec anti-répétition, `planRound` bout-en-bout
+  (dont le cas `speedMode` et le cas `headcount<12`).
+- `src/config/modes.test.js` étendu : `petitGroupe` dans la table `MODES`, le smoke
+  test code→route, et une assertion explicite que `"smallGroupAdmin"` est distinct
+  des 4 autres destinations.
+- `src/lib/databaseRules.test.js` étendu (+5 tests) pour `state/smallGroup`.
+- Total : **83/83 tests verts**, lint 25 problèmes (23 erreurs/2 warnings — baseline
+  pré-existante inchangée), build production réussi.
+- QA : parcours complet vérifié via un harnais React isolé (état local, aucune
+  écriture Firebase) plutôt qu'en conditions réelles — au moment de cette QA, une
+  vraie session `games` était active sur le projet Firebase partagé (26 joueurs
+  inscrits, match en cours en Habileté Pied) ; basculer `activationMode` ou lancer
+  une manche contre cette base aurait perturbé l'évènement réel en cours. Vérifié
+  dans le harnais : sélection/priorisation PurInstinct correcte (nouveaux joueurs
+  avant ceux ayant déjà joué), répartition équilibrée des zones secondaires,
+  bannière "Clôture en cours" qui attend bien la fin des matchs en cours dans
+  *toutes* les zones de la manche avant de passer à "terminée", enchaînement
+  manche 1 → manche 2, et configuration Vitesse (tout le surplus dans une course
+  unique). Non-régression sur `games`/`corporate`/`ecole`/`festival`/`parc`/`admin`
+  confirmée par audit de code exhaustif (§8.3) plutôt que par re-test manuel en
+  direct, pour la même raison — à refaire en conditions réelles (session de test
+  dédiée, hors évènement live) avant la première utilisation en production.
+- Règles Firebase (`state/smallGroup`, §8.2) écrites et testées, **non déployées**
+  sur le projet Firebase réel — même statut que §5.5/§7.4.

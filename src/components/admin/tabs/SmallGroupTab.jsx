@@ -1,0 +1,160 @@
+import { useState } from "react";
+import { ZONES, ZK } from "../../../config/zones.js";
+import { useZn, useT } from "../../../hooks/useLang.js";
+import { Panel, Eyebrow } from "../../ui/Panel.jsx";
+import { Button } from "../../ui/Button.jsx";
+import { SECONDARY_ZONE_CANDIDATES } from "../../../lib/smallGroup.js";
+
+// Il n'y a que 4 zones secondaires candidates (speed en est exclue — voir
+// plus bas) — le sélecteur de nombre de zones s'arrête donc à 4, pas 5.
+const MAX_SECONDARY_ZONES = SECONDARY_ZONE_CANDIDATES.length;
+
+function isPlaying(playerId, activeGames) {
+  return ZK.some((zk) => {
+    const g = activeGames[zk];
+    if (!g) return false;
+    const all = g.participants || [...(g.teamA || []), ...(g.teamB || [])];
+    return all.includes(playerId);
+  });
+}
+
+function ZoneMatchCard({ zone, activeGame, queue, players, zn, t }) {
+  const z = ZONES[zone];
+  const zl = zn(zone);
+  const nameOf = (id) => players.find((p) => p.id === id)?.name || "#" + id;
+  return (
+    <div style={{ border: "1px solid var(--pi-line)", borderRadius: "var(--pi-r-md)", padding: "var(--pi-s3)", background: "var(--pi-surface-2)" }}>
+      <Eyebrow style={{ marginBottom: "var(--pi-s2)" }}>{z.icon} {zl.sn}</Eyebrow>
+      {activeGame ? (
+        activeGame.type === "team" ? (
+          <div style={{ display: "flex", gap: "var(--pi-s3)" }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)", marginBottom: 4 }}>{t.smallGroupTeamA}</div>
+              {activeGame.teamA.map((id) => (
+                <div key={id} style={{ fontSize: "var(--pi-fs-body)", color: "var(--pi-text)" }}>{nameOf(id)}</div>
+              ))}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)", marginBottom: 4 }}>{t.smallGroupTeamB}</div>
+              {activeGame.teamB.map((id) => (
+                <div key={id} style={{ fontSize: "var(--pi-fs-body)", color: "var(--pi-text)" }}>{nameOf(id)}</div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--pi-s2)" }}>
+            {(activeGame.participants || []).map((id) => (
+              <span key={id} style={{ fontSize: "var(--pi-fs-body)", color: "var(--pi-text)", padding: "2px 8px", borderRadius: "var(--pi-r-pill)", background: "var(--pi-surface-3)" }}>
+                {nameOf(id)}
+              </span>
+            ))}
+          </div>
+        )
+      ) : (
+        <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)" }}>
+          En attente ({(queue || []).length} en file)
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Onglet admin "Petit Groupe": formulaire de lancement de manche (effectif
+// indicatif, nombre de zones secondaires ou manche vitesse) + grand tableau
+// des matchs en cours. L'orchestration elle-même (sélection des joueurs,
+// répartition) vit dans src/lib/smallGroup.js et App.jsx:launchSmallGroupRound
+// — ce composant ne fait qu'afficher l'état et déclencher onLaunchRound.
+export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaunchRound }) {
+  const zn = useZn();
+  const t = useT();
+  const [headcount, setHeadcount] = useState(smallGroup.headcount || 24);
+  const [zoneCount, setZoneCount] = useState(smallGroup.zoneCount || 2);
+  const [speedMode, setSpeedMode] = useState(false);
+
+  const status = smallGroup.roundStatus || "idle";
+  const canLaunch = status === "idle" || status === "roundEnded";
+  const availableCount = players.filter((p) => !isPlaying(p.id, activeGames)).length;
+  const boardZones = status === "idle" ? [] : (smallGroup.roundZones || []).filter((z) => z !== "purinstinct");
+
+  return (
+    <div className="pi-anim-up" style={{ display: "flex", flexDirection: "column", gap: "var(--pi-s3)" }}>
+      {status === "wrapping" && (
+        <Panel style={{ borderColor: "var(--pi-warn)", background: "var(--pi-warn-wash)" }}>
+          <div style={{ fontWeight: 700, color: "var(--pi-warn)" }}>{t.smallGroupWrappingTitle}</div>
+          <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)", marginTop: 2 }}>
+            {t.smallGroupWrappingDesc}{" "}
+            {(smallGroup.roundZones || []).filter((zk) => activeGames[zk]).map((zk) => zn(zk).sn).join(", ") || "—"}
+          </div>
+        </Panel>
+      )}
+      {status === "roundEnded" && (
+        <Panel style={{ borderColor: "var(--pi-lime-line)", background: "var(--pi-lime-wash)" }}>
+          <div style={{ fontWeight: 700, color: "var(--pi-lime)" }}>✓ Manche {smallGroup.roundNumber} terminée</div>
+        </Panel>
+      )}
+
+      <Panel>
+        <Eyebrow style={{ marginBottom: "var(--pi-s3)" }}>{t.smallGroupLaunchTitle}</Eyebrow>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--pi-s3)" }}>
+          <div>
+            <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)", marginBottom: 4 }}>
+              {t.smallGroupHeadcountLabel} ({availableCount} disponible{availableCount !== 1 ? "s" : ""})
+            </div>
+            <input type="number" min={12} max={50} value={headcount}
+              onChange={(e) => setHeadcount(Number(e.target.value))}
+              className="pi-input" style={{ width: 100 }} />
+            {availableCount < headcount && (
+              <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-warn)", marginTop: 4 }}>
+                ⚠️ Seulement {availableCount} joueur{availableCount !== 1 ? "s" : ""} disponible{availableCount !== 1 ? "s" : ""} pour l'instant.
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)", marginBottom: 4 }}>{t.smallGroupZoneCountLabel}</div>
+            <div style={{ display: "flex", gap: "var(--pi-s2)" }}>
+              {Array.from({ length: MAX_SECONDARY_ZONES }, (_, i) => i + 1).map((n) => (
+                <button key={n} onClick={() => setZoneCount(n)} disabled={speedMode}
+                  className={zoneCount === n && !speedMode ? "pi-tab is-active" : "pi-tab"}
+                  style={{ minWidth: 40, opacity: speedMode ? 0.5 : 1 }}>
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button onClick={() => setSpeedMode((s) => !s)}
+            style={{ alignSelf: "flex-start", padding: "7px 16px", borderRadius: "var(--pi-r-pill)", border: "1px solid", cursor: "pointer",
+              fontSize: "var(--pi-fs-label)", fontWeight: 700,
+              background: speedMode ? "var(--pi-lime-wash)" : "var(--pi-surface-2)",
+              color: speedMode ? "var(--pi-lime)" : "var(--pi-text-3)",
+              borderColor: speedMode ? "var(--pi-lime-line)" : "var(--pi-line)" }}>
+            ⚡ {t.smallGroupSpeedModeLabel} {speedMode ? t.teamModeActive : t.teamModeInactive}
+          </button>
+
+          <Button variant="primary" size="lg" disabled={!canLaunch}
+            onClick={() => onLaunchRound({ headcount, zoneCount, speedMode })}>
+            {status === "roundEnded" ? `🚀 Lancer la manche ${(smallGroup.roundNumber || 0) + 1}` : t.smallGroupLaunchBtn}
+          </Button>
+          {!canLaunch && (
+            <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)" }}>
+              Manche {smallGroup.roundNumber} en cours…
+            </div>
+          )}
+        </div>
+      </Panel>
+
+      {status !== "idle" && (
+        <Panel>
+          <Eyebrow style={{ marginBottom: "var(--pi-s3)" }}>Manche {smallGroup.roundNumber} — {t.smallGroupBoardTitle}</Eyebrow>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--pi-s3)" }}>
+            <ZoneMatchCard zone="purinstinct" activeGame={activeGames.purinstinct} queue={queues.purinstinct} players={players} zn={zn} t={t} />
+            {boardZones.map((zk) => (
+              <ZoneMatchCard key={zk} zone={zk} activeGame={activeGames[zk]} queue={queues[zk]} players={players} zn={zn} t={t} />
+            ))}
+          </div>
+        </Panel>
+      )}
+    </div>
+  );
+}

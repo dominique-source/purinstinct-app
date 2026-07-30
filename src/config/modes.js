@@ -28,6 +28,17 @@ const BASE_MODES = {
     allowPII:true, kioskDefault:true,
     enabledViews:["kiosk","station","leaderboard"],
   },
+  // Petit groupe (12-50 personnes): un seul responsable pilote la session —
+  // inscription via kiosque (comme corporate/ecole) sur des tablettes
+  // séparées (bypass ?kiosk=1 existant), et le poste qui entre CE code route
+  // droit vers le tableau de bord d'orchestration de manches (voir
+  // classifyModeRoute ci-dessous) plutôt que vers un kiosque. kioskDefault
+  // reste false pour cette raison précise.
+  petitGroupe:{
+    entryFlow:"kiosk-fixed", captureFields:["firstName"], consent:"none",
+    allowPII:true, kioskDefault:false,
+    enabledViews:["kiosk","smallGroupAdmin","station","leaderboard"],
+  },
 };
 
 // Mode caché débloqué par ADMIN_PIN: union de toutes les vues, pour les démos.
@@ -52,6 +63,7 @@ const MODE_CODES={
   ecole:import.meta.env.VITE_CODE_ECOLE||"0002",
   festival:import.meta.env.VITE_CODE_FESTIVAL||"0003",
   parc:import.meta.env.VITE_CODE_PARC||"0004",
+  petitGroupe:import.meta.env.VITE_CODE_PETIT_GROUPE||"0005",
 };
 
 // Mappe un code saisi → clé de mode ("games","corporate",...) ou "admin"
@@ -71,11 +83,15 @@ export function resolveMode(code){
 //   "kiosk" → bascule direct en KioskView: kioskDefault (festival/parc, comme
 //             ?kiosk=1) ou entryFlow prereg-checkin/roster-team (corporate/ecole,
 //             qui réutilisent la même vue étendue par captureFields/teamMode)
+//   "smallGroupAdmin" → petitGroupe: le poste qui entre ce code pilote les
+//             manches (tableau de bord admin), distinct de "kiosk" — les
+//             tablettes d'inscription utilisent ?kiosk=1 séparément.
 //   "stub"  → mode valide sans vue dédiée pour l'instant
 //   null    → clé de mode inconnue
 export function classifyModeRoute(modeKey){
   if(modeKey==="games") return "live";
   if(modeKey==="admin") return "admin";
+  if(modeKey==="petitGroupe") return "smallGroupAdmin";
   if(MODES[modeKey]?.kioskDefault) return "kiosk";
   if(modeKey==="corporate"||modeKey==="ecole") return "kiosk";
   if(MODES[modeKey]) return "stub";

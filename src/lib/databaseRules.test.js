@@ -108,3 +108,21 @@ describe("database.rules.json — mode équipes manuel (teams/teamPairCounts)", 
     expect(evalValidate(pairCountExpr, { rootData: {}, newDataValue: "2" })).toBe(false);
   });
 });
+
+describe("database.rules.json — mode Petit Groupe (state/smallGroup)", () => {
+  const fields = {
+    roundStatus: { valid: "active", invalid: 1 },
+    roundNumber: { valid: 2, invalid: "2" },
+    headcount: { valid: 24, invalid: "24" },
+    zoneCount: { valid: 2, invalid: "2" },
+    speedMode: { valid: false, invalid: "false" },
+  };
+
+  for (const [field, { valid, invalid }] of Object.entries(fields)) {
+    it(`${field}: accepte le type attendu et rejette les autres`, () => {
+      const expr = RULES.rules.state.smallGroup[field][".validate"];
+      expect(evalValidate(expr, { rootData: {}, newDataValue: valid })).toBe(true);
+      expect(evalValidate(expr, { rootData: {}, newDataValue: invalid })).toBe(false);
+    });
+  }
+});
