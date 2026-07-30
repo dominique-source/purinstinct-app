@@ -64,7 +64,7 @@ function ZoneMatchCard({ zone, activeGame, queue, players, zn, t }) {
 // des matchs en cours. L'orchestration elle-même (sélection des joueurs,
 // répartition) vit dans src/lib/smallGroup.js et App.jsx:launchSmallGroupRound
 // — ce composant ne fait qu'afficher l'état et déclencher onLaunchRound.
-export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaunchRound }) {
+export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaunchRound, previewOnly = false }) {
   const zn = useZn();
   const t = useT();
   const [headcount, setHeadcount] = useState(smallGroup.headcount || 24);
@@ -72,7 +72,7 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
   const [speedMode, setSpeedMode] = useState(false);
 
   const status = smallGroup.roundStatus || "idle";
-  const canLaunch = status === "idle" || status === "roundEnded";
+  const canLaunch = !previewOnly && (status === "idle" || status === "roundEnded");
   const availableCount = players.filter((p) => !isPlaying(p.id, activeGames)).length;
   const boardZones = status === "idle" ? [] : (smallGroup.roundZones || []).filter((z) => z !== "purinstinct");
 
@@ -136,7 +136,12 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
             onClick={() => onLaunchRound({ headcount, zoneCount, speedMode })}>
             {status === "roundEnded" ? `🚀 Lancer la manche ${(smallGroup.roundNumber || 0) + 1}` : t.smallGroupLaunchBtn}
           </Button>
-          {!canLaunch && (
+          {previewOnly && (
+            <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-warn)" }}>
+              ⚠️ Aperçu — lancement désactivé pour ne pas affecter une vraie session en cours.
+            </div>
+          )}
+          {!previewOnly && !canLaunch && (
             <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)" }}>
               Manche {smallGroup.roundNumber} en cours…
             </div>

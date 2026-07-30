@@ -560,6 +560,35 @@ export default function PurInstinctApp(){
     });
   };
 
+  // Outil Mode Développeur: arrête TOUTES les parties actives en ce moment,
+  // sur toutes les zones, en une seule écriture atomique — même logique que
+  // cancelGame (joueurs remis en tête de file dans le même ordre) répétée
+  // pour chaque zone concernée. Écrit pour de vrai sur Firebase (contrairement
+  // au reste du Mode Développeur, purement local) — l'appelant (DevHub) doit
+  // confirmer avant d'invoquer cette fonction.
+  const deactivateAllLiveGames=()=>{
+    const newQueues={...queues};
+    const newGames={...activeGames};
+    const writes={};
+    ZK.forEach(zone=>{
+      const game=activeGames[zone];
+      if(!game) return;
+      const inGame=game.type==="team"
+        ?[...(game.teamA||[]),...(game.teamB||[])]
+        :(game.participants||[]);
+      const existing=(queues[zone]||[]).filter(id=>!inGame.includes(id));
+      const newQ=[...inGame,...existing];
+      newQueues[zone]=newQ;
+      newGames[zone]=null;
+      writes["state/queues/"+zone]=newQ.length>0?newQ:null;
+      writes["state/activeGames/"+zone]=null;
+    });
+    if(Object.keys(writes).length===0) return;
+    setQueues(newQueues);
+    setActiveGames(newGames);
+    fbUpdate(writes);
+  };
+
   // --- Submit result ---
   const submitResult=(zone,winner,secondId=null)=>{
     const game=activeGames[zone];
@@ -753,6 +782,13 @@ export default function PurInstinctApp(){
     if(kind==="station"){ seedTestPlayers(); setView({type:"stationPick"}); return; }
     if(kind==="zones"){ setView({type:"testLogin"}); return; }
     if(kind==="games"){ seedTestPlayers(); setView({type:"liveLogin",devPreview:true}); return; }
+    // Aperçu local du tableau de bord Petit Groupe — activationMode mis à jour
+    // seulement en local (jamais syncActivationMode), comme les autres aperçus.
+    // Le bouton "Lancer une partie" de SmallGroupTab est désactivé quand
+    // isTestMode (previewOnly): les écritures Firebase de launchSmallGroupRound
+    // ne sont PAS gardées par isTestMode (contrairement à ce prop d'affichage),
+    // donc les autoriser ici écrirait pour de vrai sur la session partagée.
+    if(kind==="petitGroupe"){ setActivationMode(kind); seedTestPlayers(); setView({type:"admin",tab:"smallGroup"}); return; }
     setActivationMode(kind);
     setView({type:"kiosk",zone:null});
   };
@@ -782,7 +818,9 @@ export default function PurInstinctApp(){
 
   else if(view.type==="devHub") content=(
     <DevHub onPreview={enterDevPreview}
-      onExit={()=>{setDevMode(false);setIsTestMode(false);setView({type:liveMode?"liveLogin":"login"});}}/>
+      onExit={()=>{setDevMode(false);setIsTestMode(false);setView({type:liveMode?"liveLogin":"login"});}}
+      onDeactivateAllGames={deactivateAllLiveGames}
+      activeGamesCount={ZK.filter(zk=>activeGames[zk]).length}/>
   );
 
   else if(view.type==="modeStub") content=(
@@ -933,6 +971,7 @@ export default function PurInstinctApp(){
       activationMode={activationMode}
       smallGroup={smallGroup}
       onLaunchSmallGroupRound={launchSmallGroupRound}
+      isTestMode={isTestMode}
       onToggleTeamMode={onToggleTeamMode}
       onAssignPlayer={assignPlayerToTeam}
       onRemoveTeamMember={removeTeamMember}

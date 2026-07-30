@@ -17,7 +17,7 @@ import { WinnersTab } from "./tabs/WinnersTab.jsx";
 import { TeamsTab } from "./tabs/TeamsTab.jsx";
 import { SmallGroupTab } from "./tabs/SmallGroupTab.jsx";
 
-export function AdminView({players,allPlayers,queues,activeGames,arenaState,lastResultAt,rosters,activeRosterId,initialTab,teams,activationMode,smallGroup,onLaunchSmallGroupRound,onToggleTeamMode,onAssignPlayer,onRemoveTeamMember,onRenameTeam,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,onRemovePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onResetAllPoints,onResetAllHistory,onResetAllSurveys,comments,onClearComments,augState,onUpdateAugState,onUpdatePlayer2}){
+export function AdminView({players,allPlayers,queues,activeGames,arenaState,lastResultAt,rosters,activeRosterId,initialTab,teams,activationMode,smallGroup,onLaunchSmallGroupRound,isTestMode,onToggleTeamMode,onAssignPlayer,onRemoveTeamMember,onRenameTeam,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,onRemovePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onResetAllPoints,onResetAllHistory,onResetAllSurveys,comments,onClearComments,augState,onUpdateAugState,onUpdatePlayer2}){
   const t=useT();
   const [tab,setTab]=useState(initialTab||"leaderboard");
   const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
@@ -151,7 +151,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
 
         {tab==="smallGroup"&&(
           <SmallGroupTab players={players} queues={queues} activeGames={activeGames}
-            smallGroup={smallGroup} onLaunchRound={onLaunchSmallGroupRound}/>
+            smallGroup={smallGroup} onLaunchRound={onLaunchSmallGroupRound} previewOnly={!!isTestMode}/>
         )}
 
         {tab==="session"&&(
