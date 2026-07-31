@@ -576,11 +576,17 @@ export default function PurInstinctApp(){
   // tableau de bord Petit Groupe. S'applique aussi en aperçu Mode
   // Développeur (isTestMode) — décision explicite: ce Firebase est un
   // projet de test, aucune vraie session n'y tourne jamais en parallèle.
+  // force=false (pas true): minP===maxP pour toutes les zones secondaires
+  // (voir config/zones.js), donc "pas assez pour une équipe complète" et
+  // "en dessous de minP" sont exactement la même condition — force=true
+  // contournait volontairement ce garde et pouvait générer un match
+  // incomplet (ex. 1 joueur seul contre personne). On préfère attendre
+  // (file d'attente affichée) qu'une équipe complète soit disponible.
   useEffect(()=>{
     if(activationMode!=="petitGroupe"||smallGroup.roundStatus!=="active") return;
     (smallGroup.secondaryZones||[]).forEach(zone=>{
       if(activeGames[zone]) return;
-      generateTeams(zone,null,true);
+      generateTeams(zone,null,false);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[activationMode,smallGroup.roundStatus,smallGroup.secondaryZones,activeGames]);
@@ -646,18 +652,18 @@ export default function PurInstinctApp(){
       updated=computeIndividualResult(players,game.participants||[],winner,zone,secondId);
     }
     const newGames={...activeGames,[zone]:null};
-    let refilled=refillQueues(updated,queues,newGames);
-    // Mode Petit Groupe: refillQueues redistribue génériquement vers TOUTE
-    // zone sous QUEUE_MIN, sans notion de "manche en cours" — ça polluerait
-    // les zones hors smallGroup.roundZones. On ne garde le refill que pour
-    // les zones de la manche active ; les autres restent telles qu'avant
-    // l'appel (vides, comme les a laissées launchSmallGroupRound).
-    if(activationMode==="petitGroupe"){
-      const roundZones=new Set(smallGroup.roundZones||[]);
-      const scoped={...queues};
-      roundZones.forEach(zk=>{scoped[zk]=refilled[zk];});
-      refilled=scoped;
-    }
+    // Mode Petit Groupe: système fermé, aucun joueur externe à piocher —
+    // refillQueues (générique, conçu pour le mode "games" où on peut piocher
+    // dans tout le roster à travers toutes les zones) vide le "budget" de 2
+    // files par joueur bien avant d'atteindre la zone qui vient de se
+    // libérer (les autres zones de ZK, toutes sous QUEUE_MIN puisque vides
+    // en Petit Groupe, raflent les joueurs éligibles en premier) — les
+    // gagnants ET perdants du match pouvaient ainsi disparaître du jeu pour
+    // le reste de la manche. Ici, pas d'ambiguïté : ils retournent en fin de
+    // la file de LEUR zone, point final.
+    const refilled=activationMode==="petitGroupe"
+      ?{...queues,[zone]:[...(queues[zone]||[]),...inGame]}
+      :refillQueues(updated,queues,newGames);
     // Mise à jour locale immédiate
     const stamp=Date.now();
     setPlayers(updated);
