@@ -498,12 +498,19 @@ export default function PurInstinctApp(){
   // d'abord les 6 files (repart d'une feuille blanche) via syncQueues/
   // syncGames, les mêmes helpers "opération globale volontaire" déjà utilisés
   // par activateRoster.
-  // En aperçu Mode Développeur (isTestMode), utilise TEST_PLAYERS (jamais
-  // synced Firebase) au lieu des vrais joueurs inscrits, et n'écrit rien sur
-  // Firebase — état local uniquement, pour que le bouton "Lancer" reste
-  // testable sans jamais toucher une vraie session partagée.
+  // N'agit JAMAIS en aperçu Mode Développeur (isTestMode) — même en état
+  // local uniquement. Tentative précédente ("écrit juste en local, jamais
+  // Firebase") jugée insuffisante : setQueues/setActiveGames écrivent dans
+  // le MÊME état partagé que lit/écrit tout le reste de l'app (submitResult,
+  // removeFromGame, generateTeams…), aucun desquels n'est lui-même gardé par
+  // isTestMode. Un seul clic sur "Lancer" en aperçu a suffi à faire fuiter
+  // des ids TEST_PLAYERS (1000+) dans les vraies files Firebase via
+  // submitResult, en testant simplement les nouveaux boutons de match. Le
+  // bouton reste désactivé côté UI (SmallGroupTab.previewOnly) — ce return
+  // anticipé est une deuxième barrière, pas la seule.
   const launchSmallGroupRound=({headcount,zoneCount,speedMode})=>{
-    const sessionPlayers=isTestMode?TEST_PLAYERS:players.filter(p=>(p.groupId||"main")===activeRosterId);
+    if(isTestMode) return;
+    const sessionPlayers=players.filter(p=>(p.groupId||"main")===activeRosterId);
     const availableIds=sessionPlayers
       .filter(p=>getStatus(p.id,queues,activeGames).playingAt===null)
       .map(p=>p.id);
@@ -525,7 +532,14 @@ export default function PurInstinctApp(){
       newGames.speed={type:"sprint",participants:plan.speedQueue};
       roundZones=["purinstinct","speed"];
     } else {
-      plan.secondaryZones.forEach(z=>{newQueues[z]=plan.secondaryAssignments[z]||[];});
+      // Forme un vrai match initial pour chaque zone secondaire (pas
+      // seulement une file) — le responsable pilote tout depuis ce tableau
+      // de bord, rien ne garantit qu'un StationView soit ouvert ailleurs
+      // pour déclencher generateTeams passivement.
+      plan.secondaryZones.forEach(z=>{
+        newGames[z]=plan.secondaryMatches[z]||null;
+        newQueues[z]=plan.secondaryQueues[z]||[];
+      });
       roundZones=["purinstinct",...plan.secondaryZones];
     }
 
@@ -540,17 +554,30 @@ export default function PurInstinctApp(){
       wrappingStartedAt:null,
     };
 
-    if(isTestMode){
-      setQueues(newQueues);
-      setActiveGames(newGames);
-      setSmallGroup(nextRound);
-      return;
-    }
     syncQueues(newQueues);
     syncGames(newGames);
     setSmallGroup(nextRound);
     fbSet("smallGroup",nextRound);
   };
+
+  // Mode Petit Groupe: régénère automatiquement le prochain match d'une zone
+  // secondaire dès qu'elle se libère (activeGames[zone] redevenu null) tant
+  // que la manche est active — même logique que l'auto-génération de
+  // StationView.jsx, répliquée ici car rien ne garantit qu'un StationView
+  // soit ouvert sur ces zones : le responsable pilote tout depuis le
+  // tableau de bord Petit Groupe. En aperçu (isTestMode), generateTeams
+  // écrirait quand même sur Firebase (il n'est pas gardé par isTestMode) —
+  // ce cas ne se présente pas en pratique puisque isTestMode utilise des
+  // joueurs fictifs jamais en conflit avec de vraies zones, mais si ça
+  // devait arriver l'effet est aussi coupé ici par prudence.
+  useEffect(()=>{
+    if(activationMode!=="petitGroupe"||smallGroup.roundStatus!=="active"||isTestMode) return;
+    (smallGroup.secondaryZones||[]).forEach(zone=>{
+      if(activeGames[zone]) return;
+      generateTeams(zone,null,true);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[activationMode,smallGroup.roundStatus,smallGroup.secondaryZones,activeGames,isTestMode]);
 
   // --- Cancel game: remettre les joueurs en tête de file dans le même ordre ---
   const cancelGame=(zone)=>{
@@ -981,6 +1008,9 @@ export default function PurInstinctApp(){
       activationMode={activationMode}
       smallGroup={smallGroup}
       onLaunchSmallGroupRound={launchSmallGroupRound}
+      onSubmitResult={submitResult}
+      onRemoveFromGame={removeFromGame}
+      onReplaceInGame={replaceInGame}
       isTestMode={isTestMode}
       onToggleTeamMode={onToggleTeamMode}
       onAssignPlayer={assignPlayerToTeam}

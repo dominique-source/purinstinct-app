@@ -210,8 +210,6 @@ export const T={
     smallGroupWrappingTitle:"⏳ Clôture en cours",
     smallGroupWrappingDesc:"En attente de la fin du match en cours dans :",
     smallGroupBoardTitle:"grand tableau",
-    smallGroupTeamA:"Équipe A",
-    smallGroupTeamB:"Équipe B",
   },
   en:{
     lang:"EN", langOther:"FR",
@@ -424,7 +422,5 @@ export const T={
     smallGroupWrappingTitle:"⏳ Wrapping up",
     smallGroupWrappingDesc:"Waiting for the current match to finish in:",
     smallGroupBoardTitle:"big board",
-    smallGroupTeamA:"Team A",
-    smallGroupTeamB:"Team B",
   },
 };
