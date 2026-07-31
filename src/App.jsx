@@ -102,6 +102,14 @@ export default function PurInstinctApp(){
   const liveModeRef=useRef(liveMode);
   useEffect(()=>{liveModeRef.current=liveMode;},[liveMode]);
 
+  // Mode Développeur: activationMode y est délibérément un aperçu LOCAL
+  // (setActivationMode, jamais syncActivationMode — voir enterDevPreview).
+  // Le listener Firebase (useEffect ci-dessous, monté une seule fois) doit
+  // pouvoir lire l'état devMode courant sans le remettre dans ses deps —
+  // d'où ce ref, même pattern que liveModeRef.
+  const devModeRef=useRef(devMode);
+  useEffect(()=>{devModeRef.current=devMode;},[devMode]);
+
   // ── Firebase sync ──────────────────────────────────────────────
   useEffect(()=>{
     let stateRef=null;
@@ -151,7 +159,13 @@ export default function PurInstinctApp(){
         if(data.liveMode) setView(v=>v.type==="login"?{type:"liveLogin"}:v);
       }
       if(data.activeRosterId) setActiveRosterId(data.activeRosterId);
-      if(data.activationMode) setActivationMode(data.activationMode);
+      // En Mode Développeur, activationMode est un aperçu local délibéré —
+      // ne jamais laisser un snapshot Firebase (déclenché par une écriture
+      // de test, ex. lancer une manche Petit Groupe) l'écraser en cours de
+      // route. Sans ce garde, le prochain résultat déclaré dans l'aperçu
+      // lirait un activationMode déjà retombé à la vraie valeur Firebase et
+      // manquerait le signal de fin de manche.
+      if(data.activationMode&&!devModeRef.current) setActivationMode(data.activationMode);
       setTeams(data.teams||{});
       setTeamPairCounts(data.teamPairCounts||{});
       if(data.smallGroup) setSmallGroup(data.smallGroup);
@@ -498,19 +512,13 @@ export default function PurInstinctApp(){
   // d'abord les 6 files (repart d'une feuille blanche) via syncQueues/
   // syncGames, les mêmes helpers "opération globale volontaire" déjà utilisés
   // par activateRoster.
-  // N'agit JAMAIS en aperçu Mode Développeur (isTestMode) — même en état
-  // local uniquement. Tentative précédente ("écrit juste en local, jamais
-  // Firebase") jugée insuffisante : setQueues/setActiveGames écrivent dans
-  // le MÊME état partagé que lit/écrit tout le reste de l'app (submitResult,
-  // removeFromGame, generateTeams…), aucun desquels n'est lui-même gardé par
-  // isTestMode. Un seul clic sur "Lancer" en aperçu a suffi à faire fuiter
-  // des ids TEST_PLAYERS (1000+) dans les vraies files Firebase via
-  // submitResult, en testant simplement les nouveaux boutons de match. Le
-  // bouton reste désactivé côté UI (SmallGroupTab.previewOnly) — ce return
-  // anticipé est une deuxième barrière, pas la seule.
+  // En aperçu Mode Développeur (isTestMode), utilise TEST_PLAYERS comme
+  // source de joueurs (même convention que les autres tuiles DevHub) mais
+  // écrit sur Firebase exactement comme en usage réel — pas de garde
+  // spéciale ici. Décision explicite: ce Firebase est un projet de test,
+  // aucune vraie session n'y tourne jamais en parallèle.
   const launchSmallGroupRound=({headcount,zoneCount,speedMode})=>{
-    if(isTestMode) return;
-    const sessionPlayers=players.filter(p=>(p.groupId||"main")===activeRosterId);
+    const sessionPlayers=isTestMode?TEST_PLAYERS:players.filter(p=>(p.groupId||"main")===activeRosterId);
     const availableIds=sessionPlayers
       .filter(p=>getStatus(p.id,queues,activeGames).playingAt===null)
       .map(p=>p.id);
@@ -565,19 +573,17 @@ export default function PurInstinctApp(){
   // que la manche est active — même logique que l'auto-génération de
   // StationView.jsx, répliquée ici car rien ne garantit qu'un StationView
   // soit ouvert sur ces zones : le responsable pilote tout depuis le
-  // tableau de bord Petit Groupe. En aperçu (isTestMode), generateTeams
-  // écrirait quand même sur Firebase (il n'est pas gardé par isTestMode) —
-  // ce cas ne se présente pas en pratique puisque isTestMode utilise des
-  // joueurs fictifs jamais en conflit avec de vraies zones, mais si ça
-  // devait arriver l'effet est aussi coupé ici par prudence.
+  // tableau de bord Petit Groupe. S'applique aussi en aperçu Mode
+  // Développeur (isTestMode) — décision explicite: ce Firebase est un
+  // projet de test, aucune vraie session n'y tourne jamais en parallèle.
   useEffect(()=>{
-    if(activationMode!=="petitGroupe"||smallGroup.roundStatus!=="active"||isTestMode) return;
+    if(activationMode!=="petitGroupe"||smallGroup.roundStatus!=="active") return;
     (smallGroup.secondaryZones||[]).forEach(zone=>{
       if(activeGames[zone]) return;
       generateTeams(zone,null,true);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[activationMode,smallGroup.roundStatus,smallGroup.secondaryZones,activeGames,isTestMode]);
+  },[activationMode,smallGroup.roundStatus,smallGroup.secondaryZones,activeGames]);
 
   // --- Cancel game: remettre les joueurs en tête de file dans le même ordre ---
   const cancelGame=(zone)=>{

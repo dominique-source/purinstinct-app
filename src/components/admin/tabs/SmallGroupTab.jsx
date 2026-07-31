@@ -63,11 +63,7 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
   const [speedMode, setSpeedMode] = useState(false);
 
   const status = smallGroup.roundStatus || "idle";
-  // previewOnly (Mode Développeur): désactivé même quand canLaunch serait
-  // sinon vrai — lancer une manche écrit sur l'état partagé queues/
-  // activeGames que d'autres actions non gardées (submitResult,
-  // removeFromGame, generateTeams…) lisent ensuite pour écrire sur Firebase.
-  const canLaunch = !previewOnly && (status === "idle" || status === "roundEnded");
+  const canLaunch = status === "idle" || status === "roundEnded";
   const availableCount = players.filter((p) => !isPlaying(p.id, activeGames)).length;
   const boardZones = status === "idle" ? [] : (smallGroup.roundZones || []).filter((z) => z !== "purinstinct");
 
@@ -138,8 +134,8 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
             {status === "roundEnded" ? `🚀 Lancer la manche ${(smallGroup.roundNumber || 0) + 1}` : t.smallGroupLaunchBtn}
           </Button>
           {previewOnly && (
-            <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-warn)" }}>
-              ⚠️ Aperçu — lancement désactivé pour ne pas affecter une vraie session en cours.
+            <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)" }}>
+              🧪 Aperçu — joueurs de test.
             </div>
           )}
           {!canLaunch && (
