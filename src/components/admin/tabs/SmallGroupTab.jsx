@@ -21,6 +21,32 @@ function isPlaying(playerId, activeGames) {
   });
 }
 
+// Liste (noms) des joueurs en attente d'une zone — pas seulement le compte,
+// pour que le responsable voie qui reviendra dans le prochain match.
+function WaitingList({ queue, players }) {
+  if (!queue || queue.length === 0) return null;
+  const pMap = {}; players.forEach((p) => { pMap[p.id] = p; });
+  return (
+    <div style={{ marginTop: "var(--pi-s2)", paddingTop: "var(--pi-s2)", borderTop: "1px solid var(--pi-line)" }}>
+      <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)", marginBottom: 6 }}>
+        En attente ({queue.length})
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {queue.map((id) => {
+          const p = pMap[id];
+          if (!p) return null;
+          return (
+            <span key={id} style={{ fontSize: 11, padding: "3px 8px", borderRadius: "var(--pi-r-pill)",
+              background: "var(--pi-surface-1)", border: "1px solid var(--pi-line)", color: "var(--pi-text-2)" }}>
+              {p.number ? `#${p.number} ` : ""}{p.name.split(" ")[0]}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // Carte de zone: rend le vrai composant de match interactif (les mêmes que
 // StationView — boutons "retirer un joueur", "remplacer", "déclarer
 // gagnant") dès qu'un match est formé. Simplification volontaire par
@@ -42,10 +68,9 @@ function ZoneMatchCard({ zone, activeGame, queue, players, zn, onResult, onRemov
           <IndividualGameView game={activeGame} players={players} zone={zone} onWinner={onResult} onRemove={onRemove} onReplace={onReplace} />
         )
       ) : (
-        <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)" }}>
-          En attente ({(queue || []).length} en file)
-        </div>
+        <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)" }}>En attente</div>
       )}
+      <WaitingList queue={queue} players={players} />
     </div>
   );
 }

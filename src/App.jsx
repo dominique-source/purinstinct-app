@@ -833,11 +833,16 @@ export default function PurInstinctApp(){
     if(kind==="games"){ seedTestPlayers(); setView({type:"liveLogin",devPreview:true}); return; }
     // Aperçu local du tableau de bord Petit Groupe — activationMode mis à jour
     // seulement en local (jamais syncActivationMode), comme les autres aperçus.
-    // Le bouton "Lancer une partie" de SmallGroupTab est désactivé quand
-    // isTestMode (previewOnly): les écritures Firebase de launchSmallGroupRound
-    // ne sont PAS gardées par isTestMode (contrairement à ce prop d'affichage),
-    // donc les autoriser ici écrirait pour de vrai sur la session partagée.
-    if(kind==="petitGroupe"){ setActivationMode(kind); seedTestPlayers(); setView({type:"admin",tab:"smallGroup"}); return; }
+    // Pas de seedTestPlayers() ici (contrairement aux autres tuiles) : Petit
+    // Groupe écrit pour de vrai sur Firebase (launchSmallGroupRound,
+    // submitResult — voir leurs commentaires), donc les files affichées
+    // doivent rester les vraies files déjà synchronisées depuis Firebase, pas
+    // un seed local "tout le monde partout" qui ne serait plus jamais corrigé
+    // (le listener onValue ne refire que si Firebase change réellement) et
+    // fausserait aussi bien l'affichage que les remplacements ("+ Remplaçant
+    // depuis la file"). isTestMode=true suffit : players/allPlayers basculent
+    // déjà sur TEST_PLAYERS via le rendu de AdminView (voir plus bas).
+    if(kind==="petitGroupe"){ setActivationMode(kind); setIsTestMode(true); setView({type:"admin",tab:"smallGroup"}); return; }
     setActivationMode(kind);
     setView({type:"kiosk",zone:null});
   };
