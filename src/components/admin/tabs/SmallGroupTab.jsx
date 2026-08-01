@@ -22,12 +22,17 @@ function isPlaying(playerId, activeGames) {
 }
 
 // Liste (noms) des joueurs en attente d'une zone — pas seulement le compte,
-// pour que le responsable voie qui reviendra dans le prochain match.
-function WaitingList({ queue, players }) {
+// pour que le responsable voie qui reviendra dans le prochain match. Teintée
+// avec la couleur de la zone (comme les puces de match des GameView) —
+// sur fond var(--pi-surface-1)/var(--pi-text-2) les puces étaient quasi
+// invisibles (gris sur gris sombre), et la couleur renforce aussi
+// visuellement que ces joueurs restent affectés à CETTE zone.
+function WaitingList({ zone, queue, players }) {
   if (!queue || queue.length === 0) return null;
+  const z = ZONES[zone];
   const pMap = {}; players.forEach((p) => { pMap[p.id] = p; });
   return (
-    <div style={{ marginTop: "var(--pi-s2)", paddingTop: "var(--pi-s2)", borderTop: "1px solid var(--pi-line)" }}>
+    <div style={{ marginTop: "var(--pi-s2)", paddingTop: "var(--pi-s2)", borderTop: "1px solid "+z.border }}>
       <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)", marginBottom: 6 }}>
         En attente ({queue.length})
       </div>
@@ -36,8 +41,8 @@ function WaitingList({ queue, players }) {
           const p = pMap[id];
           if (!p) return null;
           return (
-            <span key={id} style={{ fontSize: 11, padding: "3px 8px", borderRadius: "var(--pi-r-pill)",
-              background: "var(--pi-surface-1)", border: "1px solid var(--pi-line)", color: "var(--pi-text-2)" }}>
+            <span key={id} style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: "var(--pi-r-pill)",
+              background: z.bg, border: "1px solid "+z.border, color: z.color }}>
               {p.number ? `#${p.number} ` : ""}{p.name.split(" ")[0]}
             </span>
           );
@@ -53,12 +58,15 @@ function WaitingList({ queue, players }) {
 // rapport à StationView: soumission immédiate au clic, pas de fenêtre
 // d'annulation de 10s — acceptable ici puisqu'un seul responsable de
 // confiance pilote tout depuis ce tableau de bord.
+// Bordure/fond teintés avec la couleur de la zone (z.border/z.bg, config/
+// zones.js) plutôt que le gris générique var(--pi-line) — pour bien
+// délimiter visuellement les zones secondaires les unes des autres.
 function ZoneMatchCard({ zone, activeGame, queue, players, zn, onResult, onRemove, onReplace }) {
   const z = ZONES[zone];
   const zl = zn(zone);
   return (
-    <div style={{ border: "1px solid var(--pi-line)", borderRadius: "var(--pi-r-md)", padding: "var(--pi-s3)", background: "var(--pi-surface-2)" }}>
-      <Eyebrow style={{ marginBottom: "var(--pi-s2)" }}>{z.icon} {zl.sn}</Eyebrow>
+    <div style={{ border: "1px solid "+z.border, borderRadius: "var(--pi-r-md)", padding: "var(--pi-s3)", background: z.bg }}>
+      <Eyebrow style={{ marginBottom: "var(--pi-s2)", color: z.color }}>{z.icon} {zl.sn}</Eyebrow>
       {activeGame ? (
         activeGame.type === "team" ? (
           <TeamGameView game={activeGame} players={players} zone={zone} onResult={onResult} onRemove={onRemove} onReplace={onReplace} />
@@ -70,7 +78,7 @@ function ZoneMatchCard({ zone, activeGame, queue, players, zn, onResult, onRemov
       ) : (
         <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)" }}>En attente</div>
       )}
-      <WaitingList queue={queue} players={players} />
+      <WaitingList zone={zone} queue={queue} players={players} />
     </div>
   );
 }
