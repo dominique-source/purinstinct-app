@@ -591,8 +591,24 @@ export default function PurInstinctApp(){
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[activationMode,smallGroup.roundStatus,smallGroup.secondaryZones,activeGames]);
 
+  // Vrai si CETTE zone est actuellement réservée par une manche Petit Groupe
+  // active/en clôture — contrairement à activationMode==="petitGroupe" (vrai
+  // SEULEMENT sur l'appareil qui a lancé l'aperçu Mode Développeur, jamais
+  // synced à Firebase par design), smallGroup EST toujours synced pour tous
+  // les appareils. C'est donc la seule source de vérité fiable pour protéger
+  // une zone contre une action "games" classique (StationView) déclenchée
+  // depuis un autre appareil pendant qu'elle appartient à une manche Petit
+  // Groupe — voir StationView.jsx (roundOwned) et submitResult ci-dessous.
+  const zoneInActiveRound=(zone)=>
+    (smallGroup.roundZones||[]).includes(zone)&&
+    (smallGroup.roundStatus==="active"||smallGroup.roundStatus==="wrapping");
+
   // --- Cancel game: remettre les joueurs en tête de file dans le même ordre ---
   const cancelGame=(zone)=>{
+    if(zoneInActiveRound(zone)){
+      window.alert("Cette zone est actuellement gérée par une manche Petit Groupe en cours — impossible d'annuler la partie depuis ce poste.");
+      return;
+    }
     const game=activeGames[zone];
     if(!game) return;
     const inGame=game.type==="team"
@@ -661,7 +677,12 @@ export default function PurInstinctApp(){
     // gagnants ET perdants du match pouvaient ainsi disparaître du jeu pour
     // le reste de la manche. Ici, pas d'ambiguïté : ils retournent en fin de
     // la file de LEUR zone, point final.
-    const refilled=activationMode==="petitGroupe"
+    // zoneInActiveRound (pas activationMode==="petitGroupe") : ce résultat
+    // peut être déclaré depuis N'IMPORTE QUEL appareil pointé sur cette zone
+    // (StationView réel, activationMode local "games") — s'appuyer sur
+    // activationMode local aurait raté ce cas et laissé refillQueues
+    // repeupler la file avec du vrai roster (observé en direct).
+    const refilled=zoneInActiveRound(zone)
       ?{...queues,[zone]:[...(queues[zone]||[]),...inGame]}
       :refillQueues(updated,queues,newGames);
     // Mise à jour locale immédiate
@@ -689,7 +710,7 @@ export default function PurInstinctApp(){
     // "c'est la dernière partie" — ils terminent leur match en cours (déjà
     // clôturé plus haut si c'était eux) mais n'en génèrent plus de nouveau
     // (voir suppressAutoGen sur StationView) jusqu'à la manche suivante.
-    if(activationMode==="petitGroupe"&&zone==="purinstinct"&&smallGroup.roundStatus==="active"){
+    if(zone==="purinstinct"&&smallGroup.roundStatus==="active"&&(smallGroup.roundZones||[]).includes("purinstinct")){
       writes["state/smallGroup/roundStatus"]="wrapping";
       writes["state/smallGroup/wrappingStartedAt"]=stamp;
       setSmallGroup(sg=>({...sg,roundStatus:"wrapping",wrappingStartedAt:stamp}));
@@ -1132,6 +1153,7 @@ export default function PurInstinctApp(){
       queue={queues[view.id]||[]}
       activeGame={activeGames[view.id]}
       disabled={(arenaState.disabledZones||[]).includes(view.id)}
+      roundOwned={zoneInActiveRound(view.id)}
       arenaState={arenaState}
       sessionName={(rosters.find(r=>r.id===activeRosterId)||{name:"Session Standard"}).name}
       sessionCode={(rosterCodes||{})[activeRosterId]||null}
