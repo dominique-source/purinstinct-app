@@ -14,7 +14,7 @@ import { Button, IconButton, Panel, Eyebrow, Badge, LiveIndicator, Tabs, Timer, 
 // Flagship live-station console. Presentation is design-system-driven; the
 // pending/undo state machine, auto-generation and queue logic are preserved
 // verbatim from the previous implementation.
-export function StationView({zone,players,queue,activeGame,disabled,arenaState,sessionName,sessionCode,teamMode,teams,suppressAutoGen=false,onGenerateTeamMatch,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId,onFillQueue}){
+export function StationView({zone,players,queue,activeGame,disabled,roundOwned,arenaState,sessionName,sessionCode,teamMode,teams,suppressAutoGen=false,onGenerateTeamMatch,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId,onFillQueue}){
   const t=useT();
   const zn=useZn();
   const z=ZONES[zone];
@@ -158,6 +158,29 @@ export function StationView({zone,players,queue,activeGame,disabled,arenaState,s
       <div style={{fontSize:56,opacity:0.25}}>{z.icon}</div>
       <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:"var(--pi-fs-title)",color:"var(--pi-text-3)",textAlign:"center"}}>{t.stationDisabled}</div>
       <div style={{fontSize:"var(--pi-fs-body)",color:"var(--pi-text-3)",textAlign:"center",maxWidth:260}}>{t.stationDisabledDesc}</div>
+      {sessionName&&<Badge>📋 {sessionName}</Badge>}
+      <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s2)",marginTop:"var(--pi-s4)",width:"100%",maxWidth:280}}>
+        <Button variant="secondary" block onClick={onBack||onLogout}>{t.backToStations}</Button>
+        {onGoAdmin&&<Button variant="primary" block onClick={onGoAdmin}>{fromPlayerId?t.goPlayer:t.goAdmin}</Button>}
+        <Button variant="ghost" size="sm" block onClick={onLogout}>{t.disconnect}</Button>
+      </div>
+    </div>
+  );
+
+  // ---- Zone owned by an active Petit Groupe round -----------------------------
+  // smallGroup (App.jsx) is always synced from Firebase for every device — unlike
+  // activationMode, which stays purely local for the Mode Développeur preview.
+  // A real station operator on this zone could otherwise cancel/remove/replace/
+  // declare a winner behind the Petit Groupe dashboard's back (observed live:
+  // "Retour à la file" here silently corrupted an in-progress round). Blocking
+  // the whole game tab here — not just individual actions — is what actually
+  // keeps the round safe, since these buttons are shared with SmallGroupTab and
+  // can't be told apart at the App.jsx function level.
+  if(roundOwned) return(
+    <div style={{minHeight:"100svh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"var(--pi-s4)",padding:"var(--pi-s6)"}}>
+      <div style={{fontSize:56}}>🎯</div>
+      <div style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:"var(--pi-fs-title)",color:"var(--pi-text-3)",textAlign:"center"}}>{t.stationRoundOwned}</div>
+      <div style={{fontSize:"var(--pi-fs-body)",color:"var(--pi-text-3)",textAlign:"center",maxWidth:280}}>{t.stationRoundOwnedDesc}</div>
       {sessionName&&<Badge>📋 {sessionName}</Badge>}
       <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s2)",marginTop:"var(--pi-s4)",width:"100%",maxWidth:280}}>
         <Button variant="secondary" block onClick={onBack||onLogout}>{t.backToStations}</Button>
