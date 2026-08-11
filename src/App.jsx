@@ -23,8 +23,11 @@ import { LoginView } from "./components/views/LoginView.jsx";
 import { LiveLoginView } from "./components/views/LiveLoginView.jsx";
 import { PlayerView } from "./components/views/PlayerView.jsx";
 import { KioskView } from "./components/views/KioskView.jsx";
+import { NfcUnassignedView } from "./components/views/NfcUnassignedView.jsx";
 import { DevHub } from "./components/views/DevHub.jsx";
 import { DEV_PIN } from "./config/pins.js";
+import { BASE_URL } from "./config/constants.js";
+import { parseNfcToken, resolvePlayerId } from "./lib/nfc.js";
 
 // ================================================================
 // PURINSTINCT ARENA v3  –  75 min  |  Dynamic rosters  |  5 tiers
@@ -57,6 +60,8 @@ export default function PurInstinctApp(){
   // Mode Petit Groupe: état de la manche en cours — voir src/lib/smallGroup.js
   // et launchSmallGroupRound ci-dessous.
   const [smallGroup,setSmallGroup]=useState({roundStatus:"idle",roundNumber:0,secondaryZoneUsage:{}});
+  // Bracelets NFC: { [token]: {playerId, assignedAt, active} } — voir src/lib/nfc.js.
+  const [nfcTags,setNfcTags]=useState({});
   // Borne fixe: ?kiosk=1 (option &zone=X pour verrouiller une borne à une seule
   // zone) bascule directement en mode kiosque, sans passer par l'écran PIN.
   const [view,setView]=useState(()=>{
@@ -168,6 +173,7 @@ export default function PurInstinctApp(){
       if(data.activationMode&&!devModeRef.current) setActivationMode(data.activationMode);
       setTeams(data.teams||{});
       setTeamPairCounts(data.teamPairCounts||{});
+      setNfcTags(data.nfcTags||{});
       if(data.smallGroup) setSmallGroup(data.smallGroup);
       if(data.extraRosters) setRosters([...INITIAL_ROSTERS,...Object.values(data.extraRosters).map(r=>({...r,entries:r.entries||[]}))]);
 
@@ -377,6 +383,41 @@ export default function PurInstinctApp(){
       else addToQueue(newId,zone,true);
       onDone();
     },activeRosterId,extra);
+  };
+
+  // Assigne un bracelet NFC déjà écrit (token) à un joueur — appelé après que
+  // AssignWristbandFlow a confirmé l'écriture physique du tag. Désactive
+  // l'ancien token du joueur dans la même écriture atomique s'il en avait un.
+  const assignNfcTag=(playerId,token)=>{
+    const player=players.find(p=>p.id===playerId);
+    const updates={
+      ["state/nfcTags/"+token]:{playerId,assignedAt:Date.now(),active:true},
+      ["state/players/"+playerId+"/nfcToken"]:token,
+    };
+    if(player?.nfcToken&&player.nfcToken!==token){
+      updates["state/nfcTags/"+player.nfcToken+"/active"]=false;
+    }
+    setNfcTags(prev=>{
+      const next={...prev,[token]:{playerId,assignedAt:Date.now(),active:true}};
+      if(player?.nfcToken&&player.nfcToken!==token) next[player.nfcToken]={...next[player.nfcToken],active:false};
+      return next;
+    });
+    setPlayers(prev=>prev.map(p=>p.id===playerId?{...p,nfcToken:token}:p));
+    fbUpdate(updates);
+  };
+
+  // Retire le bracelet d'un joueur (bracelet perdu, etc.) sans en assigner un
+  // nouveau — désactive le tag et vide players/{id}/nfcToken en une écriture.
+  const unassignNfcTag=(playerId)=>{
+    const player=players.find(p=>p.id===playerId);
+    if(!player?.nfcToken) return;
+    const token=player.nfcToken;
+    fbUpdate({
+      ["state/nfcTags/"+token+"/active"]:false,
+      ["state/players/"+playerId+"/nfcToken"]:"",
+    });
+    setNfcTags(prev=>({...prev,[token]:{...prev[token],active:false}}));
+    setPlayers(prev=>prev.map(p=>p.id===playerId?{...p,nfcToken:""}:p));
   };
 
   const updatePlayer=(updated)=>syncOnePlayer(updated);
@@ -879,6 +920,18 @@ export default function PurInstinctApp(){
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[fbReady]);
 
+  // Bracelet NFC tapé (?nfc=TOKEN, écrit par AssignWristbandFlow) : ouvre
+  // directement le PlayerView du joueur associé, sans pavé numérique — même
+  // gating une-seule-fois-au-chargement que le lien ?code= ci-dessus.
+  useEffect(()=>{
+    if(!fbReady||view.type!=="login") return;
+    const token=parseNfcToken(window.location.href,window.location.origin);
+    if(!token) return;
+    const playerId=resolvePlayerId(token,nfcTags);
+    setTimeout(()=>setView(playerId?{type:"player",id:playerId}:{type:"nfcUnassigned"}),0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[fbReady]);
+
   // --- Routing ---
   let content=null;
   if(!fbReady){
@@ -889,6 +942,10 @@ export default function PurInstinctApp(){
     );
   } else if(view.type==="login") content=(
     <ModeSelectView onSelectMode={handleSelectMode} onDevMode={()=>setView({type:"devHub"})}/>
+  );
+
+  else if(view.type==="nfcUnassigned") content=(
+    <NfcUnassignedView onBack={()=>setView({type:"login"})}/>
   );
 
   else if(view.type==="devHub") content=(
@@ -923,6 +980,7 @@ export default function PurInstinctApp(){
       lockedZone={view.zone}
       teamMode={!!arenaState.teamMode}
       teams={teams}
+      nfcTags={nfcTags}
       onRegister={kioskRegister}/>
     {devMode&&<button onClick={()=>{setDevMode(false);setView({type:"devHub"});}}
       style={{position:"fixed",top:12,right:12,zIndex:999,padding:"8px 14px",borderRadius:10,
@@ -1140,7 +1198,10 @@ export default function PurInstinctApp(){
       onUnpublishWinners={()=>{setWinnersPublished(false);fbSet("winnersPublished",false);}}
       augState={augState}
       onUpdateAugState={(gameId,newState)=>setAugState(prev=>({...prev,[gameId]:newState}))}
-      onUpdatePlayer2={updatePlayer}/>
+      onUpdatePlayer2={updatePlayer}
+      nfcTags={nfcTags}
+      assignNfcTag={assignNfcTag}
+      unassignNfcTag={unassignNfcTag}/>
   );
 
   else if(view.type==="station") content=(

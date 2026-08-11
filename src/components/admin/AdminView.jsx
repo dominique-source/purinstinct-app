@@ -5,6 +5,8 @@ import { useT } from "../../hooks/useLang.js";
 import { S } from "../shared/styles.js";
 import { ZonePip } from "../shared/ZonePip.jsx";
 import { PlayerDossier } from "./PlayerDossier.jsx";
+import { AssignWristbandFlow } from "./AssignWristbandFlow.jsx";
+import { BASE_URL } from "../../config/constants.js";
 import { LangFooter } from "../shared/LangFooter.jsx";
 import { CockpitTab } from "./tabs/CockpitTab.jsx";
 import { LeaderboardTab } from "./tabs/LeaderboardTab.jsx";
@@ -17,7 +19,7 @@ import { WinnersTab } from "./tabs/WinnersTab.jsx";
 import { TeamsTab } from "./tabs/TeamsTab.jsx";
 import { SmallGroupTab } from "./tabs/SmallGroupTab.jsx";
 
-export function AdminView({players,allPlayers,queues,activeGames,arenaState,lastResultAt,rosters,activeRosterId,initialTab,teams,activationMode,smallGroup,onLaunchSmallGroupRound,onSubmitResult,onRemoveFromGame,onReplaceInGame,isTestMode,onToggleTeamMode,onAssignPlayer,onRemoveTeamMember,onRenameTeam,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,onRemovePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onResetAllPoints,onResetAllHistory,onResetAllSurveys,comments,onClearComments,augState,onUpdateAugState,onUpdatePlayer2}){
+export function AdminView({players,allPlayers,queues,activeGames,arenaState,lastResultAt,rosters,activeRosterId,initialTab,teams,activationMode,smallGroup,onLaunchSmallGroupRound,onSubmitResult,onRemoveFromGame,onReplaceInGame,isTestMode,onToggleTeamMode,onAssignPlayer,onRemoveTeamMember,onRenameTeam,onStart,onEnd,onPause,onResume,onUpdateDuration,onGoStation,onToggleZone,onAddQ,onRemoveQ,onAddGroupToQueue,onLogout,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onUpdatePlayer,onRemovePlayer,winnersPublished,onPublishWinners,onUnpublishWinners,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onResetAllPoints,onResetAllHistory,onResetAllSurveys,comments,onClearComments,augState,onUpdateAugState,onUpdatePlayer2,nfcTags,assignNfcTag,unassignNfcTag}){
   const t=useT();
   const [tab,setTab]=useState(initialTab||"leaderboard");
   const [sessionMins,setSessionMins]=useState(arenaState.sessionMins||75);
@@ -25,6 +27,7 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
   const [dossierPlayerId,setDossierPlayerId]=useState(null);
   const [dossierOrigin,setDossierOrigin]=useState(null);
   const [selectedStation,setSelectedStation]=useState(null);
+  const [nfcFlowPlayerId,setNfcFlowPlayerId]=useState(null);
 
   const openDossier=(id)=>{
     setDossierOrigin({tab,station:selectedStation});
@@ -51,11 +54,19 @@ export function AdminView({players,allPlayers,queues,activeGames,arenaState,last
   const winner=arenaState.ended&&eligible.length>0?eligible[0]:null;
   const timerColor=arenaState.active?"#B8E020":arenaState.paused?"#f97316":arenaState.ended?"#dc2626":"#374151";
 
-  if(dossierPlayer) return(
+  if(dossierPlayer) return(<>
     <PlayerDossier player={dossierPlayer}
       onSave={(updated)=>{onUpdatePlayer(updated);}}
-      onBack={()=>{setDossierPlayerId(null);if(dossierOrigin){setTab(dossierOrigin.tab);setSelectedStation(dossierOrigin.station);}setDossierOrigin(null);}}/>
-  );
+      onBack={()=>{setDossierPlayerId(null);if(dossierOrigin){setTab(dossierOrigin.tab);setSelectedStation(dossierOrigin.station);}setDossierOrigin(null);}}
+      nfcToken={dossierPlayer.nfcToken||""}
+      onAssignNfc={()=>setNfcFlowPlayerId(dossierPlayer.id)}
+      onUnassignNfc={()=>unassignNfcTag(dossierPlayer.id)}/>
+    {nfcFlowPlayerId===dossierPlayer.id&&(
+      <AssignWristbandFlow player={dossierPlayer} baseUrl={BASE_URL}
+        onAssigned={(token)=>assignNfcTag(dossierPlayer.id,token)}
+        onCancel={()=>setNfcFlowPlayerId(null)}/>
+    )}
+  </>);
 
   return(<>
     <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif"}}>

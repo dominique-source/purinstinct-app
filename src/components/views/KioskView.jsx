@@ -5,6 +5,11 @@ import { useMode } from "../../hooks/useMode.js";
 import { useCountUp } from "../../hooks/useCountUp.js";
 import { Button, Eyebrow, EmptyState, Field } from "../ui/index.js";
 import { ConsentGate } from "../shared/ConsentGate.jsx";
+import { isWebNfcSupported, scanNfc } from "../../lib/webNfc.js";
+import { parseNfcToken, resolvePlayerId } from "../../lib/nfc.js";
+import { BASE_URL } from "../../config/constants.js";
+
+const NFC_REREAD_DEBOUNCE_MS = 1500; // évite les doubles lectures d'un même tag posé sur le lecteur
 
 // Ligne du classement kiosque — composant séparé pour que useCountUp anime chaque score.
 // Podium (1-3) vs peloton: la hiérarchie passe par l'échelle et le rim-light, pas par
@@ -55,13 +60,15 @@ const BACK_BTN_STYLE={minHeight:108,padding:"0 32px",fontSize:24,fontWeight:700,
 // Borne fixe et publique: écran d'accueil = classement en boucle, jamais de
 // session affichée trop longtemps. Inscription en 3 taps (2 en mode équipes): zone →
 // [équipe] → nom → confirmer.
-export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onRegister}){
+export function KioskView({players,disabledZones,lockedZone,teamMode,teams,nfcTags,onRegister}){
   const zn=useZn();
   const t=useT();
   const {modeConfig}=useMode();
   const [mode,setMode]=useState("idle"); // idle | leaderboard | zone | team | identify | confirm
   const [zone,setZone]=useState(lockedZone||null);
   const [search,setSearch]=useState("");
+  const [nfcError,setNfcError]=useState(false);
+  const nfcLastRef=useRef({token:null,at:0});
   const [gender,setGender]=useState("M");
   const [email,setEmail]=useState("");
   const [marketingConsent,setMarketingConsent]=useState(false);
@@ -96,6 +103,7 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
   const reset=useCallback(()=>{
     setMode("idle"); setZone(lockedZone||null); setSearch(""); setGender("M"); setConfirmed(null);
     setEmail(""); setMarketingConsent(false); setExtraFieldValue(""); setTeamSearch(""); setSelectedTeam(null);
+    setNfcError(false);
   },[lockedZone]);
 
   // Désactive le pinch-zoom pour cette borne publique uniquement — on restaure
@@ -170,6 +178,30 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
       setMode("confirm");
     },Object.keys(extra).length>0?extra:undefined);
   };
+
+  // Identification par bracelet NFC, en parallèle de la recherche manuelle
+  // (jamais désactivée). Lecture seule — ne verrouille/n'écrit jamais un tag.
+  useEffect(()=>{
+    if(mode!=="identify"||!isWebNfcSupported()) return;
+    const expectedOrigin=new URL(BASE_URL).origin;
+    const stop=scanNfc({
+      onRead:(url)=>{
+        const token=parseNfcToken(url,expectedOrigin);
+        if(!token) return; // tag hors-app, ignoré silencieusement
+        const now=Date.now();
+        if(nfcLastRef.current.token===token&&now-nfcLastRef.current.at<NFC_REREAD_DEBOUNCE_MS) return;
+        nfcLastRef.current={token,at:now};
+        const playerId=resolvePlayerId(token,nfcTags);
+        const player=playerId!=null?groupPlayers.find(p=>p.id===playerId):null;
+        bump();
+        if(player){ setNfcError(false); finish(player.name,player.id); }
+        else setNfcError(true);
+      },
+      onError:()=>{},
+    });
+    return stop;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[mode]);
 
   const sorted=[...players].sort((a,b)=>b.globalPoints-a.globalPoints).slice(0,10);
 
@@ -345,6 +377,16 @@ export function KioskView({players,disabledZones,lockedZone,teamMode,teams,onReg
                 {t.teamLabel} : {selectedTeam.name}
               </div>}
             </div>
+
+            {isWebNfcSupported()&&(
+              <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",
+                padding:"var(--pi-s3)",marginBottom:"var(--pi-s3)",borderRadius:"var(--pi-r-md)",
+                border:"1px dashed "+(nfcError?"var(--pi-danger)":"var(--pi-lime-line)"),
+                background:nfcError?"transparent":"var(--pi-lime-wash)",
+                color:nfcError?"var(--pi-danger)":"var(--pi-lime)",fontSize:"var(--pi-fs-body)",fontWeight:600}}>
+                {nfcError?t.nfcKioskError:t.nfcKioskPrompt}
+              </div>
+            )}
 
             <input value={search} onChange={e=>{bump();setSearch(e.target.value);}} autoFocus
               placeholder="Tapez votre nom…" className="pi-input"

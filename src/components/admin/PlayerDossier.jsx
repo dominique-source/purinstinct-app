@@ -5,7 +5,7 @@ import { useT } from "../../hooks/useLang.js";
 import { S } from "../shared/styles.js";
 import { ProgressChart } from "./ProgressChart.jsx";
 
-export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onAddComment}){
+export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onAddComment,onAssignNfc,onUnassignNfc,nfcToken}){
   const t=useT();
   const [form,setForm]=useState({
     name:player.name||"",gender:player.gender||"M",age:player.age||"",
@@ -134,6 +134,32 @@ export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onA
           ))}
         </div>
       </div>
+
+      {/* Bracelet NFC (admin uniquement) */}
+      {onAssignNfc&&(
+        <div style={{...S.card()}}>
+          <div style={{...S.label(),marginBottom:10}}>{t.nfcSectionTitle}</div>
+          <div style={{...S.row(),justifyContent:"space-between"}}>
+            <span style={{fontSize:13,color:nfcToken?"#fff":"#4b5563"}}>
+              {nfcToken?t.nfcTagAssigned+" — •••"+nfcToken.slice(-4):t.nfcNoTag}
+            </span>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:10}}>
+            <button onClick={onAssignNfc} style={{flex:1,padding:"10px",borderRadius:10,border:"none",cursor:"pointer",
+              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
+              background:"#B8E020",color:"#000"}}>
+              {nfcToken?t.nfcReplaceBtn:t.nfcAssignBtn}
+            </button>
+            {nfcToken&&onUnassignNfc&&(
+              <button onClick={onUnassignNfc} style={{flex:1,padding:"10px",borderRadius:10,cursor:"pointer",
+                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
+                background:"#1a0606",border:"1px solid #dc262650",color:"#ef4444"}}>
+                {t.nfcUnassignBtn}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Graphique historique */}
       {(player.history||[]).length>0&&(

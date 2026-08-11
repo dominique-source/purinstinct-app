@@ -42,6 +42,7 @@ export function PlayersTab({players,queues,activeGames,onAddQ,onRemoveQ,onOpenDo
               <div style={{display:"flex",alignItems:"center",padding:"9px 12px",gap:"var(--pi-s3)"}}>
                 <div style={{width:8,height:8,borderRadius:"50%",background:statusDot,flexShrink:0,marginTop:1}}/>
                 <Bib n={p.number} size="sm"/>
+                {p.nfcToken&&<span title="Bracelet NFC assigné" style={{fontSize:12,flexShrink:0}}>📶</span>}
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{color:"var(--pi-text)",fontWeight:600,fontSize:"var(--pi-fs-body)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
                   <div style={{fontSize:"var(--pi-fs-label)",marginTop:1,fontWeight:600,color:statusColor}}>{statusText}</div>

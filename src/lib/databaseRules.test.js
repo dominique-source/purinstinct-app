@@ -126,3 +126,42 @@ describe("database.rules.json — mode Petit Groupe (state/smallGroup)", () => {
     });
   }
 });
+
+describe("database.rules.json — bracelets NFC (nfcTags/players.$playerId.nfcToken)", () => {
+  const nfcTokenExpr = RULES.rules.state.players.$playerId.nfcToken[".validate"];
+  const playerIdExpr = RULES.rules.state.nfcTags.$token.playerId[".validate"];
+  const assignedAtExpr = RULES.rules.state.nfcTags.$token.assignedAt[".validate"];
+  const activeExpr = RULES.rules.state.nfcTags.$token.active[".validate"];
+
+  it("accepte un nfcToken qui est une chaîne", () => {
+    expect(evalValidate(nfcTokenExpr, { rootData: {}, newDataValue: "0123456789abcdef0123456789abcdef" })).toBe(true);
+  });
+
+  it("rejette un nfcToken qui n'est pas une chaîne", () => {
+    expect(evalValidate(nfcTokenExpr, { rootData: {}, newDataValue: 123 })).toBe(false);
+  });
+
+  it("accepte un playerId numérique sur un tag", () => {
+    expect(evalValidate(playerIdExpr, { rootData: {}, newDataValue: 7 })).toBe(true);
+  });
+
+  it("rejette un playerId non numérique sur un tag", () => {
+    expect(evalValidate(playerIdExpr, { rootData: {}, newDataValue: "7" })).toBe(false);
+  });
+
+  it("accepte un assignedAt numérique (timestamp ms)", () => {
+    expect(evalValidate(assignedAtExpr, { rootData: {}, newDataValue: 1700000000000 })).toBe(true);
+  });
+
+  it("rejette un assignedAt non numérique", () => {
+    expect(evalValidate(assignedAtExpr, { rootData: {}, newDataValue: "1700000000000" })).toBe(false);
+  });
+
+  it("accepte un active booléen", () => {
+    expect(evalValidate(activeExpr, { rootData: {}, newDataValue: true })).toBe(true);
+  });
+
+  it("rejette un active non booléen", () => {
+    expect(evalValidate(activeExpr, { rootData: {}, newDataValue: "true" })).toBe(false);
+  });
+});
