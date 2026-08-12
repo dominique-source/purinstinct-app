@@ -52,6 +52,7 @@ export function PlayerHubView({player,rank,hubPts,arenaTimer,arenaStatus,arenaSt
 
       {/* Identity block */}
       <div style={{textAlign:"center",marginBottom:"var(--pi-s8)"}}>
+        <Eyebrow style={{marginBottom:"var(--pi-s3)"}}>Profil</Eyebrow>
         <Bib n={player.number} size="lg"/>
         <div style={{fontWeight:700,color:"var(--pi-text)",fontSize:"var(--pi-fs-card)",marginTop:"var(--pi-s2)"}}>{player.name}</div>
         <div style={{display:"flex",alignItems:"baseline",gap:"var(--pi-s2)",justifyContent:"center",marginTop:"var(--pi-s1)"}}>
