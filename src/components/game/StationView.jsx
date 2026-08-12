@@ -10,11 +10,16 @@ import { IndividualGameView } from "./IndividualGameView.jsx";
 import { TeamGameView } from "./TeamGameView.jsx";
 import { useArenaTimer } from "../../hooks/useArenaTimer.js";
 import { Button, IconButton, Panel, Eyebrow, Badge, LiveIndicator, Tabs, Timer, Modal } from "../ui/index.js";
+import { isWebNfcSupported, scanNfc } from "../../lib/webNfc.js";
+import { parseNfcToken, resolvePlayerId } from "../../lib/nfc.js";
+import { BASE_URL } from "../../config/constants.js";
+
+const NFC_REREAD_DEBOUNCE_MS = 1500; // évite les doubles lectures d'un même bracelet posé sur le lecteur
 
 // Flagship live-station console. Presentation is design-system-driven; the
 // pending/undo state machine, auto-generation and queue logic are preserved
 // verbatim from the previous implementation.
-export function StationView({zone,players,queue,activeGame,disabled,roundOwned,arenaState,sessionName,sessionCode,teamMode,teams,suppressAutoGen=false,onGenerateTeamMatch,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId,onFillQueue}){
+export function StationView({zone,players,queue,activeGame,disabled,roundOwned,arenaState,sessionName,sessionCode,teamMode,teams,nfcTags,suppressAutoGen=false,onGenerateTeamMatch,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId,onFillQueue}){
   const t=useT();
   const zn=useZn();
   const z=ZONES[zone];
@@ -107,16 +112,46 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
   const handleAdd=()=>{
     const n=parseInt(numInput,10);
     const p=players.find(px=>px.number===n);
-    if(!p){setNumInput(""); return;}
-    if(queue.includes(p.id)){
-      setHighlightId(p.id);
-      setTimeout(()=>setHighlightId(null),2800);
-      setNumInput("");
-      return;
-    }
-    onAddQ(p.id,zone,true);
+    if(p) addPlayerToQueue(p.id);
     setNumInput("");
   };
+
+  const addPlayerToQueue=(id)=>{
+    if(queue.includes(id)){
+      setHighlightId(id);
+      setTimeout(()=>setHighlightId(null),2800);
+      return;
+    }
+    onAddQ(id,zone,true);
+  };
+  // Toujours la dernière version (queue/zone changent à chaque ajout) — évite
+  // de redémarrer le scan NFC (donc une fenêtre de lecture manquée) à chaque
+  // fois qu'un joueur rejoint la file, même pattern que onResultRef ci-dessus.
+  const addPlayerToQueueRef=useRef(addPlayerToQueue);
+  useEffect(()=>{addPlayerToQueueRef.current=addPlayerToQueue;});
+
+  // Identification par bracelet NFC: le joueur tape son bracelet directement
+  // sur l'appareil du responsable de plateau (il n'a pas forcément son
+  // téléphone) — ajoute à la file exactement comme le numéro de dossard
+  // manuel (handleAdd) ci-dessus. Lecture seule, jamais de verrouillage/écriture.
+  const nfcLastRef=useRef({token:null,at:0});
+  useEffect(()=>{
+    if(!isWebNfcSupported()) return;
+    const expectedOrigin=new URL(BASE_URL).origin;
+    const stop=scanNfc({
+      onRead:(url)=>{
+        const token=parseNfcToken(url,expectedOrigin);
+        if(!token) return;
+        const now=Date.now();
+        if(nfcLastRef.current.token===token&&now-nfcLastRef.current.at<NFC_REREAD_DEBOUNCE_MS) return;
+        nfcLastRef.current={token,at:now};
+        const playerId=resolvePlayerId(token,nfcTags);
+        if(playerId!=null) addPlayerToQueueRef.current(playerId);
+      },
+      onError:()=>{},
+    });
+    return stop;
+  },[nfcTags]);
 
   const handleFlashResult=(label)=>{ setFlash(label); setTimeout(()=>setFlash(null),2200); };
 
@@ -405,6 +440,14 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
                   <Eyebrow>{t.queue} · {qPlayers.length}</Eyebrow>
                   {onFillQueue&&<Button variant="outline" size="sm" onClick={onFillQueue}>Remplir</Button>}
                 </div>
+                {isWebNfcSupported()&&(
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",
+                    padding:"var(--pi-s2) var(--pi-s3)",marginBottom:"var(--pi-s2)",borderRadius:"var(--pi-r-md)",
+                    border:"1px dashed var(--pi-lime-line)",background:"var(--pi-lime-wash)",
+                    color:"var(--pi-lime)",fontSize:"var(--pi-fs-label)",fontWeight:600}}>
+                    {t.nfcKioskPrompt}
+                  </div>
+                )}
                 <div style={{display:"flex",gap:"var(--pi-s2)",marginBottom:"var(--pi-s3)"}}>
                   <input type="number" min="1" max="999" placeholder="# Joueur" className="pi-input"
                     value={numInput} onChange={e=>setNumInput(e.target.value)}

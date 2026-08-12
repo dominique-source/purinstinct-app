@@ -24,6 +24,7 @@ import { LiveLoginView } from "./components/views/LiveLoginView.jsx";
 import { PlayerView } from "./components/views/PlayerView.jsx";
 import { KioskView } from "./components/views/KioskView.jsx";
 import { NfcUnassignedView } from "./components/views/NfcUnassignedView.jsx";
+import { NfcKioskView } from "./components/views/NfcKioskView.jsx";
 import { DevHub } from "./components/views/DevHub.jsx";
 import { DEV_PIN } from "./config/pins.js";
 import { BASE_URL } from "./config/constants.js";
@@ -67,6 +68,9 @@ export default function PurInstinctApp(){
   const [view,setView]=useState(()=>{
     const p=new URLSearchParams(window.location.search);
     if(p.get("kiosk")) return {type:"kiosk",zone:p.get("zone")||null};
+    // Poste fixe "main desk": tape un bracelet, vois ton profil, en boucle —
+    // même bypass du pavé PIN que ?kiosk=1.
+    if(p.get("nfcKiosk")) return {type:"nfcKiosk"};
     return {type:"login"};
   });
   const [liveMode,setLiveMode]=useState(false);
@@ -999,6 +1003,15 @@ export default function PurInstinctApp(){
     </button>}
   </>);
 
+  else if(view.type==="nfcKiosk") content=(
+    <NfcKioskView players={isTestMode?TEST_PLAYERS:players} nfcTags={nfcTags}
+      queues={queues} activeGames={activeGames}
+      disabledZones={arenaState.disabledZones||[]} arenaState={arenaState}
+      rosterCodes={rosterCodes} winnersPublished={winnersPublished}
+      onJoin={addToQueue} onLeave={removeFromQueue}
+      onUpdatePlayer={updatePlayer} onAddComment={addComment}/>
+  );
+
   else if(view.type==="liveLogin") content=(<>
     <LiveLoginView players={view.devPreview?TEST_PLAYERS:players} queues={queues} disabledZones={arenaState.disabledZones||[]}
         rosterCodes={rosterCodes}
@@ -1229,6 +1242,7 @@ export default function PurInstinctApp(){
       sessionCode={(rosterCodes||{})[activeRosterId]||null}
       teamMode={!!arenaState.teamMode}
       teams={teams[view.id]||{}}
+      nfcTags={nfcTags}
       suppressAutoGen={activationMode==="petitGroupe"&&smallGroup.roundStatus!=="active"}
       onGenerateTeamMatch={()=>generateTeamMatch(view.id)}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}
