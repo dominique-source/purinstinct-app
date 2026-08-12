@@ -1249,6 +1249,7 @@ export default function PurInstinctApp(){
       teamMode={!!arenaState.teamMode}
       teams={teams[view.id]||{}}
       nfcTags={nfcTags}
+      onAssignNfc={assignNfcTag}
       suppressAutoGen={activationMode==="petitGroupe"&&smallGroup.roundStatus!=="active"}
       onGenerateTeamMatch={()=>generateTeamMatch(view.id)}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}

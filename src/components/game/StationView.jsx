@@ -19,7 +19,7 @@ const NFC_REREAD_DEBOUNCE_MS = 1500; // évite les doubles lectures d'un même b
 // Flagship live-station console. Presentation is design-system-driven; the
 // pending/undo state machine, auto-generation and queue logic are preserved
 // verbatim from the previous implementation.
-export function StationView({zone,players,queue,activeGame,disabled,roundOwned,arenaState,sessionName,sessionCode,teamMode,teams,nfcTags,suppressAutoGen=false,onGenerateTeamMatch,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId,onFillQueue}){
+export function StationView({zone,players,queue,activeGame,disabled,roundOwned,arenaState,sessionName,sessionCode,teamMode,teams,nfcTags,onAssignNfc,suppressAutoGen=false,onGenerateTeamMatch,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,fromPlayerId,onFillQueue}){
   const t=useT();
   const zn=useZn();
   const z=ZONES[zone];
@@ -28,6 +28,10 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
   const [tab,setTab]=useState("game");
   const [showRoster,setShowRoster]=useState(false);
   const [numInput,setNumInput]=useState("");
+  // Bracelet NFC scanné mais pas encore lié à un joueur: token en attente de
+  // sélection dans la liste (voir l'effet de scan plus bas).
+  const [nfcUnknownToken,setNfcUnknownToken]=useState(null);
+  const [nfcPickerSearch,setNfcPickerSearch]=useState("");
   const [sprintSize,setSprintSize]=useState(4); // nombre ou "tous"
   const [flash,setFlash]=useState(null);
   const [confirmShortGame,setConfirmShortGame]=useState(false);
@@ -132,8 +136,12 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
 
   // Identification par bracelet NFC: le joueur tape son bracelet directement
   // sur l'appareil du responsable de plateau (il n'a pas forcément son
-  // téléphone) — ajoute à la file exactement comme le numéro de dossard
-  // manuel (handleAdd) ci-dessus. Lecture seule, jamais de verrouillage/écriture.
+  // téléphone). Bracelet déjà lié -> ajoute à la file exactement comme le
+  // numéro de dossard manuel (handleAdd) ci-dessus — il "tombe" directement
+  // dans cette zone. Bracelet valide mais pas encore lié à personne -> ouvre
+  // la liste de noms (nfcUnknownToken) pour l'activer sur-le-champ, puis
+  // l'ajoute à cette même file une fois choisi (voir handleNfcPickName plus
+  // bas). Lecture seule côté scan, jamais de verrouillage/écriture du tag.
   const nfcLastRef=useRef({token:null,at:0});
   useEffect(()=>{
     if(!isWebNfcSupported()) return;
@@ -147,11 +155,26 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
         nfcLastRef.current={token,at:now};
         const playerId=resolvePlayerId(token,nfcTags);
         if(playerId!=null) addPlayerToQueueRef.current(playerId);
+        else if(onAssignNfc) setNfcUnknownToken(token);
       },
       onError:()=>{},
     });
     return stop;
-  },[nfcTags]);
+  },[nfcTags,onAssignNfc]);
+
+  // Bracelet inconnu + nom choisi dans la liste: on lie le bracelet à ce
+  // joueur ET on l'ajoute à la file de cette zone en un seul geste — il
+  // "tombe" directement dans la section où il vient de taper.
+  const handleNfcPickName=(playerId)=>{
+    onAssignNfc(playerId,nfcUnknownToken);
+    addPlayerToQueue(playerId);
+    setNfcUnknownToken(null);
+    setNfcPickerSearch("");
+  };
+
+  const nfcPickerFiltered=nfcPickerSearch.trim().length>0
+    ?players.filter(p=>p.name.toLowerCase().includes(nfcPickerSearch.toLowerCase())||String(p.number).includes(nfcPickerSearch))
+    :players;
 
   const handleFlashResult=(label)=>{ setFlash(label); setTimeout(()=>setFlash(null),2200); };
 
@@ -522,6 +545,33 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
             <span style={{fontSize:"var(--pi-fs-label)",color:"var(--pi-text-4)"}}>{p.gender==="F"?"F":"H"}</span>
             <span style={{fontFamily:"var(--pi-font-display)",fontWeight:700,fontStyle:"italic",fontSize:14,color:"var(--pi-text-2)"}}>{p.globalPoints} pts</span>
           </div>
+        ))}
+      </div>
+    </Modal>
+
+    {/* ================= BRACELET NFC INCONNU: CHOISIR UN NOM ================= */}
+    <Modal open={!!nfcUnknownToken} onClose={()=>{setNfcUnknownToken(null);setNfcPickerSearch("");}} labelledBy="nfc-picker-title">
+      <h2 id="nfc-picker-title" style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
+        fontSize:"var(--pi-fs-section)",color:"var(--pi-text)",marginBottom:"var(--pi-s1)"}}>
+        {t.nfcSelectNameTitle}
+      </h2>
+      <p style={{color:"var(--pi-text-2)",fontSize:"var(--pi-fs-body)",marginBottom:"var(--pi-s3)"}}>{t.nfcSelectNameDesc}</p>
+      <input value={nfcPickerSearch} onChange={e=>setNfcPickerSearch(e.target.value)} autoFocus
+        placeholder={t.nfcSelectNameSearchPlaceholder} className="pi-input"
+        style={{width:"100%",marginBottom:"var(--pi-s3)",boxSizing:"border-box"}}/>
+      <div style={{maxHeight:"50vh",overflowY:"auto",display:"flex",flexDirection:"column",gap:"var(--pi-s2)"}}>
+        {nfcPickerFiltered.length===0&&(
+          <div style={{textAlign:"center",color:"var(--pi-text-4)",fontSize:"var(--pi-fs-body)",padding:"var(--pi-s4) 0"}}>{t.nfcSelectNameEmpty}</div>
+        )}
+        {nfcPickerFiltered.map(p=>(
+          <button key={p.id} onClick={()=>handleNfcPickName(p.id)} style={{
+            display:"flex",alignItems:"center",gap:"var(--pi-s3)",padding:"12px 14px",borderRadius:"var(--pi-r-md)",
+            border:"1px solid var(--pi-line)",background:"var(--pi-surface-1)",cursor:"pointer",textAlign:"left"}}>
+            <span style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:16,
+              color:"var(--pi-lime)",width:30,flexShrink:0,textAlign:"center"}}>#{p.number}</span>
+            <span style={{flex:1,color:"#fff",fontWeight:600,fontSize:"var(--pi-fs-body)"}}>{p.name}</span>
+            <span style={{color:"var(--pi-text-4)",fontSize:16}}>›</span>
+          </button>
         ))}
       </div>
     </Modal>
