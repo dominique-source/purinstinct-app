@@ -4,6 +4,7 @@ import { ZONES, ZK, zn } from "../../config/zones.js";
 import { useT } from "../../hooks/useLang.js";
 import { S } from "../shared/styles.js";
 import { ProgressChart } from "./ProgressChart.jsx";
+import braceletLime from "../../assets/bracelet-lime.png";
 
 export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onAddComment,onAssignNfc,onUnassignNfc,nfcToken}){
   const t=useT();
@@ -139,25 +140,27 @@ export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onA
       {onAssignNfc&&(
         <div style={{...S.card()}}>
           <div style={{...S.label(),marginBottom:10}}>{t.nfcSectionTitle}</div>
-          <div style={{...S.row(),justifyContent:"space-between"}}>
-            <span style={{fontSize:13,color:nfcToken?"#fff":"#4b5563"}}>
-              {nfcToken?t.nfcTagAssigned+" — •••"+nfcToken.slice(-4):t.nfcNoTag}
-            </span>
+          <div onClick={onAssignNfc} style={{position:"relative",borderRadius:16,overflow:"hidden",
+            cursor:"pointer",border:"2px solid #B8E02050",boxShadow:"0 4px 24px #B8E02020"}}>
+            <img src={braceletLime} alt="" style={{width:"100%",display:"block"}}/>
+            <div style={{position:"absolute",left:0,right:0,bottom:0,padding:"14px 16px",
+              background:"linear-gradient(0deg,#000000e6,#00000000)"}}>
+              <div style={{fontSize:12,color:nfcToken?"#B8E020":"#9ca3af",fontWeight:700,marginBottom:2}}>
+                {nfcToken?t.nfcTagAssigned+" — •••"+nfcToken.slice(-4):t.nfcNoTag}
+              </div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",
+                fontSize:18,color:"#fff"}}>
+                {nfcToken?t.nfcReplaceBtn:t.nfcAssignBtn}
+              </div>
+            </div>
           </div>
-          <div style={{display:"flex",gap:8,marginTop:10}}>
-            <button onClick={onAssignNfc} style={{flex:1,padding:"10px",borderRadius:10,border:"none",cursor:"pointer",
+          {nfcToken&&onUnassignNfc&&(
+            <button onClick={onUnassignNfc} style={{width:"100%",marginTop:8,padding:"10px",borderRadius:10,cursor:"pointer",
               fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
-              background:"#B8E020",color:"#000"}}>
-              {nfcToken?t.nfcReplaceBtn:t.nfcAssignBtn}
+              background:"#1a0606",border:"1px solid #dc262650",color:"#ef4444"}}>
+              {t.nfcUnassignBtn}
             </button>
-            {nfcToken&&onUnassignNfc&&(
-              <button onClick={onUnassignNfc} style={{flex:1,padding:"10px",borderRadius:10,cursor:"pointer",
-                fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:13,
-                background:"#1a0606",border:"1px solid #dc262650",color:"#ef4444"}}>
-                {t.nfcUnassignBtn}
-              </button>
-            )}
-          </div>
+          )}
         </div>
       )}
 
