@@ -928,7 +928,7 @@ export default function PurInstinctApp(){
     const token=parseNfcToken(window.location.href,window.location.origin);
     if(!token) return;
     const playerId=resolvePlayerId(token,nfcTags);
-    setTimeout(()=>setView(playerId?{type:"player",id:playerId}:{type:"nfcUnassigned"}),0);
+    setTimeout(()=>setView(playerId?{type:"player",id:playerId}:{type:"nfcUnassigned",token}),0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[fbReady]);
 
@@ -945,7 +945,10 @@ export default function PurInstinctApp(){
   );
 
   else if(view.type==="nfcUnassigned") content=(
-    <NfcUnassignedView onBack={()=>setView({type:"login"})}/>
+    <NfcUnassignedView
+      players={players.filter(p=>(p.groupId||"main")===activeRosterId)}
+      onBack={()=>setView({type:"login"})}
+      onConnect={(playerId)=>{assignNfcTag(playerId,view.token);setView({type:"player",id:playerId});}}/>
   );
 
   else if(view.type==="devHub") content=(
