@@ -27,8 +27,8 @@ import { NfcUnassignedView } from "./components/views/NfcUnassignedView.jsx";
 import { NfcKioskView } from "./components/views/NfcKioskView.jsx";
 import { DevHub } from "./components/views/DevHub.jsx";
 import { DEV_PIN } from "./config/pins.js";
-import { BASE_URL } from "./config/constants.js";
 import { parseNfcToken, resolvePlayerId } from "./lib/nfc.js";
+import braceletLime from "./assets/bracelet-lime.png";
 
 // ================================================================
 // PURINSTINCT ARENA v3  –  75 min  |  Dynamic rosters  |  5 tiers
@@ -77,6 +77,10 @@ export default function PurInstinctApp(){
     const stationZone=p.get("station");
     if(stationZone&&ZK.includes(stationZone)) return {type:"station",id:stationZone};
     if(p.get("stationPick")) return {type:"stationPick"};
+    // Bracelet NFC tapé: état dédié dès le premier rendu, jamais le pavé PIN
+    // même brièvement — la résolution (?nfc=TOKEN) attend juste que Firebase
+    // soit prêt, voir l'effet plus bas.
+    if(p.get("nfc")) return {type:"nfcResolving"};
     return {type:"login"};
   });
   const [liveMode,setLiveMode]=useState(false);
@@ -930,19 +934,15 @@ export default function PurInstinctApp(){
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[fbReady]);
 
-  // Bracelet NFC tapé (?nfc=TOKEN, écrit par AssignWristbandFlow) : ouvre
-  // directement le PlayerView du joueur associé, sans pavé numérique — une
-  // seule fois au chargement, comme le lien ?code= ci-dessus. Contrairement
-  // à ?code=, on accepte aussi bien "login" que "liveLogin": le listener
-  // Firebase (data.liveMode, plus haut) peut faire basculer view vers
-  // liveLogin dans le même batch de renders que celui qui met fbReady à
-  // true (une session live est en cours) — sans ce deuxième cas, le lien
-  // NFC ne se déclencherait jamais tant qu'une session live tourne, ce qui
-  // est précisément le moment où les bracelets servent le plus.
+  // Bracelet NFC tapé (?nfc=TOKEN, écrit par AssignWristbandFlow) : dès que
+  // Firebase est prêt, résout le token vers PlayerView (bracelet connu) ou
+  // l'écran de connexion (bracelet inconnu) — le pavé PIN n'est jamais
+  // affiché entretemps, view démarre déjà à "nfcResolving" (voir le
+  // useState(view) plus haut), quel que soit liveMode.
   useEffect(()=>{
-    if(!fbReady||(view.type!=="login"&&view.type!=="liveLogin")) return;
+    if(!fbReady||view.type!=="nfcResolving") return;
     const token=parseNfcToken(window.location.href,window.location.origin);
-    if(!token) return;
+    if(!token){ setTimeout(()=>setView({type:"login"}),0); return; }
     const playerId=resolvePlayerId(token,nfcTags);
     setTimeout(()=>setView(playerId?{type:"player",id:playerId}:{type:"nfcUnassigned",token}),0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -950,7 +950,21 @@ export default function PurInstinctApp(){
 
   // --- Routing ---
   let content=null;
-  if(!fbReady){
+  if(view.type==="nfcResolving"){
+    // Toujours l'image du bracelet ici, jamais le pavé PIN ni le splash
+    // générique — même pendant que Firebase se connecte (avant fbReady).
+    content=(
+      <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
+        display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+        padding:24,textAlign:"center"}}>
+        <style>{FONTS}</style>
+        <img src={braceletLime} alt="" style={{width:"100%",maxWidth:340,borderRadius:20,
+          marginBottom:24,border:"2px solid #B8E02050",boxShadow:"0 4px 24px #B8E02020"}}/>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",
+          fontSize:22,color:"#fff"}}>{T[lang].nfcResolvingTitle}</div>
+      </div>
+    );
+  } else if(!fbReady){
     content=(
       <div style={{minHeight:"100vh",background:"#0A0A0A",display:"flex",alignItems:"center",justifyContent:"center"}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,color:"#B8E020",letterSpacing:4}}>PURINSTINCT</div>
@@ -1227,7 +1241,6 @@ export default function PurInstinctApp(){
       augState={augState}
       onUpdateAugState={(gameId,newState)=>setAugState(prev=>({...prev,[gameId]:newState}))}
       onUpdatePlayer2={updatePlayer}
-      nfcTags={nfcTags}
       assignNfcTag={assignNfcTag}
       unassignNfcTag={unassignNfcTag}/>
   );

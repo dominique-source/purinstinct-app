@@ -239,6 +239,7 @@ export const T={
     nfcSelectNameSearchPlaceholder:"🔍 Rechercher ton nom...",
     nfcSelectNameEmpty:"Aucun joueur trouvé",
     nfcProfileKioskPrompt:"Tape ton bracelet pour voir ton profil",
+    nfcResolvingTitle:"Associer un bracelet",
   },
   en:{
     lang:"EN", langOther:"FR",
@@ -480,5 +481,6 @@ export const T={
     nfcSelectNameSearchPlaceholder:"🔍 Search your name...",
     nfcSelectNameEmpty:"No player found",
     nfcProfileKioskPrompt:"Tap your wristband to see your profile",
+    nfcResolvingTitle:"Associate a wristband",
   },
 };
