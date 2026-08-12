@@ -71,6 +71,12 @@ export default function PurInstinctApp(){
     // Poste fixe "main desk": tape un bracelet, vois ton profil, en boucle —
     // même bypass du pavé PIN que ?kiosk=1.
     if(p.get("nfcKiosk")) return {type:"nfcKiosk"};
+    // Lien direct responsable de plateau: ?station=footAgility saute le PIN
+    // et la liste de zones, ?stationPick=1 saute le PIN mais laisse choisir
+    // la zone (même esprit que ?kiosk=1 pour la borne).
+    const stationZone=p.get("station");
+    if(stationZone&&ZK.includes(stationZone)) return {type:"station",id:stationZone};
+    if(p.get("stationPick")) return {type:"stationPick"};
     return {type:"login"};
   });
   const [liveMode,setLiveMode]=useState(false);
