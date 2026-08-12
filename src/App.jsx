@@ -921,10 +921,16 @@ export default function PurInstinctApp(){
   },[fbReady]);
 
   // Bracelet NFC tapé (?nfc=TOKEN, écrit par AssignWristbandFlow) : ouvre
-  // directement le PlayerView du joueur associé, sans pavé numérique — même
-  // gating une-seule-fois-au-chargement que le lien ?code= ci-dessus.
+  // directement le PlayerView du joueur associé, sans pavé numérique — une
+  // seule fois au chargement, comme le lien ?code= ci-dessus. Contrairement
+  // à ?code=, on accepte aussi bien "login" que "liveLogin": le listener
+  // Firebase (data.liveMode, plus haut) peut faire basculer view vers
+  // liveLogin dans le même batch de renders que celui qui met fbReady à
+  // true (une session live est en cours) — sans ce deuxième cas, le lien
+  // NFC ne se déclencherait jamais tant qu'une session live tourne, ce qui
+  // est précisément le moment où les bracelets servent le plus.
   useEffect(()=>{
-    if(!fbReady||view.type!=="login") return;
+    if(!fbReady||(view.type!=="login"&&view.type!=="liveLogin")) return;
     const token=parseNfcToken(window.location.href,window.location.origin);
     if(!token) return;
     const playerId=resolvePlayerId(token,nfcTags);
