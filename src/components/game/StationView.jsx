@@ -32,12 +32,7 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
   // sélection dans la liste (voir l'effet de scan plus bas).
   const [nfcUnknownToken,setNfcUnknownToken]=useState(null);
   const [nfcPickerSearch,setNfcPickerSearch]=useState("");
-  // Diagnostic terrain: affiche l'erreur brute (err.name) au lieu de
-  // l'avaler silencieusement, plus un statut brut (démarré / événement reçu)
-  // pour voir si l'événement "reading" du navigateur se déclenche vraiment
-  // — à retirer une fois la cause confirmée.
-  const [nfcError,setNfcError]=useState(null);
-  const [nfcStatus,setNfcStatus]=useState(null);
+  const [nfcError,setNfcError]=useState(false);
   const [sprintSize,setSprintSize]=useState(4); // nombre ou "tous"
   const [flash,setFlash]=useState(null);
   const [confirmShortGame,setConfirmShortGame]=useState(false);
@@ -164,19 +159,10 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
   const nfcStopRef=useRef(null);
   const startNfcScan=()=>{
     if(!isWebNfcSupported()||nfcStopRef.current) return;
-    setNfcError(null);
-    setNfcStatus("starting… (expectedOrigin="+new URL(BASE_URL).origin+")");
+    setNfcError(false);
     const expectedOrigin=new URL(BASE_URL).origin;
     nfcStopRef.current=scanNfc({
-      onStarted:()=>{
-        setNfcStatus("actif — en attente d'un tap ("+new Date().toLocaleTimeString()+")");
-      },
-      onRawEvent:({recordCount,types,decodedPreview})=>{
-        const token=decodedPreview?parseNfcToken(decodedPreview,expectedOrigin):null;
-        setNfcStatus("reading: "+recordCount+" rec ["+types.join(",")+"] raw="+JSON.stringify(decodedPreview)+" parsedToken="+token+" @ "+new Date().toLocaleTimeString());
-      },
       onRead:(url)=>{
-        setNfcError(null);
         const token=parseNfcToken(url,expectedOrigin);
         if(!token) return;
         const now=Date.now();
@@ -186,8 +172,8 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
         if(playerId!=null) addPlayerToQueueRef.current(playerId);
         else if(onAssignNfcRef.current) setNfcUnknownToken(token);
       },
-      onError:(err)=>{
-        setNfcError((err&&(err.name||err.message))||String(err));
+      onError:()=>{
+        setNfcError(true);
         setNfcScanActive(false);
         nfcStopRef.current=null;
       },
@@ -499,19 +485,12 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
                 </div>
                 {isWebNfcSupported()&&(
                   nfcScanActive?(
-                    <>
-                      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",
-                        padding:"var(--pi-s2) var(--pi-s3)",marginBottom:6,borderRadius:"var(--pi-r-md)",
-                        border:"1px dashed var(--pi-lime-line)",background:"var(--pi-lime-wash)",
-                        color:"var(--pi-lime)",fontSize:"var(--pi-fs-label)",fontWeight:600}}>
-                        {t.nfcKioskPrompt}
-                      </div>
-                      {nfcStatus&&(
-                        <div style={{color:"var(--pi-text-4)",fontSize:10,textAlign:"center",marginBottom:"var(--pi-s2)",fontFamily:"monospace",wordBreak:"break-all"}}>
-                          {nfcStatus}
-                        </div>
-                      )}
-                    </>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",
+                      padding:"var(--pi-s2) var(--pi-s3)",marginBottom:"var(--pi-s2)",borderRadius:"var(--pi-r-md)",
+                      border:"1px dashed var(--pi-lime-line)",background:"var(--pi-lime-wash)",
+                      color:"var(--pi-lime)",fontSize:"var(--pi-fs-label)",fontWeight:600}}>
+                      {t.nfcKioskPrompt}
+                    </div>
                   ):(
                     <>
                       <button onClick={startNfcScan} style={{display:"flex",width:"100%",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",
@@ -521,8 +500,8 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
                         {t.nfcActivateScanBtn}
                       </button>
                       {nfcError&&(
-                        <div style={{color:"#ef4444",fontSize:11,textAlign:"center",marginBottom:"var(--pi-s2)",fontFamily:"monospace"}}>
-                          NFC error: {nfcError}
+                        <div style={{color:"#ef4444",fontSize:12,textAlign:"center",marginBottom:"var(--pi-s2)"}}>
+                          {t.nfcKioskError}
                         </div>
                       )}
                     </>

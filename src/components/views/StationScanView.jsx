@@ -33,12 +33,7 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
   // démarré tout seul au montage (voir startNfcScan plus bas, appelé
   // uniquement depuis l'onClick du bouton "Activer le scan bracelet").
   const [nfcScanActive,setNfcScanActive]=useState(false);
-  // Diagnostic terrain: affiche l'erreur brute (err.name) au lieu de
-  // l'avaler silencieusement, plus un statut brut (démarré / événement reçu)
-  // pour voir si l'événement "reading" du navigateur se déclenche vraiment
-  // — à retirer une fois la cause confirmée.
-  const [nfcError,setNfcError]=useState(null);
-  const [nfcStatus,setNfcStatus]=useState(null);
+  const [nfcError,setNfcError]=useState(false);
 
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
   const qPlayers=[...queue].reverse().map(id=>pMap[id]).filter(Boolean);
@@ -72,19 +67,10 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
   const nfcStopRef=useRef(null);
   const startNfcScan=()=>{
     if(!isWebNfcSupported()||nfcStopRef.current) return;
-    setNfcError(null);
-    setNfcStatus("starting… (expectedOrigin="+new URL(BASE_URL).origin+")");
+    setNfcError(false);
     const expectedOrigin=new URL(BASE_URL).origin;
     nfcStopRef.current=scanNfc({
-      onStarted:()=>{
-        setNfcStatus("actif — en attente d'un tap ("+new Date().toLocaleTimeString()+")");
-      },
-      onRawEvent:({recordCount,types,decodedPreview})=>{
-        const token=decodedPreview?parseNfcToken(decodedPreview,expectedOrigin):null;
-        setNfcStatus("reading: "+recordCount+" rec ["+types.join(",")+"] raw="+JSON.stringify(decodedPreview)+" parsedToken="+token+" @ "+new Date().toLocaleTimeString());
-      },
       onRead:(url)=>{
-        setNfcError(null);
         const token=parseNfcToken(url,expectedOrigin);
         if(!token) return;
         const now=Date.now();
@@ -103,8 +89,8 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
         setNfcScanActive(false);
         setBlankFlow({step:"pick"});
       },
-      onError:(err)=>{
-        setNfcError((err&&(err.name||err.message))||String(err));
+      onError:()=>{
+        setNfcError(true);
         setNfcScanActive(false);
         nfcStopRef.current=null;
       },
@@ -135,7 +121,6 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
       setBlankFlow(null);
       setNfcPickerSearch("");
     } else {
-      setNfcError(result.error);
       setBlankFlow({step:"error",playerId});
     }
   };
@@ -163,19 +148,12 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
       <div style={{width:"100%",maxWidth:420}}>
         {isWebNfcSupported()&&(
           nfcScanActive?(
-            <>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-                padding:"14px",marginBottom:6,borderRadius:12,
-                border:"1px dashed #B8E02060",background:"#0d1a05",
-                color:"#B8E020",fontSize:14,fontWeight:600}}>
-                {flash?`✓ ${flash} — ${t.stationScanAdded}`:t.nfcKioskPrompt}
-              </div>
-              {nfcStatus&&(
-                <div style={{color:"#6b7280",fontSize:10,textAlign:"center",marginBottom:14,fontFamily:"monospace",wordBreak:"break-all"}}>
-                  {nfcStatus}
-                </div>
-              )}
-            </>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+              padding:"14px",marginBottom:14,borderRadius:12,
+              border:"1px dashed #B8E02060",background:"#0d1a05",
+              color:"#B8E020",fontSize:14,fontWeight:600}}>
+              {flash?`✓ ${flash} — ${t.stationScanAdded}`:t.nfcKioskPrompt}
+            </div>
           ):(
             <>
               <button onClick={startNfcScan} style={{display:"flex",width:"100%",alignItems:"center",justifyContent:"center",gap:8,
@@ -185,8 +163,8 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
                 {t.nfcActivateScanBtn}
               </button>
               {nfcError&&(
-                <div style={{color:"#ef4444",fontSize:11,textAlign:"center",marginBottom:10,fontFamily:"monospace"}}>
-                  NFC error: {nfcError}
+                <div style={{color:"#ef4444",fontSize:12,textAlign:"center",marginBottom:10}}>
+                  {t.nfcKioskError}
                 </div>
               )}
             </>
