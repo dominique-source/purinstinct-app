@@ -8,9 +8,11 @@ export function isWebNfcSupported() {
 
 // Lecture continue (identification borne): ne verrouille jamais le tag,
 // n'écrit rien. onRead(url) est appelé à chaque lecture d'un enregistrement
-// URL. Retourne stop() pour interrompre le scan (changement d'étape,
-// démontage du composant).
-export function scanNfc({ onRead, onError }) {
+// URL, onBlank() quand le tag lu ne porte aucun enregistrement URL exploitable
+// (bracelet jamais écrit — l'événement "reading" arrive quand même, avec un
+// message NDEF vide ou sans record de type url/absolute-url). Retourne stop()
+// pour interrompre le scan (changement d'étape, démontage du composant).
+export function scanNfc({ onRead, onBlank, onError }) {
   if (!isWebNfcSupported()) {
     onError?.(new Error("web-nfc-unsupported"));
     return () => {};
@@ -25,6 +27,7 @@ export function scanNfc({ onRead, onError }) {
         return;
       }
     }
+    onBlank?.();
   });
   reader.addEventListener("readingerror", () => {
     onError?.(new Error("web-nfc-reading-error"));

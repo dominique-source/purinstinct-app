@@ -3,8 +3,8 @@ import { FONTS } from "../../config/fonts.js";
 import { ZONES } from "../../config/zones.js";
 import { useZn, useT } from "../../hooks/useLang.js";
 import { Modal } from "../ui/index.js";
-import { isWebNfcSupported, scanNfc } from "../../lib/webNfc.js";
-import { parseNfcToken, resolvePlayerId } from "../../lib/nfc.js";
+import { isWebNfcSupported, scanNfc, writeNfcUrl } from "../../lib/webNfc.js";
+import { parseNfcToken, resolvePlayerId, generateNfcToken, buildNfcUrl } from "../../lib/nfc.js";
 import { BASE_URL } from "../../config/constants.js";
 
 const NFC_REREAD_DEBOUNCE_MS = 1500;
@@ -25,6 +25,12 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
   const [highlightId,setHighlightId]=useState(null);
   const [nfcUnknownToken,setNfcUnknownToken]=useState(null);
   const [nfcPickerSearch,setNfcPickerSearch]=useState("");
+  // Bracelet vierge (jamais écrit) approché à la station: null hors flux,
+  // {step:"pick"} choix du joueur, {step:"writing",playerId} écriture en
+  // cours (le bracelet doit retoucher le téléphone), {step:"error",playerId}
+  // écriture échouée. Le scan passif (useEffect plus bas) se met en pause
+  // pendant "writing" pour ne pas faire compétition à l'écriture NFC.
+  const [blankFlow,setBlankFlow]=useState(null);
 
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
   const qPlayers=[...queue].reverse().map(id=>pMap[id]).filter(Boolean);
@@ -53,6 +59,7 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
   const nfcLastRef=useRef({token:null,at:0});
   useEffect(()=>{
     if(!isWebNfcSupported()) return;
+    if(blankFlow?.step==="writing") return; // laisse le NDEFReader d'écriture seul sur le tag
     const expectedOrigin=new URL(BASE_URL).origin;
     const stop=scanNfc({
       onRead:(url)=>{
@@ -65,16 +72,45 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
         if(playerId!=null) addPlayerToQueueRef.current(playerId);
         else if(onAssignNfc) setNfcUnknownToken(token);
       },
+      onBlank:()=>{
+        if(onAssignNfc) setBlankFlow(prev=>prev??{step:"pick"});
+      },
       onError:()=>{},
     });
     return stop;
-  },[nfcTags,onAssignNfc]);
+  },[nfcTags,onAssignNfc,blankFlow?.step]);
 
   const handleNfcPickName=(playerId)=>{
     onAssignNfc(playerId,nfcUnknownToken);
     addPlayerToQueue(playerId);
     setNfcUnknownToken(null);
     setNfcPickerSearch("");
+  };
+
+  // Écriture différée: se déclenche quand blankFlow passe à "writing" (après
+  // choix du joueur) plutôt que dans le onClick lui-même, pour que l'effet du
+  // scan passif ci-dessus se coupe en premier (dépendance blankFlow?.step) et
+  // libère le NDEFReader avant que celui-ci ne tente d'écrire.
+  useEffect(()=>{
+    if(blankFlow?.step!=="writing") return;
+    let cancelled=false;
+    const token=generateNfcToken();
+    writeNfcUrl(buildNfcUrl(token,BASE_URL)).then((result)=>{
+      if(cancelled) return;
+      if(result.ok){
+        onAssignNfc(blankFlow.playerId,token);
+        addPlayerToQueueRef.current(blankFlow.playerId);
+        setBlankFlow(null);
+        setNfcPickerSearch("");
+      } else {
+        setBlankFlow({step:"error",playerId:blankFlow.playerId});
+      }
+    });
+    return ()=>{cancelled=true;};
+  },[blankFlow,onAssignNfc]);
+
+  const handleBlankPickName=(playerId)=>{
+    setBlankFlow({step:"writing",playerId});
   };
 
   const nfcPickerFiltered=nfcPickerSearch.trim().length>0
@@ -160,6 +196,63 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
             </button>
           ))}
         </div>
+      </Modal>
+
+      {/* ================= BRACELET VIERGE: ACTIVER SUR PLACE ================= */}
+      <Modal open={!!blankFlow} onClose={()=>{setBlankFlow(null);setNfcPickerSearch("");}} labelledBy="station-scan-blank-title">
+        {blankFlow?.step==="pick"&&(
+          <>
+            <h2 id="station-scan-blank-title" style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
+              fontSize:"var(--pi-fs-section)",color:"var(--pi-text)",marginBottom:"var(--pi-s1)"}}>
+              {t.nfcSelectNameTitle}
+            </h2>
+            <p style={{color:"var(--pi-text-2)",fontSize:"var(--pi-fs-body)",marginBottom:"var(--pi-s3)"}}>{t.nfcSelectNameDesc}</p>
+            <input value={nfcPickerSearch} onChange={e=>setNfcPickerSearch(e.target.value)} autoFocus
+              placeholder={t.nfcSelectNameSearchPlaceholder} className="pi-input"
+              style={{width:"100%",marginBottom:"var(--pi-s3)",boxSizing:"border-box"}}/>
+            <div style={{maxHeight:"50vh",overflowY:"auto",display:"flex",flexDirection:"column",gap:"var(--pi-s2)"}}>
+              {nfcPickerFiltered.length===0&&(
+                <div style={{textAlign:"center",color:"var(--pi-text-4)",fontSize:"var(--pi-fs-body)",padding:"var(--pi-s4) 0"}}>{t.nfcSelectNameEmpty}</div>
+              )}
+              {nfcPickerFiltered.map(p=>(
+                <button key={p.id} onClick={()=>handleBlankPickName(p.id)} style={{
+                  display:"flex",alignItems:"center",gap:"var(--pi-s3)",padding:"12px 14px",borderRadius:"var(--pi-r-md)",
+                  border:"1px solid var(--pi-line)",background:"var(--pi-surface-1)",cursor:"pointer",textAlign:"left"}}>
+                  <span style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:16,
+                    color:"var(--pi-lime)",width:30,flexShrink:0,textAlign:"center"}}>#{p.number}</span>
+                  <span style={{flex:1,color:"#fff",fontWeight:600,fontSize:"var(--pi-fs-body)"}}>{p.name}</span>
+                  <span style={{color:"var(--pi-text-4)",fontSize:16}}>›</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        {blankFlow?.step==="writing"&&(
+          <>
+            <h2 id="station-scan-blank-title" style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
+              fontSize:"var(--pi-fs-section)",color:"var(--pi-text)",marginBottom:"var(--pi-s2)"}}>
+              {t.nfcApproachTitle}
+            </h2>
+            <p style={{color:"var(--pi-text-2)",fontSize:"var(--pi-fs-body)",textAlign:"center",padding:"var(--pi-s4) 0"}}>
+              {t.nfcWriting}
+            </p>
+          </>
+        )}
+        {blankFlow?.step==="error"&&(
+          <>
+            <p style={{color:"#ef4444",fontSize:"var(--pi-fs-body)",marginBottom:"var(--pi-s6)"}}>{t.nfcAssignError}</p>
+            <div style={{display:"flex",gap:"var(--pi-s2)"}}>
+              <button onClick={()=>{setBlankFlow(null);setNfcPickerSearch("");}} style={{flex:1,padding:"12px",borderRadius:10,
+                border:"1px solid #1f2937",background:"#0d0f1a",color:"#fff",cursor:"pointer",fontWeight:600,fontSize:14}}>
+                {t.nfcCancelBtn}
+              </button>
+              <button onClick={()=>setBlankFlow({step:"writing",playerId:blankFlow.playerId})} style={{flex:1,padding:"12px",borderRadius:10,
+                border:"none",background:"#B8E020",color:"#000",cursor:"pointer",fontWeight:700,fontSize:14}}>
+                {t.nfcApproachTitle}
+              </button>
+            </div>
+          </>
+        )}
       </Modal>
     </div>
   );
