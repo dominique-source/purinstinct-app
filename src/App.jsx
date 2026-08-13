@@ -25,6 +25,9 @@ import { PlayerView } from "./components/views/PlayerView.jsx";
 import { KioskView } from "./components/views/KioskView.jsx";
 import { NfcUnassignedView } from "./components/views/NfcUnassignedView.jsx";
 import { NfcKioskView } from "./components/views/NfcKioskView.jsx";
+import { StationHubView } from "./components/views/StationHubView.jsx";
+import { StationScanView } from "./components/views/StationScanView.jsx";
+import { StationPlayerLookupView } from "./components/views/StationPlayerLookupView.jsx";
 import { DevHub } from "./components/views/DevHub.jsx";
 import { DEV_PIN } from "./config/pins.js";
 import { parseNfcToken, resolvePlayerId } from "./lib/nfc.js";
@@ -71,9 +74,15 @@ export default function PurInstinctApp(){
     // Poste fixe "main desk": tape un bracelet, vois ton profil, en boucle —
     // même bypass du pavé PIN que ?kiosk=1.
     if(p.get("nfcKiosk")) return {type:"nfcKiosk"};
-    // Lien direct responsable de plateau: ?station=footAgility saute le PIN
-    // et la liste de zones, ?stationPick=1 saute le PIN mais laisse choisir
-    // la zone (même esprit que ?kiosk=1 pour la borne).
+    // Code QR d'une station (StationQrCodes, imprimé et collé au poste):
+    // ?stationHub=footAgility saute le PIN et ouvre le menu à 3 options du
+    // responsable de plateau pour cette zone (StationHubView) — même esprit
+    // que ?kiosk=1 pour la borne.
+    const stationHubZone=p.get("stationHub");
+    if(stationHubZone&&ZK.includes(stationHubZone)) return {type:"stationHub",id:stationHubZone};
+    // Lien direct plus ancien: ?station=footAgility saute tout droit dans la
+    // session de jeu (sans passer par le menu), ?stationPick=1 saute le PIN
+    // mais laisse choisir la zone.
     const stationZone=p.get("station");
     if(stationZone&&ZK.includes(stationZone)) return {type:"station",id:stationZone};
     if(p.get("stationPick")) return {type:"stationPick"};
@@ -1243,6 +1252,37 @@ export default function PurInstinctApp(){
       onUpdatePlayer2={updatePlayer}
       assignNfcTag={assignNfcTag}
       unassignNfcTag={unassignNfcTag}/>
+  );
+
+  else if(view.type==="stationHub") content=(
+    <StationHubView zone={view.id}
+      onEnterSession={()=>setView({type:"station",id:view.id})}
+      onLookupPlayer={()=>setView({type:"stationLookup",id:view.id})}
+      onScanNext={()=>setView({type:"stationScan",id:view.id})}
+      onBack={()=>isTestMode?testHome():setView({type:"stationPick"})}/>
+  );
+
+  else if(view.type==="stationScan") content=(
+    <StationScanView zone={view.id} players={isTestMode?TEST_PLAYERS:players.filter(p=>{
+      if((p.groupId||"main")===activeRosterId) return true;
+      if(ZK.some(zk=>queues[zk]&&queues[zk].includes(p.id))) return true;
+      if(ZK.some(zk=>{const g=activeGames[zk];if(!g)return false;const all=g.participants||[...(g.teamA||[]),...(g.teamB||[])];return all.includes(p.id);})) return true;
+      return false;
+    })}
+      queue={queues[view.id]||[]}
+      nfcTags={nfcTags}
+      onAssignNfc={assignNfcTag}
+      onAddQ={addToQueue}
+      onBack={()=>setView({type:"stationHub",id:view.id})}/>
+  );
+
+  else if(view.type==="stationLookup") content=(
+    <StationPlayerLookupView
+      players={isTestMode?TEST_PLAYERS:players.filter(p=>(p.groupId||"main")===activeRosterId)}
+      nfcTags={nfcTags}
+      onAssignNfc={assignNfcTag}
+      onUpdatePlayer={updatePlayer}
+      onBack={()=>setView({type:"stationHub",id:view.id})}/>
   );
 
   else if(view.type==="station") content=(
