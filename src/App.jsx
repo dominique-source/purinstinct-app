@@ -30,7 +30,7 @@ import { StationHubPinView } from "./components/views/StationHubPinView.jsx";
 import { StationScanView } from "./components/views/StationScanView.jsx";
 import { StationPlayerLookupView } from "./components/views/StationPlayerLookupView.jsx";
 import { DevHub } from "./components/views/DevHub.jsx";
-import { DEV_PIN } from "./config/pins.js";
+import { DEV_PIN, STATION_HUB_UNLOCKED_KEY } from "./config/pins.js";
 import { parseNfcToken, resolvePlayerId } from "./lib/nfc.js";
 import braceletLime from "./assets/bracelet-lime.png";
 
@@ -81,7 +81,10 @@ export default function PurInstinctApp(){
     // menu à 3 options du responsable de plateau pour cette zone
     // (StationHubView).
     const stationHubZone=p.get("stationHub");
-    if(stationHubZone&&ZK.includes(stationHubZone)) return {type:"stationHubPin",id:stationHubZone};
+    if(stationHubZone&&ZK.includes(stationHubZone)){
+      const alreadyUnlocked=sessionStorage.getItem(STATION_HUB_UNLOCKED_KEY)==="1";
+      return {type:alreadyUnlocked?"stationHub":"stationHubPin",id:stationHubZone};
+    }
     // Lien direct plus ancien: ?station=footAgility saute tout droit dans la
     // session de jeu (sans passer par le menu), ?stationPick=1 saute le PIN
     // mais laisse choisir la zone.

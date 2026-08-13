@@ -3,7 +3,7 @@ import { FONTS } from "../../config/fonts.js";
 import { ZONES } from "../../config/zones.js";
 import { useZn, useT } from "../../hooks/useLang.js";
 import { LangFooter } from "../shared/LangFooter.jsx";
-import { STATION_PIN } from "../../config/pins.js";
+import { STATION_PIN, STATION_HUB_UNLOCKED_KEY } from "../../config/pins.js";
 import { NumPad } from "./LiveLoginView.jsx";
 
 // Porte d'entrée du code QR de station (?stationHub=ZONE): un QR imprimé et
@@ -21,6 +21,7 @@ export function StationHubPinView({zone,onUnlocked,onBack}){
   const handleComplete=(value)=>{
     if(value===STATION_PIN){
       setPinError(false);
+      sessionStorage.setItem(STATION_HUB_UNLOCKED_KEY,"1");
       onUnlocked();
     } else {
       setPinError(true);
