@@ -33,6 +33,9 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
   // démarré tout seul au montage (voir startNfcScan plus bas, appelé
   // uniquement depuis l'onClick du bouton "Activer le scan bracelet").
   const [nfcScanActive,setNfcScanActive]=useState(false);
+  // Diagnostic terrain: affiche l'erreur brute (err.name) au lieu de
+  // l'avaler silencieusement — à retirer une fois la cause confirmée.
+  const [nfcError,setNfcError]=useState(null);
 
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
   const qPlayers=[...queue].reverse().map(id=>pMap[id]).filter(Boolean);
@@ -66,9 +69,11 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
   const nfcStopRef=useRef(null);
   const startNfcScan=()=>{
     if(!isWebNfcSupported()||nfcStopRef.current) return;
+    setNfcError(null);
     const expectedOrigin=new URL(BASE_URL).origin;
     nfcStopRef.current=scanNfc({
       onRead:(url)=>{
+        setNfcError(null);
         const token=parseNfcToken(url,expectedOrigin);
         if(!token) return;
         const now=Date.now();
@@ -87,7 +92,11 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
         setNfcScanActive(false);
         setBlankFlow({step:"pick"});
       },
-      onError:()=>{},
+      onError:(err)=>{
+        setNfcError((err&&(err.name||err.message))||String(err));
+        setNfcScanActive(false);
+        nfcStopRef.current=null;
+      },
     });
     setNfcScanActive(true);
   };
@@ -115,6 +124,7 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
       setBlankFlow(null);
       setNfcPickerSearch("");
     } else {
+      setNfcError(result.error);
       setBlankFlow({step:"error",playerId});
     }
   };
@@ -149,12 +159,19 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
               {flash?`✓ ${flash} — ${t.stationScanAdded}`:t.nfcKioskPrompt}
             </div>
           ):(
-            <button onClick={startNfcScan} style={{display:"flex",width:"100%",alignItems:"center",justifyContent:"center",gap:8,
-              padding:"14px",marginBottom:14,borderRadius:12,cursor:"pointer",
-              border:"1px dashed #B8E02060",background:"transparent",
-              color:"#B8E020",fontSize:14,fontWeight:700}}>
-              {t.nfcActivateScanBtn}
-            </button>
+            <>
+              <button onClick={startNfcScan} style={{display:"flex",width:"100%",alignItems:"center",justifyContent:"center",gap:8,
+                padding:"14px",marginBottom:nfcError?4:14,borderRadius:12,cursor:"pointer",
+                border:"1px dashed #B8E02060",background:"transparent",
+                color:"#B8E020",fontSize:14,fontWeight:700}}>
+                {t.nfcActivateScanBtn}
+              </button>
+              {nfcError&&(
+                <div style={{color:"#ef4444",fontSize:11,textAlign:"center",marginBottom:10,fontFamily:"monospace"}}>
+                  NFC error: {nfcError}
+                </div>
+              )}
+            </>
           )
         )}
 

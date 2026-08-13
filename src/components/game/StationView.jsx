@@ -32,6 +32,9 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
   // sélection dans la liste (voir l'effet de scan plus bas).
   const [nfcUnknownToken,setNfcUnknownToken]=useState(null);
   const [nfcPickerSearch,setNfcPickerSearch]=useState("");
+  // Diagnostic terrain: affiche l'erreur brute (err.name) au lieu de
+  // l'avaler silencieusement — à retirer une fois la cause confirmée.
+  const [nfcError,setNfcError]=useState(null);
   const [sprintSize,setSprintSize]=useState(4); // nombre ou "tous"
   const [flash,setFlash]=useState(null);
   const [confirmShortGame,setConfirmShortGame]=useState(false);
@@ -158,9 +161,11 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
   const nfcStopRef=useRef(null);
   const startNfcScan=()=>{
     if(!isWebNfcSupported()||nfcStopRef.current) return;
+    setNfcError(null);
     const expectedOrigin=new URL(BASE_URL).origin;
     nfcStopRef.current=scanNfc({
       onRead:(url)=>{
+        setNfcError(null);
         const token=parseNfcToken(url,expectedOrigin);
         if(!token) return;
         const now=Date.now();
@@ -170,7 +175,11 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
         if(playerId!=null) addPlayerToQueueRef.current(playerId);
         else if(onAssignNfcRef.current) setNfcUnknownToken(token);
       },
-      onError:()=>{},
+      onError:(err)=>{
+        setNfcError((err&&(err.name||err.message))||String(err));
+        setNfcScanActive(false);
+        nfcStopRef.current=null;
+      },
     });
     setNfcScanActive(true);
   };
@@ -486,12 +495,19 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
                       {t.nfcKioskPrompt}
                     </div>
                   ):(
-                    <button onClick={startNfcScan} style={{display:"flex",width:"100%",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",
-                      padding:"var(--pi-s2) var(--pi-s3)",marginBottom:"var(--pi-s2)",borderRadius:"var(--pi-r-md)",
-                      border:"1px dashed var(--pi-lime-line)",background:"transparent",cursor:"pointer",
-                      color:"var(--pi-lime)",fontSize:"var(--pi-fs-label)",fontWeight:700}}>
-                      {t.nfcActivateScanBtn}
-                    </button>
+                    <>
+                      <button onClick={startNfcScan} style={{display:"flex",width:"100%",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",
+                        padding:"var(--pi-s2) var(--pi-s3)",marginBottom:nfcError?4:"var(--pi-s2)",borderRadius:"var(--pi-r-md)",
+                        border:"1px dashed var(--pi-lime-line)",background:"transparent",cursor:"pointer",
+                        color:"var(--pi-lime)",fontSize:"var(--pi-fs-label)",fontWeight:700}}>
+                        {t.nfcActivateScanBtn}
+                      </button>
+                      {nfcError&&(
+                        <div style={{color:"#ef4444",fontSize:11,textAlign:"center",marginBottom:"var(--pi-s2)",fontFamily:"monospace"}}>
+                          NFC error: {nfcError}
+                        </div>
+                      )}
+                    </>
                   )
                 )}
                 <div style={{display:"flex",gap:"var(--pi-s2)",marginBottom:"var(--pi-s3)"}}>
