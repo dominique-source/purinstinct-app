@@ -8,7 +8,7 @@ import { Modal } from "../ui/Modal.jsx";
 
 // Numeric keypad — dot progress indicator + 3x4 grid. Module-scope (not
 // defined inside LiveLoginView) so it isn't recreated on every render.
-function NumPad({value,onChange,onComplete,maxLen=4}){
+export function NumPad({value,onChange,onComplete,maxLen=4}){
   return(
     <div>
       <div style={{display:"flex",justifyContent:"center",gap:"var(--pi-s3)",marginBottom:"var(--pi-s5)"}}>

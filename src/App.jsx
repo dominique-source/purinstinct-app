@@ -26,6 +26,7 @@ import { KioskView } from "./components/views/KioskView.jsx";
 import { NfcUnassignedView } from "./components/views/NfcUnassignedView.jsx";
 import { NfcKioskView } from "./components/views/NfcKioskView.jsx";
 import { StationHubView } from "./components/views/StationHubView.jsx";
+import { StationHubPinView } from "./components/views/StationHubPinView.jsx";
 import { StationScanView } from "./components/views/StationScanView.jsx";
 import { StationPlayerLookupView } from "./components/views/StationPlayerLookupView.jsx";
 import { DevHub } from "./components/views/DevHub.jsx";
@@ -75,11 +76,12 @@ export default function PurInstinctApp(){
     // même bypass du pavé PIN que ?kiosk=1.
     if(p.get("nfcKiosk")) return {type:"nfcKiosk"};
     // Code QR d'une station (StationQrCodes, imprimé et collé au poste):
-    // ?stationHub=footAgility saute le PIN et ouvre le menu à 3 options du
-    // responsable de plateau pour cette zone (StationHubView) — même esprit
-    // que ?kiosk=1 pour la borne.
+    // ?stationHub=footAgility demande le code PIN (StationHubPinView — un QR
+    // imprimé peut être photographié/partagé par n'importe qui) puis ouvre le
+    // menu à 3 options du responsable de plateau pour cette zone
+    // (StationHubView).
     const stationHubZone=p.get("stationHub");
-    if(stationHubZone&&ZK.includes(stationHubZone)) return {type:"stationHub",id:stationHubZone};
+    if(stationHubZone&&ZK.includes(stationHubZone)) return {type:"stationHubPin",id:stationHubZone};
     // Lien direct plus ancien: ?station=footAgility saute tout droit dans la
     // session de jeu (sans passer par le menu), ?stationPick=1 saute le PIN
     // mais laisse choisir la zone.
@@ -1254,6 +1256,12 @@ export default function PurInstinctApp(){
       unassignNfcTag={unassignNfcTag}/>
   );
 
+  else if(view.type==="stationHubPin") content=(
+    <StationHubPinView zone={view.id}
+      onUnlocked={()=>setView({type:"stationHub",id:view.id})}
+      onBack={()=>isTestMode?testHome():setView({type:"stationPick"})}/>
+  );
+
   else if(view.type==="stationHub") content=(
     <StationHubView zone={view.id}
       onEnterSession={()=>setView({type:"station",id:view.id})}
@@ -1312,8 +1320,8 @@ export default function PurInstinctApp(){
       onRemoveFromGame={removeFromGame}
       onReplaceInGame={replaceInGame}
       onReorderQ={reorderQueue}
-      onBack={()=>isTestMode?testHome():setView({type:"stationPick",fromPlayerId:view.fromPlayerId})}
-      onGoAdmin={()=>isTestMode?testHome():view.fromPlayerId?setView({type:"player",id:view.fromPlayerId}):setView({type:"adminHome"})}
+      onBack={()=>isTestMode?testHome():setView({type:"stationHub",id:view.id})}
+      onGoAdmin={view.fromPlayerId?()=>isTestMode?testHome():setView({type:"player",id:view.fromPlayerId}):undefined}
       onLogout={()=>isTestMode?testHome():setView({type:"liveLogin"})}
       fromPlayerId={view.fromPlayerId}
       onFillQueue={()=>fillQueue(view.id)}/>
