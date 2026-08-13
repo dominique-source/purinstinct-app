@@ -10,7 +10,7 @@ import { NumPad } from "./LiveLoginView.jsx";
 // collé au poste peut être photographié/partagé par n'importe qui — ce code
 // PIN (même STATION_PIN que le cadran classique) évite qu'un scan trouvé au
 // hasard donne un accès direct au menu responsable de plateau.
-export function StationHubPinView({zone,onUnlocked,onBack}){
+export function StationHubPinView({zone,onUnlocked}){
   const t=useT();
   const zn=useZn();
   const z=ZONES[zone];
@@ -40,10 +40,6 @@ export function StationHubPinView({zone,onUnlocked,onBack}){
       </div>
       {pinError&&<div style={{textAlign:"center",color:"#ef4444",fontSize:13,marginBottom:16}}>{t.stationHubPinError}</div>}
       <NumPad value={pin} onChange={v=>{setPin(v);setPinError(false);}} onComplete={handleComplete}/>
-      {onBack&&<button onClick={onBack} style={{marginTop:24,padding:"10px",borderRadius:10,border:"none",
-        background:"none",color:"#6b7280",cursor:"pointer",fontSize:13}}>
-        {t.back}
-      </button>}
       <LangFooter/>
     </div>
   );

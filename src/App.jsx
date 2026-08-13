@@ -1261,8 +1261,7 @@ export default function PurInstinctApp(){
 
   else if(view.type==="stationHubPin") content=(
     <StationHubPinView zone={view.id}
-      onUnlocked={()=>setView({type:"stationHub",id:view.id})}
-      onBack={()=>isTestMode?testHome():setView({type:"stationPick"})}/>
+      onUnlocked={()=>setView({type:"stationHub",id:view.id})}/>
   );
 
   else if(view.type==="stationHub") content=(
