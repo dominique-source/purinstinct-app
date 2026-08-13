@@ -26,10 +26,16 @@ export function scanNfc({ onRead, onBlank, onError, onStarted, onRawEvent }) {
   const reader = new window.NDEFReader();
   const controller = new AbortController();
   reader.addEventListener("reading", (event) => {
+    let decodedPreview = null;
+    try {
+      const first = event.message.records[0];
+      if (first) decodedPreview = new TextDecoder(first.encoding || "utf-8").decode(first.data);
+    } catch { /* diagnostic best-effort only */ }
     onRawEvent?.({
       recordCount: event.message.records.length,
       types: event.message.records.map((r) => r.recordType),
       serial: event.serialNumber || null,
+      decodedPreview,
     });
     for (const record of event.message.records) {
       if (record.recordType === "url" || record.recordType === "absolute-url") {

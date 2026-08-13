@@ -165,14 +165,15 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
   const startNfcScan=()=>{
     if(!isWebNfcSupported()||nfcStopRef.current) return;
     setNfcError(null);
-    setNfcStatus("starting…");
+    setNfcStatus("starting… (expectedOrigin="+new URL(BASE_URL).origin+")");
     const expectedOrigin=new URL(BASE_URL).origin;
     nfcStopRef.current=scanNfc({
       onStarted:()=>{
         setNfcStatus("actif — en attente d'un tap ("+new Date().toLocaleTimeString()+")");
       },
-      onRawEvent:({recordCount,types,serial})=>{
-        setNfcStatus("événement reçu: "+recordCount+" record(s) ["+types.join(",")+"] serial="+serial+" @ "+new Date().toLocaleTimeString());
+      onRawEvent:({recordCount,types,decodedPreview})=>{
+        const token=decodedPreview?parseNfcToken(decodedPreview,expectedOrigin):null;
+        setNfcStatus("reading: "+recordCount+" rec ["+types.join(",")+"] raw="+JSON.stringify(decodedPreview)+" parsedToken="+token+" @ "+new Date().toLocaleTimeString());
       },
       onRead:(url)=>{
         setNfcError(null);
