@@ -77,11 +77,15 @@ export function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReord
               border:p.id===highlightId?"2px solid "+z.color:isOver?"2px solid "+z.color+"80":isDragging?"2px solid #B8E02060":"1px solid transparent",
               cursor:"grab",transition:"all .15s",opacity:isDragging?0.5:1,
               animation:p.id===highlightId?"pulseLime 0.6s ease-in-out 4":"none"}}>
-            {/* drag handle — toucher pour drag sur mobile */}
+            {/* drag handle — toucher pour drag sur mobile. Cible tactile 44px
+                (min recommandé) même si l'icône reste petite — sinon c'est le
+                genre de bouton qu'on manque à bout de bras pendant un événement. */}
             <div
               onTouchStart={(e)=>handleHandleTouchStart(e,idx)}
-              style={{color:isDragging?"#B8E020":"#4b5563",fontSize:20,flexShrink:0,
-                cursor:"grab",touchAction:"none",padding:"0 4px 0 0",lineHeight:1}}>⠿</div>
+              style={{display:"flex",alignItems:"center",justifyContent:"center",
+                minWidth:44,minHeight:44,flexShrink:0,margin:"-8px 0",
+                color:isDragging?"#B8E020":"#4b5563",fontSize:20,
+                cursor:"grab",touchAction:"none",lineHeight:1}}>⠿</div>
             <div style={{fontSize:11,color:"#374151",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,width:16,flexShrink:0}}>{idx+1}</div>
             <Bib n={p.number} size="sm" color={z.color}/>
             <span style={{fontSize:13,color:"#fff",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
@@ -89,15 +93,18 @@ export function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReord
             {zone!=="speed"&&<div style={{...S.tag(z.color),fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{zs}</div>}
             {streak>=2&&<span style={{fontSize:11,color:"#f97316",flexShrink:0}}>🔥x{streak}</span>}
             <button onClick={(e)=>{e.stopPropagation();onMoveTop(p.id,zone);}}
-              style={{background:"none",border:"none",cursor:"pointer",color:"#4b5563",fontSize:16,lineHeight:1,padding:"0 2px"}}
+              style={{display:"flex",alignItems:"center",justifyContent:"center",minWidth:44,minHeight:44,margin:"-8px 0",
+                background:"none",border:"none",cursor:"pointer",color:"#4b5563",fontSize:18,lineHeight:1}}
               onMouseEnter={e=>e.target.style.color="#B8E020"}
               onMouseLeave={e=>e.target.style.color="#4b5563"}>↑</button>
             <button onClick={(e)=>{e.stopPropagation();onMoveBottom(p.id,zone);}}
-              style={{background:"none",border:"none",cursor:"pointer",color:"#4b5563",fontSize:16,lineHeight:1,padding:"0 2px"}}
+              style={{display:"flex",alignItems:"center",justifyContent:"center",minWidth:44,minHeight:44,margin:"-8px 0",
+                background:"none",border:"none",cursor:"pointer",color:"#4b5563",fontSize:18,lineHeight:1}}
               onMouseEnter={e=>e.target.style.color="#f97316"}
               onMouseLeave={e=>e.target.style.color="#4b5563"}>↓</button>
             <button onClick={(e)=>{e.stopPropagation();onRemove(p.id,zone);}}
-              style={{background:"none",border:"none",cursor:"pointer",color:"#374151",fontSize:16,lineHeight:1,padding:"0 2px"}}
+              style={{display:"flex",alignItems:"center",justifyContent:"center",minWidth:44,minHeight:44,margin:"-8px -6px -8px 0",
+                background:"none",border:"none",cursor:"pointer",color:"#374151",fontSize:18,lineHeight:1}}
               onMouseEnter={e=>e.target.style.color="#ef4444"}
               onMouseLeave={e=>e.target.style.color="#374151"}>×</button>
           </div>
