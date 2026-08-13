@@ -1,5 +1,6 @@
 import { useT } from "../../../hooks/useLang.js";
 import { SessionPanel } from "../SessionPanel.jsx";
+import { StationQrCodes } from "../StationQrCodes.jsx";
 import { Button } from "../../ui/Button.jsx";
 
 export function SessionTab({rosters,players,allPlayers,activeRosterId,onActivateRoster,onSetActiveRoster,onUpdateRoster,onDeleteRoster,onAddPlayer,onCreateRoster,onRemovePlayer,onOpenDossier,rosterCodes,onUpdateCodes,pendingSessions,onDismissPending,onPromotePending,onAddGroupToQueue,onResetAllHistory,onResetAllPoints}){
@@ -21,6 +22,7 @@ export function SessionTab({rosters,players,allPlayers,activeRosterId,onActivate
       onPromotePending={onPromotePending}
       onAddGroupToQueue={onAddGroupToQueue}
     />
+    <StationQrCodes/>
     {/* Actions destructives regroupées en fin d'onglet, sous la session active */}
     {onResetAllHistory&&(
       <div style={{margin:"var(--pi-s4) 0 0",padding:"var(--pi-s3) var(--pi-s4)",borderRadius:"var(--pi-r-lg)",background:"var(--pi-danger-wash)",border:"1px solid var(--pi-danger)",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"var(--pi-s3)"}}>

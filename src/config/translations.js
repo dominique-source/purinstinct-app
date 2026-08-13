@@ -240,6 +240,8 @@ export const T={
     nfcSelectNameEmpty:"Aucun joueur trouvé",
     nfcProfileKioskPrompt:"Tape ton bracelet pour voir ton profil",
     nfcResolvingTitle:"Associer un bracelet",
+    stationQrTitle:"Codes QR des stations",
+    stationQrDesc:"À imprimer et coller sur chaque poste — un scan ouvre directement le tableau du responsable de plateau pour cette zone, sans code PIN.",
   },
   en:{
     lang:"EN", langOther:"FR",
@@ -482,5 +484,7 @@ export const T={
     nfcSelectNameEmpty:"No player found",
     nfcProfileKioskPrompt:"Tap your wristband to see your profile",
     nfcResolvingTitle:"Associate a wristband",
+    stationQrTitle:"Station QR codes",
+    stationQrDesc:"Print and post at each station — scanning opens the station manager's board for that zone directly, no PIN needed.",
   },
 };
