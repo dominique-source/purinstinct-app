@@ -27,10 +27,12 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
   const [nfcPickerSearch,setNfcPickerSearch]=useState("");
   // Bracelet vierge (jamais écrit) approché à la station: null hors flux,
   // {step:"pick"} choix du joueur, {step:"writing",playerId} écriture en
-  // cours (le bracelet doit retoucher le téléphone), {step:"error",playerId}
-  // écriture échouée. Le scan passif (useEffect plus bas) se met en pause
-  // pendant "writing" pour ne pas faire compétition à l'écriture NFC.
+  // cours, {step:"error",playerId} écriture échouée.
   const [blankFlow,setBlankFlow]=useState(null);
+  // NDEFReader.scan() exige une activation utilisateur directe — jamais
+  // démarré tout seul au montage (voir startNfcScan plus bas, appelé
+  // uniquement depuis l'onClick du bouton "Activer le scan bracelet").
+  const [nfcScanActive,setNfcScanActive]=useState(false);
 
   const pMap={}; players.forEach(p=>{pMap[p.id]=p;});
   const qPlayers=[...queue].reverse().map(id=>pMap[id]).filter(Boolean);
@@ -56,29 +58,40 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
     setNumInput("");
   };
 
+  const nfcTagsRef=useRef(nfcTags);
+  useEffect(()=>{nfcTagsRef.current=nfcTags;});
+  const onAssignNfcRef=useRef(onAssignNfc);
+  useEffect(()=>{onAssignNfcRef.current=onAssignNfc;});
   const nfcLastRef=useRef({token:null,at:0});
-  useEffect(()=>{
-    if(!isWebNfcSupported()) return;
-    if(blankFlow?.step==="writing") return; // laisse le NDEFReader d'écriture seul sur le tag
+  const nfcStopRef=useRef(null);
+  const startNfcScan=()=>{
+    if(!isWebNfcSupported()||nfcStopRef.current) return;
     const expectedOrigin=new URL(BASE_URL).origin;
-    const stop=scanNfc({
+    nfcStopRef.current=scanNfc({
       onRead:(url)=>{
         const token=parseNfcToken(url,expectedOrigin);
         if(!token) return;
         const now=Date.now();
         if(nfcLastRef.current.token===token&&now-nfcLastRef.current.at<NFC_REREAD_DEBOUNCE_MS) return;
         nfcLastRef.current={token,at:now};
-        const playerId=resolvePlayerId(token,nfcTags);
+        const playerId=resolvePlayerId(token,nfcTagsRef.current);
         if(playerId!=null) addPlayerToQueueRef.current(playerId);
-        else if(onAssignNfc) setNfcUnknownToken(token);
+        else if(onAssignNfcRef.current) setNfcUnknownToken(token);
       },
       onBlank:()=>{
-        if(onAssignNfc) setBlankFlow(prev=>prev??{step:"pick"});
+        if(!onAssignNfcRef.current) return;
+        // Coupe le scan passif: le prochain geste NFC (choisir un nom) doit
+        // faire un vrai .write(), pas être en compétition avec ce .scan().
+        nfcStopRef.current?.();
+        nfcStopRef.current=null;
+        setNfcScanActive(false);
+        setBlankFlow({step:"pick"});
       },
       onError:()=>{},
     });
-    return stop;
-  },[nfcTags,onAssignNfc,blankFlow?.step]);
+    setNfcScanActive(true);
+  };
+  useEffect(()=>()=>{nfcStopRef.current?.();},[]);
 
   const handleNfcPickName=(playerId)=>{
     onAssignNfc(playerId,nfcUnknownToken);
@@ -87,30 +100,23 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
     setNfcPickerSearch("");
   };
 
-  // Écriture différée: se déclenche quand blankFlow passe à "writing" (après
-  // choix du joueur) plutôt que dans le onClick lui-même, pour que l'effet du
-  // scan passif ci-dessus se coupe en premier (dépendance blankFlow?.step) et
-  // libère le NDEFReader avant que celui-ci ne tente d'écrire.
-  useEffect(()=>{
-    if(blankFlow?.step!=="writing") return;
-    let cancelled=false;
-    const token=generateNfcToken();
-    writeNfcUrl(buildNfcUrl(token,BASE_URL)).then((result)=>{
-      if(cancelled) return;
-      if(result.ok){
-        onAssignNfc(blankFlow.playerId,token);
-        addPlayerToQueueRef.current(blankFlow.playerId);
-        setBlankFlow(null);
-        setNfcPickerSearch("");
-      } else {
-        setBlankFlow({step:"error",playerId:blankFlow.playerId});
-      }
-    });
-    return ()=>{cancelled=true;};
-  },[blankFlow,onAssignNfc]);
-
-  const handleBlankPickName=(playerId)=>{
+  // Appelé en direct depuis l'onClick (choix du nom, ou "réessayer" après une
+  // erreur) — jamais depuis un effet déclenché par un changement d'état: le
+  // .write() de Web NFC exige lui aussi une activation utilisateur fraîche,
+  // perdue si on passe par un useEffect qui ne se déclenche qu'après le
+  // re-render suivant le clic.
+  const handleBlankPickName=async(playerId)=>{
     setBlankFlow({step:"writing",playerId});
+    const token=generateNfcToken();
+    const result=await writeNfcUrl(buildNfcUrl(token,BASE_URL));
+    if(result.ok){
+      onAssignNfc(playerId,token);
+      addPlayerToQueue(playerId);
+      setBlankFlow(null);
+      setNfcPickerSearch("");
+    } else {
+      setBlankFlow({step:"error",playerId});
+    }
   };
 
   const nfcPickerFiltered=nfcPickerSearch.trim().length>0
@@ -135,12 +141,21 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
 
       <div style={{width:"100%",maxWidth:420}}>
         {isWebNfcSupported()&&(
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-            padding:"14px",marginBottom:14,borderRadius:12,
-            border:"1px dashed #B8E02060",background:"#0d1a05",
-            color:"#B8E020",fontSize:14,fontWeight:600}}>
-            {flash?`✓ ${flash} — ${t.stationScanAdded}`:t.nfcKioskPrompt}
-          </div>
+          nfcScanActive?(
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+              padding:"14px",marginBottom:14,borderRadius:12,
+              border:"1px dashed #B8E02060",background:"#0d1a05",
+              color:"#B8E020",fontSize:14,fontWeight:600}}>
+              {flash?`✓ ${flash} — ${t.stationScanAdded}`:t.nfcKioskPrompt}
+            </div>
+          ):(
+            <button onClick={startNfcScan} style={{display:"flex",width:"100%",alignItems:"center",justifyContent:"center",gap:8,
+              padding:"14px",marginBottom:14,borderRadius:12,cursor:"pointer",
+              border:"1px dashed #B8E02060",background:"transparent",
+              color:"#B8E020",fontSize:14,fontWeight:700}}>
+              {t.nfcActivateScanBtn}
+            </button>
+          )
         )}
 
         <div style={{display:"flex",gap:8,marginBottom:16}}>
@@ -246,7 +261,7 @@ export function StationScanView({zone,players,queue,nfcTags,onAssignNfc,onAddQ,o
                 border:"1px solid #1f2937",background:"#0d0f1a",color:"#fff",cursor:"pointer",fontWeight:600,fontSize:14}}>
                 {t.nfcCancelBtn}
               </button>
-              <button onClick={()=>setBlankFlow({step:"writing",playerId:blankFlow.playerId})} style={{flex:1,padding:"12px",borderRadius:10,
+              <button onClick={()=>handleBlankPickName(blankFlow.playerId)} style={{flex:1,padding:"12px",borderRadius:10,
                 border:"none",background:"#B8E020",color:"#000",cursor:"pointer",fontWeight:700,fontSize:14}}>
                 {t.nfcApproachTitle}
               </button>

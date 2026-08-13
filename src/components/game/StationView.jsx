@@ -142,25 +142,39 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
   // la liste de noms (nfcUnknownToken) pour l'activer sur-le-champ, puis
   // l'ajoute à cette même file une fois choisi (voir handleNfcPickName plus
   // bas). Lecture seule côté scan, jamais de verrouillage/écriture du tag.
+  //
+  // NDEFReader.scan() exige une activation utilisateur directe (Chrome le
+  // refuse sinon, silencieusement) — jamais démarré tout seul dans un effet
+  // au montage. nfcScanActive + startNfcScan() ci-dessous: l'écran affiche un
+  // bouton tant que ce n'est pas activé; le clic appelle scanNfc() en direct.
+  // nfcTags/onAssignNfc passent par des refs pour que la lecture reste à jour
+  // sans jamais relancer (donc redemander l'activation) le scan en cours.
+  const [nfcScanActive,setNfcScanActive]=useState(false);
+  const nfcTagsRef=useRef(nfcTags);
+  useEffect(()=>{nfcTagsRef.current=nfcTags;});
+  const onAssignNfcRef=useRef(onAssignNfc);
+  useEffect(()=>{onAssignNfcRef.current=onAssignNfc;});
   const nfcLastRef=useRef({token:null,at:0});
-  useEffect(()=>{
-    if(!isWebNfcSupported()) return;
+  const nfcStopRef=useRef(null);
+  const startNfcScan=()=>{
+    if(!isWebNfcSupported()||nfcStopRef.current) return;
     const expectedOrigin=new URL(BASE_URL).origin;
-    const stop=scanNfc({
+    nfcStopRef.current=scanNfc({
       onRead:(url)=>{
         const token=parseNfcToken(url,expectedOrigin);
         if(!token) return;
         const now=Date.now();
         if(nfcLastRef.current.token===token&&now-nfcLastRef.current.at<NFC_REREAD_DEBOUNCE_MS) return;
         nfcLastRef.current={token,at:now};
-        const playerId=resolvePlayerId(token,nfcTags);
+        const playerId=resolvePlayerId(token,nfcTagsRef.current);
         if(playerId!=null) addPlayerToQueueRef.current(playerId);
-        else if(onAssignNfc) setNfcUnknownToken(token);
+        else if(onAssignNfcRef.current) setNfcUnknownToken(token);
       },
       onError:()=>{},
     });
-    return stop;
-  },[nfcTags,onAssignNfc]);
+    setNfcScanActive(true);
+  };
+  useEffect(()=>()=>{nfcStopRef.current?.();},[]);
 
   // Bracelet inconnu + nom choisi dans la liste: on lie le bracelet à ce
   // joueur ET on l'ajoute à la file de cette zone en un seul geste — il
@@ -464,12 +478,21 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
                   {onFillQueue&&<Button variant="outline" size="sm" onClick={onFillQueue}>Remplir</Button>}
                 </div>
                 {isWebNfcSupported()&&(
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",
-                    padding:"var(--pi-s2) var(--pi-s3)",marginBottom:"var(--pi-s2)",borderRadius:"var(--pi-r-md)",
-                    border:"1px dashed var(--pi-lime-line)",background:"var(--pi-lime-wash)",
-                    color:"var(--pi-lime)",fontSize:"var(--pi-fs-label)",fontWeight:600}}>
-                    {t.nfcKioskPrompt}
-                  </div>
+                  nfcScanActive?(
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",
+                      padding:"var(--pi-s2) var(--pi-s3)",marginBottom:"var(--pi-s2)",borderRadius:"var(--pi-r-md)",
+                      border:"1px dashed var(--pi-lime-line)",background:"var(--pi-lime-wash)",
+                      color:"var(--pi-lime)",fontSize:"var(--pi-fs-label)",fontWeight:600}}>
+                      {t.nfcKioskPrompt}
+                    </div>
+                  ):(
+                    <button onClick={startNfcScan} style={{display:"flex",width:"100%",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",
+                      padding:"var(--pi-s2) var(--pi-s3)",marginBottom:"var(--pi-s2)",borderRadius:"var(--pi-r-md)",
+                      border:"1px dashed var(--pi-lime-line)",background:"transparent",cursor:"pointer",
+                      color:"var(--pi-lime)",fontSize:"var(--pi-fs-label)",fontWeight:700}}>
+                      {t.nfcActivateScanBtn}
+                    </button>
+                  )
                 )}
                 <div style={{display:"flex",gap:"var(--pi-s2)",marginBottom:"var(--pi-s3)"}}>
                   <input type="number" min="1" max="999" placeholder="# Joueur" className="pi-input"
