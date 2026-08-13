@@ -33,8 +33,11 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
   const [nfcUnknownToken,setNfcUnknownToken]=useState(null);
   const [nfcPickerSearch,setNfcPickerSearch]=useState("");
   // Diagnostic terrain: affiche l'erreur brute (err.name) au lieu de
-  // l'avaler silencieusement — à retirer une fois la cause confirmée.
+  // l'avaler silencieusement, plus un statut brut (démarré / événement reçu)
+  // pour voir si l'événement "reading" du navigateur se déclenche vraiment
+  // — à retirer une fois la cause confirmée.
   const [nfcError,setNfcError]=useState(null);
+  const [nfcStatus,setNfcStatus]=useState(null);
   const [sprintSize,setSprintSize]=useState(4); // nombre ou "tous"
   const [flash,setFlash]=useState(null);
   const [confirmShortGame,setConfirmShortGame]=useState(false);
@@ -162,8 +165,15 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
   const startNfcScan=()=>{
     if(!isWebNfcSupported()||nfcStopRef.current) return;
     setNfcError(null);
+    setNfcStatus("starting…");
     const expectedOrigin=new URL(BASE_URL).origin;
     nfcStopRef.current=scanNfc({
+      onStarted:()=>{
+        setNfcStatus("actif — en attente d'un tap ("+new Date().toLocaleTimeString()+")");
+      },
+      onRawEvent:({recordCount,types,serial})=>{
+        setNfcStatus("événement reçu: "+recordCount+" record(s) ["+types.join(",")+"] serial="+serial+" @ "+new Date().toLocaleTimeString());
+      },
       onRead:(url)=>{
         setNfcError(null);
         const token=parseNfcToken(url,expectedOrigin);
@@ -488,12 +498,19 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
                 </div>
                 {isWebNfcSupported()&&(
                   nfcScanActive?(
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",
-                      padding:"var(--pi-s2) var(--pi-s3)",marginBottom:"var(--pi-s2)",borderRadius:"var(--pi-r-md)",
-                      border:"1px dashed var(--pi-lime-line)",background:"var(--pi-lime-wash)",
-                      color:"var(--pi-lime)",fontSize:"var(--pi-fs-label)",fontWeight:600}}>
-                      {t.nfcKioskPrompt}
-                    </div>
+                    <>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",
+                        padding:"var(--pi-s2) var(--pi-s3)",marginBottom:6,borderRadius:"var(--pi-r-md)",
+                        border:"1px dashed var(--pi-lime-line)",background:"var(--pi-lime-wash)",
+                        color:"var(--pi-lime)",fontSize:"var(--pi-fs-label)",fontWeight:600}}>
+                        {t.nfcKioskPrompt}
+                      </div>
+                      {nfcStatus&&(
+                        <div style={{color:"var(--pi-text-4)",fontSize:10,textAlign:"center",marginBottom:"var(--pi-s2)",fontFamily:"monospace",wordBreak:"break-all"}}>
+                          {nfcStatus}
+                        </div>
+                      )}
+                    </>
                   ):(
                     <>
                       <button onClick={startNfcScan} style={{display:"flex",width:"100%",alignItems:"center",justifyContent:"center",gap:"var(--pi-s2)",

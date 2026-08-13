@@ -12,7 +12,13 @@ export function isWebNfcSupported() {
 // (bracelet jamais écrit — l'événement "reading" arrive quand même, avec un
 // message NDEF vide ou sans record de type url/absolute-url). Retourne stop()
 // pour interrompre le scan (changement d'étape, démontage du composant).
-export function scanNfc({ onRead, onBlank, onError }) {
+// onStarted() confirme que reader.scan() a bien démarré (permission accordée,
+// dispatch NFC actif) — distinct de onError, pour diagnostiquer le cas où le
+// scan démarre sans erreur mais ne reçoit jamais aucun événement "reading".
+// onRawEvent({recordCount,types,serial}) est appelé en premier à CHAQUE
+// événement "reading", avant tout parsing — sert à vérifier que l'événement
+// arrive vraiment côté page, même si le contenu ne matche aucun cas connu.
+export function scanNfc({ onRead, onBlank, onError, onStarted, onRawEvent }) {
   if (!isWebNfcSupported()) {
     onError?.(new Error("web-nfc-unsupported"));
     return () => {};
@@ -20,6 +26,11 @@ export function scanNfc({ onRead, onBlank, onError }) {
   const reader = new window.NDEFReader();
   const controller = new AbortController();
   reader.addEventListener("reading", (event) => {
+    onRawEvent?.({
+      recordCount: event.message.records.length,
+      types: event.message.records.map((r) => r.recordType),
+      serial: event.serialNumber || null,
+    });
     for (const record of event.message.records) {
       if (record.recordType === "url" || record.recordType === "absolute-url") {
         const url = new TextDecoder(record.encoding || "utf-8").decode(record.data);
@@ -32,7 +43,7 @@ export function scanNfc({ onRead, onBlank, onError }) {
   reader.addEventListener("readingerror", () => {
     onError?.(new Error("web-nfc-reading-error"));
   });
-  reader.scan({ signal: controller.signal }).catch((err) => onError?.(err));
+  reader.scan({ signal: controller.signal }).then(() => onStarted?.()).catch((err) => onError?.(err));
   return () => controller.abort();
 }
 
