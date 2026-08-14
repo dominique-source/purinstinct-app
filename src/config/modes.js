@@ -63,7 +63,11 @@ const MODE_CODES={
   ecole:import.meta.env.VITE_CODE_ECOLE||"0002",
   festival:import.meta.env.VITE_CODE_FESTIVAL||"0003",
   parc:import.meta.env.VITE_CODE_PARC||"0004",
-  petitGroupe:import.meta.env.VITE_CODE_PETIT_GROUPE||"0005",
+  // petitGroupe EN SOURDINE (projet auxiliaire, pas prêt) — décommenter pour
+  // réactiver le code d'entrée "0005". resolveMode() ne matchera plus rien
+  // pour ce code tant que cette ligne reste commentée; classifyModeRoute
+  // et tout le reste de l'orchestration Petit Groupe restent intacts.
+  // petitGroupe:import.meta.env.VITE_CODE_PETIT_GROUPE||"0005",
 };
 
 // Mappe un code saisi → clé de mode ("games","corporate",...) ou "admin"

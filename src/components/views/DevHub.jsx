@@ -9,7 +9,10 @@ const TILES=[
   {key:"ecole",icon:"🏫",label:"École",sub:"Inscription par équipe"},
   {key:"festival",icon:"🎪",label:"Festival",sub:"Kiosque libre-service"},
   {key:"parc",icon:"🌳",label:"Parc",sub:"Borne fixe"},
-  {key:"petitGroupe",icon:"👥",label:"Petit Groupe",sub:"Orchestration (aperçu, joueurs de test)"},
+  // Petit Groupe EN SOURDINE (projet auxiliaire, pas prêt) — décommenter
+  // cette ligne pour réactiver la tuile. Le reste (SmallGroupTab.jsx,
+  // App.jsx, lib/smallGroup.js) reste intact, seule cette entrée UI est coupée.
+  // {key:"petitGroupe",icon:"👥",label:"Petit Groupe",sub:"Orchestration (aperçu, joueurs de test)"},
   {key:"admin",icon:"🛡️",label:"Admin",sub:"Données de test"},
   {key:"station",icon:"📍",label:"Responsable de plateau",sub:"Données de test"},
   {key:"zones",icon:"🏁",label:"Zones de jeu",sub:"Aperçu station par zone"},

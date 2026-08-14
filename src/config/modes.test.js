@@ -50,7 +50,11 @@ describe("resolveMode", () => {
     expect(resolveMode("0002")).toBe("ecole");
     expect(resolveMode("0003")).toBe("festival");
     expect(resolveMode("0004")).toBe("parc");
-    expect(resolveMode("0005")).toBe("petitGroupe");
+    // petitGroupe EN SOURDINE (config/modes.js: MODE_CODES.petitGroupe
+    // commenté) — "0005" ne résout plus rien tant que ça reste le cas.
+    // Remettre `expect(resolveMode("0005")).toBe("petitGroupe");` en
+    // réactivant l'entrée.
+    expect(resolveMode("0005")).toBeNull();
   });
 
   it("resolves the admin PIN to the admin mode", () => {
@@ -81,7 +85,9 @@ describe("mode switching (smoke test)", () => {
     "0002": { mode: "ecole", route: "kiosk" },
     "0003": { mode: "festival", route: "kiosk" },
     "0004": { mode: "parc", route: "kiosk" },
-    "0005": { mode: "petitGroupe", route: "smallGroupAdmin" },
+    // "0005" (petitGroupe) omis: EN SOURDINE, voir config/modes.js —
+    // remettre `"0005": { mode: "petitGroupe", route: "smallGroupAdmin" },`
+    // en réactivant l'entrée.
     "1111": { mode: "admin", route: "admin" },
   };
 
@@ -101,7 +107,10 @@ describe("mode switching (smoke test)", () => {
     expect(classifyModeRoute(resolveMode("9999"))).toBeNull();
   });
 
-  it("petitGroupe routes to its own distinct destination, not kiosk/admin/live/stub", () => {
+  // EN SOURDINE — voir config/modes.js (MODE_CODES.petitGroupe commenté).
+  // Ce test valide le comportement du code d'entrée réactivé; il redevient
+  // pertinent dès que cette entrée est décommentée.
+  it.skip("petitGroupe routes to its own distinct destination, not kiosk/admin/live/stub", () => {
     const route = classifyModeRoute(resolveMode("0005"));
     expect(route).toBe("smallGroupAdmin");
     expect(["kiosk", "admin", "live", "stub", null]).not.toContain(route);
