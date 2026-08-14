@@ -2,8 +2,6 @@ import { useState, useRef } from "react";
 import { ZONES } from "../../config/zones.js";
 import { useT } from "../../hooks/useLang.js";
 import { S } from "./styles.js";
-import { Bib } from "./Bib.jsx";
-import { TierBadge } from "./TierBadge.jsx";
 import { EmptyState } from "../ui/index.js";
 
 export function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReorder,highlightId}){
@@ -61,7 +59,6 @@ export function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReord
     <div ref={listRef} style={{display:"flex",flexDirection:"column",gap:5,userSelect:"none"}}
       onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
       {qPlayers.map((p,idx)=>{
-        const zs=(p.zoneScores||{})[zone]||50;
         const streak=(p.zoneStreaks||{})[zone]||0;
         const isOver=overIdx===idx;
         const isDragging=dragIdx===idx;
@@ -87,24 +84,21 @@ export function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReord
                 color:isDragging?"#B8E020":"#4b5563",fontSize:20,
                 cursor:"grab",touchAction:"none",lineHeight:1}}>⠿</div>
             <div style={{fontSize:11,color:"#374151",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,width:16,flexShrink:0}}>{idx+1}</div>
-            <Bib n={p.number} size="sm" color={z.color}/>
             <span style={{fontSize:13,color:"#fff",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
-            {zone==="speed"&&<TierBadge score={zs}/>}
-            {zone!=="speed"&&<div style={{...S.tag(z.color),fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{zs}</div>}
             {streak>=2&&<span style={{fontSize:11,color:"#f97316",flexShrink:0}}>🔥x{streak}</span>}
             <button onClick={(e)=>{e.stopPropagation();onMoveTop(p.id,zone);}}
-              style={{display:"flex",alignItems:"center",justifyContent:"center",minWidth:44,minHeight:44,margin:"-8px 0",
-                background:"none",border:"none",cursor:"pointer",color:"#4b5563",fontSize:18,lineHeight:1}}
+              style={{display:"flex",alignItems:"center",justifyContent:"center",minWidth:32,minHeight:44,margin:"-8px 0",
+                background:"none",border:"none",cursor:"pointer",color:"#4b5563",fontSize:16,lineHeight:1}}
               onMouseEnter={e=>e.target.style.color="#B8E020"}
               onMouseLeave={e=>e.target.style.color="#4b5563"}>↑</button>
             <button onClick={(e)=>{e.stopPropagation();onMoveBottom(p.id,zone);}}
-              style={{display:"flex",alignItems:"center",justifyContent:"center",minWidth:44,minHeight:44,margin:"-8px 0",
-                background:"none",border:"none",cursor:"pointer",color:"#4b5563",fontSize:18,lineHeight:1}}
+              style={{display:"flex",alignItems:"center",justifyContent:"center",minWidth:32,minHeight:44,margin:"-8px 0",
+                background:"none",border:"none",cursor:"pointer",color:"#4b5563",fontSize:16,lineHeight:1}}
               onMouseEnter={e=>e.target.style.color="#f97316"}
               onMouseLeave={e=>e.target.style.color="#4b5563"}>↓</button>
             <button onClick={(e)=>{e.stopPropagation();onRemove(p.id,zone);}}
               style={{display:"flex",alignItems:"center",justifyContent:"center",minWidth:44,minHeight:44,margin:"-8px -6px -8px 0",
-                background:"none",border:"none",cursor:"pointer",color:"#374151",fontSize:18,lineHeight:1}}
+                background:"none",border:"none",cursor:"pointer",color:"#374151",fontSize:26,fontWeight:700,lineHeight:1}}
               onMouseEnter={e=>e.target.style.color="#ef4444"}
               onMouseLeave={e=>e.target.style.color="#374151"}>×</button>
           </div>
