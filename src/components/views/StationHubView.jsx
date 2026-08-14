@@ -6,12 +6,13 @@ import { Wordmark } from "./LiveLoginView.jsx";
 
 // Menu atteint via le code QR d'une station (?stationHub=ZONE) — le
 // responsable de plateau scanne, tombe ici, et choisit son mode: gérer la
-// partie en cours, corriger le profil d'un joueur, ou juste enchaîner les
-// scans pour remplir la file. Trois écrans dédiés plutôt qu'un seul écran
-// surchargé — chacun reste simple pour son usage précis. Onglet Admin
-// (PIN séparé, ADMIN_PIN) pour les actions transverses (profil, bracelets,
-// changer de plateau) — voir StationAdminHubView.
-export function StationHubView({zone,onEnterSession,onLookupPlayer,onScanNext,onGoAdmin}){
+// partie en cours, ou accéder aux actions admin (profil, bracelets,
+// changer de plateau — voir StationAdminHubView). "Lire le profil d'un
+// joueur" et "Scanner les prochains joueurs" retirés d'ici: le premier vit
+// maintenant sous Admin ("Modifier profil"), le second est redondant avec
+// le scan bracelet déjà intégré à la session (StationView) — deux tuiles
+// tiennent sur un écran sans scroller, quatre non.
+export function StationHubView({zone,onEnterSession,onGoAdmin}){
   const t=useT();
   const zn=useZn();
   const z=ZONES[zone];
@@ -19,8 +20,6 @@ export function StationHubView({zone,onEnterSession,onLookupPlayer,onScanNext,on
 
   const tiles=[
     {icon:"🎮",label:t.stationHubEnterSession,sub:t.stationHubEnterSessionSub,color:z.color,action:onEnterSession},
-    {icon:"🔍",label:t.stationHubLookupPlayer,sub:t.stationHubLookupPlayerSub,color:"#3b82f6",action:onLookupPlayer},
-    {icon:"📶",label:t.stationHubScanNext,sub:t.stationHubScanNextSub,color:"#B8E020",action:onScanNext},
     {icon:"🛡️",label:t.stationHubAdmin,sub:t.stationHubAdminSub,color:"#9ca3af",action:onGoAdmin},
   ];
 
@@ -30,7 +29,7 @@ export function StationHubView({zone,onEnterSession,onLookupPlayer,onScanNext,on
       <style>{FONTS}</style>
       <Wordmark/>
       <div style={{textAlign:"center",marginBottom:32}}>
-        <div style={{fontSize:36,marginBottom:8}}>{z.icon}</div>
+        <div style={{fontSize:72,marginBottom:8}}>{z.icon}</div>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:22,color:"#fff"}}>{zl.name}</div>
         <div style={{fontSize:12,color:"#4b5563",marginTop:4}}>{t.stationHubTitle}</div>
       </div>

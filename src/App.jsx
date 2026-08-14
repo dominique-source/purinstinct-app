@@ -1306,8 +1306,6 @@ export default function PurInstinctApp(){
   else if(view.type==="stationHub") content=(
     <StationHubView zone={view.id}
       onEnterSession={()=>setView({type:"station",id:view.id})}
-      onLookupPlayer={()=>setView({type:"stationLookup",id:view.id})}
-      onScanNext={()=>setView({type:"stationScan",id:view.id})}
       onGoAdmin={()=>setView({type:"stationAdminPin"})}/>
   );
 
