@@ -3,25 +3,27 @@ import { FONTS } from "../../config/fonts.js";
 import { ZONES } from "../../config/zones.js";
 import { useZn, useT } from "../../hooks/useLang.js";
 import { LangFooter } from "../shared/LangFooter.jsx";
-import { STATION_PIN, STATION_HUB_UNLOCKED_KEY } from "../../config/pins.js";
 import { NumPad, Wordmark } from "./LiveLoginView.jsx";
 
-// Porte d'entrée du code QR de station (?stationHub=ZONE): un QR imprimé et
-// collé au poste peut être photographié/partagé par n'importe qui — ce code
-// PIN (même STATION_PIN que le cadran classique) évite qu'un scan trouvé au
-// hasard donne un accès direct au menu responsable de plateau.
-export function StationHubPinView({zone,onUnlocked}){
+// Porte d'entrée PIN générique — deux usages: (1) QR de station
+// (?stationHub=ZONE, zone fourni, expectedPin=STATION_PIN "2222") — un QR
+// imprimé peut être photographié/partagé par n'importe qui; (2) menu Admin
+// (zone omis, expectedPin=ADMIN_PIN "1111") — accessible depuis n'importe
+// quel écran responsable de plateau. persistKey optionnel: si fourni,
+// mémorise le déverrouillage en sessionStorage (tient tant que l'onglet
+// reste ouvert) — volontairement omis pour l'admin, plus sensible.
+export function StationHubPinView({zone,expectedPin,persistKey,onUnlocked}){
   const t=useT();
   const zn=useZn();
-  const z=ZONES[zone];
-  const zl=zn(zone);
+  const z=zone?ZONES[zone]:null;
+  const zl=zone?zn(zone):null;
   const [pin,setPin]=useState("");
   const [pinError,setPinError]=useState(false);
 
   const handleComplete=(value)=>{
-    if(value===STATION_PIN){
+    if(value===expectedPin){
       setPinError(false);
-      sessionStorage.setItem(STATION_HUB_UNLOCKED_KEY,"1");
+      if(persistKey) sessionStorage.setItem(persistKey,"1");
       onUnlocked();
     } else {
       setPinError(true);
@@ -35,9 +37,9 @@ export function StationHubPinView({zone,onUnlocked}){
       <style>{FONTS}</style>
       <Wordmark/>
       <div style={{textAlign:"center",marginBottom:32}}>
-        <div style={{fontSize:36,marginBottom:8}}>{z.icon}</div>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:22,color:"#fff"}}>{zl.name}</div>
-        <div style={{fontSize:12,color:"#4b5563",marginTop:4}}>{t.stationHubPinPrompt}</div>
+        {z?(<div style={{fontSize:36,marginBottom:8}}>{z.icon}</div>):(<div style={{fontSize:36,marginBottom:8}}>🛡️</div>)}
+        {zl&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:22,color:"#fff"}}>{zl.name}</div>}
+        <div style={{fontSize:12,color:"#4b5563",marginTop:4}}>{zone?t.stationHubPinPrompt:t.stationAdminPinPrompt}</div>
       </div>
       {pinError&&<div style={{textAlign:"center",color:"#ef4444",fontSize:13,marginBottom:16}}>{t.stationHubPinError}</div>}
       <NumPad value={pin} onChange={v=>{setPin(v);setPinError(false);}} onComplete={handleComplete}/>

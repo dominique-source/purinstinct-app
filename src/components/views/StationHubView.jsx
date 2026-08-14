@@ -2,13 +2,16 @@ import { FONTS } from "../../config/fonts.js";
 import { ZONES } from "../../config/zones.js";
 import { useZn, useT } from "../../hooks/useLang.js";
 import { LangFooter } from "../shared/LangFooter.jsx";
+import { Wordmark } from "./LiveLoginView.jsx";
 
 // Menu atteint via le code QR d'une station (?stationHub=ZONE) — le
 // responsable de plateau scanne, tombe ici, et choisit son mode: gérer la
 // partie en cours, corriger le profil d'un joueur, ou juste enchaîner les
 // scans pour remplir la file. Trois écrans dédiés plutôt qu'un seul écran
-// surchargé — chacun reste simple pour son usage précis.
-export function StationHubView({zone,onEnterSession,onLookupPlayer,onScanNext,onBack}){
+// surchargé — chacun reste simple pour son usage précis. Onglet Admin
+// (PIN séparé, ADMIN_PIN) pour les actions transverses (profil, bracelets,
+// changer de plateau) — voir StationAdminHubView.
+export function StationHubView({zone,onEnterSession,onLookupPlayer,onScanNext,onGoAdmin}){
   const t=useT();
   const zn=useZn();
   const z=ZONES[zone];
@@ -18,12 +21,14 @@ export function StationHubView({zone,onEnterSession,onLookupPlayer,onScanNext,on
     {icon:"🎮",label:t.stationHubEnterSession,sub:t.stationHubEnterSessionSub,color:z.color,action:onEnterSession},
     {icon:"🔍",label:t.stationHubLookupPlayer,sub:t.stationHubLookupPlayerSub,color:"#3b82f6",action:onLookupPlayer},
     {icon:"📶",label:t.stationHubScanNext,sub:t.stationHubScanNextSub,color:"#B8E020",action:onScanNext},
+    {icon:"🛡️",label:t.stationHubAdmin,sub:t.stationHubAdminSub,color:"#9ca3af",action:onGoAdmin},
   ];
 
   return(
-    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
+    <div style={{minHeight:"100svh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{FONTS}</style>
+      <Wordmark/>
       <div style={{textAlign:"center",marginBottom:32}}>
         <div style={{fontSize:36,marginBottom:8}}>{z.icon}</div>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:22,color:"#fff"}}>{zl.name}</div>
@@ -46,10 +51,6 @@ export function StationHubView({zone,onEnterSession,onLookupPlayer,onScanNext,on
           </button>
         ))}
       </div>
-      {onBack&&<button onClick={onBack} style={{marginTop:24,padding:"10px",borderRadius:10,border:"none",
-        background:"none",color:"#6b7280",cursor:"pointer",fontSize:13}}>
-        {t.back}
-      </button>}
       <LangFooter/>
     </div>
   );

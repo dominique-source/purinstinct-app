@@ -27,10 +27,13 @@ import { NfcUnassignedView } from "./components/views/NfcUnassignedView.jsx";
 import { NfcKioskView } from "./components/views/NfcKioskView.jsx";
 import { StationHubView } from "./components/views/StationHubView.jsx";
 import { StationHubPinView } from "./components/views/StationHubPinView.jsx";
+import { StationAdminHubView } from "./components/views/StationAdminHubView.jsx";
+import { StationCancelBraceletView } from "./components/views/StationCancelBraceletView.jsx";
+import { StationBecomeStationView } from "./components/views/StationBecomeStationView.jsx";
 import { StationScanView } from "./components/views/StationScanView.jsx";
 import { StationPlayerLookupView } from "./components/views/StationPlayerLookupView.jsx";
 import { DevHub } from "./components/views/DevHub.jsx";
-import { DEV_PIN, STATION_HUB_UNLOCKED_KEY } from "./config/pins.js";
+import { DEV_PIN, STATION_PIN, ADMIN_PIN, STATION_HUB_UNLOCKED_KEY } from "./config/pins.js";
 import { parseNfcToken, resolvePlayerId } from "./lib/nfc.js";
 import braceletLime from "./assets/bracelet-lime.png";
 
@@ -1260,8 +1263,44 @@ export default function PurInstinctApp(){
   );
 
   else if(view.type==="stationHubPin") content=(
-    <StationHubPinView zone={view.id}
+    <StationHubPinView zone={view.id} expectedPin={STATION_PIN} persistKey={STATION_HUB_UNLOCKED_KEY}
       onUnlocked={()=>setView({type:"stationHub",id:view.id})}/>
+  );
+
+  else if(view.type==="stationAdminPin") content=(
+    <StationHubPinView expectedPin={ADMIN_PIN}
+      onUnlocked={()=>setView({type:"stationAdminHub"})}/>
+  );
+
+  else if(view.type==="stationAdminHub") content=(
+    <StationAdminHubView
+      onEditProfile={()=>setView({type:"stationAdminProfile"})}
+      onCancelBracelet={()=>setView({type:"stationAdminCancel"})}
+      onBecomeStation={()=>setView({type:"stationAdminZonePick"})}
+      onBack={()=>isTestMode?testHome():setView({type:"stationPick"})}/>
+  );
+
+  else if(view.type==="stationAdminProfile") content=(
+    <StationPlayerLookupView
+      players={isTestMode?TEST_PLAYERS:players.filter(p=>(p.groupId||"main")===activeRosterId)}
+      nfcTags={nfcTags}
+      onAssignNfc={assignNfcTag}
+      onUpdatePlayer={updatePlayer}
+      onBack={()=>setView({type:"stationAdminHub"})}/>
+  );
+
+  else if(view.type==="stationAdminCancel") content=(
+    <StationCancelBraceletView
+      players={isTestMode?TEST_PLAYERS:players.filter(p=>(p.groupId||"main")===activeRosterId)}
+      onUnassignNfc={unassignNfcTag}
+      onBack={()=>setView({type:"stationAdminHub"})}/>
+  );
+
+  else if(view.type==="stationAdminZonePick") content=(
+    <StationBecomeStationView
+      disabledZones={arenaState.disabledZones||[]}
+      onPickZone={(zk)=>setView({type:"station",id:zk})}
+      onBack={()=>setView({type:"stationAdminHub"})}/>
   );
 
   else if(view.type==="stationHub") content=(
@@ -1269,7 +1308,7 @@ export default function PurInstinctApp(){
       onEnterSession={()=>setView({type:"station",id:view.id})}
       onLookupPlayer={()=>setView({type:"stationLookup",id:view.id})}
       onScanNext={()=>setView({type:"stationScan",id:view.id})}
-      onBack={()=>isTestMode?testHome():setView({type:"stationPick"})}/>
+      onGoAdmin={()=>setView({type:"stationAdminPin"})}/>
   );
 
   else if(view.type==="stationScan") content=(
