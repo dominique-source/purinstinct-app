@@ -10,7 +10,7 @@ export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onA
   const t=useT();
   const [form,setForm]=useState({
     name:player.name||"",gender:player.gender||"M",age:player.age||"",
-    email:player.email||"",instagram:player.instagram||"",
+    email:player.email||"",phone:player.phone||"",instagram:player.instagram||"",
     tiktok:player.tiktok||"",snapchat:player.snapchat||"",
     photoConsent:player.photoConsent||false,videoConsent:player.videoConsent||false,
     profilePhoto:player.profilePhoto||null,highlights:player.highlights||[],
@@ -123,6 +123,7 @@ export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onA
         <div style={{...S.label(),marginBottom:10}}>Contact et reseaux sociaux</div>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {[["email","📧 Email","email@exemple.com"],
+            ["phone","📱 Cellulaire","418 555-1234"],
             ["instagram","📸 Instagram","@username"],
             ["tiktok","🎵 TikTok","@username"],
             ["snapchat","👻 Snapchat","username"]

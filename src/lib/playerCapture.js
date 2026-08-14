@@ -2,7 +2,7 @@ import { MODES } from "../config/modes.js";
 
 // Champs considérés comme des renseignements personnels (PII) au sens du
 // verrou allowPII — courriel et coordonnées de contact.
-export const PII_FIELDS = ["email", "instagram", "tiktok", "snapchat"];
+export const PII_FIELDS = ["email", "phone", "instagram", "tiktok", "snapchat"];
 
 // Verrou dur: si le mode interdit les PII (allowPII=false, ex. ecole),
 // aucune donnée de contact ne doit pouvoir être écrite pour ce mode —

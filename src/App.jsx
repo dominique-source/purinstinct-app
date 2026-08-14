@@ -30,6 +30,7 @@ import { StationHubPinView } from "./components/views/StationHubPinView.jsx";
 import { StationAdminHubView } from "./components/views/StationAdminHubView.jsx";
 import { StationCancelBraceletView } from "./components/views/StationCancelBraceletView.jsx";
 import { StationConnectBraceletView } from "./components/views/StationConnectBraceletView.jsx";
+import { StationPreRegisterView } from "./components/views/StationPreRegisterView.jsx";
 import { StationBecomeStationView } from "./components/views/StationBecomeStationView.jsx";
 import { StationScanView } from "./components/views/StationScanView.jsx";
 import { StationPlayerLookupView } from "./components/views/StationPlayerLookupView.jsx";
@@ -311,7 +312,7 @@ export default function PurInstinctApp(){
       zoneStreaks:{purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0},
       zonesPlayed:[],lastResult:null,history:[],
       groupId,
-      age:"",email:safeExtra.email||"",instagram:"",tiktok:"",snapchat:"",
+      age:"",email:safeExtra.email||"",phone:safeExtra.phone||"",instagram:"",tiktok:"",snapchat:"",
       marketingConsent:!!safeExtra.marketingConsent,
       company:safeExtra.company||"",class:safeExtra.class||"",
       photoConsent:false,videoConsent:false,profilePhoto:null,highlights:[]};
@@ -319,6 +320,37 @@ export default function PurInstinctApp(){
     fbUpdate({["state/players/"+newId]:newPlayer});
     if(callback) callback(newId);
   };
+
+  // Pré-inscription admin: crée le joueur à l'avance (nom + coordonnées
+  // facultatives) avec un code à 4 chiffres unique (claimCode) que le
+  // responsable communique lui-même par texto/courriel — permet à la
+  // personne de sauter la ressaisie de ses infos au kiosque bracelet
+  // (NfcUnassignedView "J'ai un code"). Même génération de code que
+  // soloCode plus haut, unicité vérifiée contre les joueurs déjà en liste.
+  const preRegisterPlayer=async(name,email,phone,callback)=>{
+    const localMax=players.length>0?Math.max(...players.map(p=>Number(p.id)||0)):0;
+    const newId=await allocPlayerId(localMax);
+    const usedCodes=players.map(p=>p.claimCode).filter(Boolean);
+    let code;
+    do { code=String(Math.floor(1000+Math.random()*9000)); }
+    while(usedCodes.includes(code));
+    const newPlayer={id:newId,number:newId,name,gender:"M",globalPoints:0,
+      zoneScores:{purinstinct:50,speed:50,handAgility:50,footAgility:50,generalAgility:50,iq:50},
+      zoneStreaks:{purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0},
+      zonesPlayed:[],lastResult:null,history:[],
+      groupId:activeRosterId||"main",
+      age:"",email:email||"",phone:phone||"",instagram:"",tiktok:"",snapchat:"",
+      marketingConsent:false,company:"",class:"",claimCode:code,
+      photoConsent:false,videoConsent:false,profilePhoto:null,highlights:[]};
+    setPlayers(ps=>[...ps,newPlayer]);
+    fbUpdate({["state/players/"+newId]:newPlayer});
+    if(callback) callback(newId,code);
+  };
+
+  // Recherche pure (aucune écriture) — la personne entre son code au
+  // kiosque, on retrouve son pré-enregistrement pour confirmation avant
+  // d'activer le bracelet dessus.
+  const findPlayerByClaimCode=(code)=>players.find(p=>p.claimCode===code)||null;
 
 
   // --- Queue management ---
@@ -996,7 +1028,9 @@ export default function PurInstinctApp(){
     <NfcUnassignedView
       players={players.filter(p=>(p.groupId||"main")===activeRosterId)}
       onBack={()=>setView({type:"login"})}
-      onConnect={(playerId)=>{assignNfcTag(playerId,view.token);setView({type:"player",id:playerId});}}/>
+      onConnect={(playerId)=>{assignNfcTag(playerId,view.token);setView({type:"player",id:playerId});}}
+      onRegister={(name,email,phone,callback)=>addPlayerToSession(name,"M",callback,activeRosterId,{email,phone})}
+      onFindByCode={findPlayerByClaimCode}/>
   );
 
   else if(view.type==="devHub") content=(
@@ -1279,7 +1313,14 @@ export default function PurInstinctApp(){
       onConnectBracelet={()=>setView({type:"stationAdminConnect"})}
       onCancelBracelet={()=>setView({type:"stationAdminCancel"})}
       onBecomeStation={()=>setView({type:"stationAdminZonePick"})}
+      onPreRegister={()=>setView({type:"stationAdminPreRegister"})}
       onBack={()=>isTestMode?testHome():setView({type:"stationPick"})}/>
+  );
+
+  else if(view.type==="stationAdminPreRegister") content=(
+    <StationPreRegisterView
+      onRegister={preRegisterPlayer}
+      onBack={()=>setView({type:"stationAdminHub"})}/>
   );
 
   else if(view.type==="stationAdminProfile") content=(
@@ -1295,6 +1336,7 @@ export default function PurInstinctApp(){
     <StationConnectBraceletView
       players={isTestMode?TEST_PLAYERS:players.filter(p=>(p.groupId||"main")===activeRosterId)}
       onAssignNfc={assignNfcTag}
+      onRegister={(name,email,phone,callback)=>addPlayerToSession(name,"M",callback,activeRosterId,{email,phone})}
       onBack={()=>setView({type:"stationAdminHub"})}/>
   );
 

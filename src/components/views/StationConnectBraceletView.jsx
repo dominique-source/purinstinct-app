@@ -12,11 +12,16 @@ import { BASE_URL } from "../../config/constants.js";
 // précise. writeNfcUrl() appelé en direct depuis l'onClick (jamais via un
 // useEffect déclenché par un changement d'état): Web NFC exige une
 // activation utilisateur fraîche pour chaque écriture.
-export function StationConnectBraceletView({players,onAssignNfc,onBack}){
+export function StationConnectBraceletView({players,onAssignNfc,onRegister,onBack}){
   const t=useT();
   const [selectedId,setSelectedId]=useState(null);
   const [search,setSearch]=useState("");
   const [step,setStep]=useState("idle"); // idle | writing | success | error
+  const [registering,setRegistering]=useState(false);
+  const [newName,setNewName]=useState("");
+  const [newEmail,setNewEmail]=useState("");
+  const [newPhone,setNewPhone]=useState("");
+  const [saving,setSaving]=useState(false);
 
   const filtered=search.trim().length>0
     ?players.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())||String(p.number).includes(search))
@@ -27,6 +32,18 @@ export function StationConnectBraceletView({players,onAssignNfc,onBack}){
   const handleSelect=(id)=>{
     setSelectedId(id);
     setStep("idle");
+  };
+
+  const handleCreateAndSelect=()=>{
+    if(!newName.trim()||saving) return;
+    setSaving(true);
+    onRegister(newName.trim(),newEmail.trim(),newPhone.trim(),(newId)=>{
+      setSelectedId(newId);
+      setStep("idle");
+      setRegistering(false);
+      setSaving(false);
+      setNewName("");setNewEmail("");setNewPhone("");
+    });
   };
 
   const handleConnect=async()=>{
@@ -89,6 +106,51 @@ export function StationConnectBraceletView({players,onAssignNfc,onBack}){
     );
   }
 
+  if(registering){
+    return(
+      <div style={{minHeight:"100svh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
+        display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+        <style>{FONTS}</style>
+        <div style={{width:"100%",maxWidth:360}}>
+          <button onClick={()=>setRegistering(false)} style={{marginBottom:20,padding:"8px 14px",borderRadius:10,
+            background:"#111827",border:"1px solid #B8E02040",color:"#B8E020",cursor:"pointer",
+            fontSize:13,fontWeight:700}}>
+            {t.back}
+          </button>
+          <div style={{textAlign:"center",marginBottom:20}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:20,color:"#fff"}}>{t.stationConnectNewPlayerTitle}</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            <div>
+              <div style={{fontSize:11,color:"#9ca3af",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>{t.fullName}</div>
+              <input value={newName} onChange={e=>setNewName(e.target.value)} autoFocus placeholder={t.nfcNamePlaceholder}
+                style={{width:"100%",padding:"12px 14px",borderRadius:10,border:"1px solid #1f2937",
+                  background:"#0d0f1a",color:"#fff",fontSize:15,outline:"none",boxSizing:"border-box"}}/>
+            </div>
+            <div>
+              <div style={{fontSize:11,color:"#9ca3af",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>{t.nfcEmailOptional}</div>
+              <input value={newEmail} onChange={e=>setNewEmail(e.target.value)} type="email" placeholder="email@exemple.com"
+                style={{width:"100%",padding:"12px 14px",borderRadius:10,border:"1px solid #1f2937",
+                  background:"#0d0f1a",color:"#fff",fontSize:15,outline:"none",boxSizing:"border-box"}}/>
+            </div>
+            <div>
+              <div style={{fontSize:11,color:"#9ca3af",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>{t.nfcPhoneOptional}</div>
+              <input value={newPhone} onChange={e=>setNewPhone(e.target.value)} type="tel" placeholder="418 555-1234"
+                style={{width:"100%",padding:"12px 14px",borderRadius:10,border:"1px solid #1f2937",
+                  background:"#0d0f1a",color:"#fff",fontSize:15,outline:"none",boxSizing:"border-box"}}/>
+            </div>
+            <button onClick={handleCreateAndSelect} disabled={!newName.trim()||saving} style={{
+              marginTop:8,padding:"16px",borderRadius:14,border:"none",cursor:newName.trim()?"pointer":"default",
+              fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,
+              background:newName.trim()?"#B8E020":"#1f2937",color:newName.trim()?"#000":"#4b5563"}}>
+              {t.stationConnectNewPlayerBtn}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return(
     <div style={{minHeight:"100svh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",padding:24}}>
@@ -105,7 +167,14 @@ export function StationConnectBraceletView({players,onAssignNfc,onBack}){
       </div>
 
       <div style={{width:"100%",maxWidth:420}}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} autoFocus
+        {onRegister&&(
+          <button onClick={()=>setRegistering(true)} style={{width:"100%",padding:"12px 14px",borderRadius:10,
+            border:"1px dashed #B8E02060",background:"transparent",color:"#B8E020",cursor:"pointer",
+            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,marginBottom:12}}>
+            {t.stationConnectNewPlayerCta}
+          </button>
+        )}
+        <input value={search} onChange={e=>setSearch(e.target.value)}
           placeholder={t.stationCancelSearchPlaceholder}
           style={{width:"100%",padding:"12px 14px",borderRadius:10,border:"1px solid #1f2937",
             background:"#0d0f1a",color:"#fff",fontSize:15,outline:"none",marginBottom:14,boxSizing:"border-box"}}/>

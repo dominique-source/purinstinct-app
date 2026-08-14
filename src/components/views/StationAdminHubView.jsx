@@ -5,21 +5,23 @@ import { LangFooter } from "../shared/LangFooter.jsx";
 // Menu atteint via le PIN admin (StationHubPinView, ADMIN_PIN "1111"),
 // accessible depuis le bouton Admin de n'importe quelle zone. Même esprit
 // que StationHubView: trois écrans dédiés plutôt qu'un seul surchargé.
-export function StationAdminHubView({onEditProfile,onConnectBracelet,onCancelBracelet,onBecomeStation,onBack}){
+export function StationAdminHubView({onEditProfile,onConnectBracelet,onCancelBracelet,onBecomeStation,onPreRegister,onBack}){
   const t=useT();
 
   const tiles=[
     {icon:"✏️",label:t.stationAdminEditProfile,sub:t.stationAdminEditProfileSub,color:"#3b82f6",action:onEditProfile},
     {icon:"📶",label:t.stationAdminConnectBracelet,sub:t.stationAdminConnectBraceletSub,color:"#B8E020",action:onConnectBracelet},
     {icon:"🚫",label:t.stationAdminCancelBracelet,sub:t.stationAdminCancelBraceletSub,color:"#ef4444",action:onCancelBracelet},
+    {icon:"📝",label:t.stationAdminPreRegister,sub:t.stationAdminPreRegisterSub,color:"#a855f7",action:onPreRegister},
     {icon:"📍",label:t.stationAdminBecomeStation,sub:t.stationAdminBecomeStationSub,color:"#f97316",action:onBecomeStation},
   ];
 
   return(
     <div style={{minHeight:"100svh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
-      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      display:"flex",flexDirection:"column",alignItems:"center",
+      paddingTop:"calc(env(safe-area-inset-top) + 32px)",paddingLeft:24,paddingRight:24,paddingBottom:24}}>
       <style>{FONTS}</style>
-      <div style={{textAlign:"center",marginBottom:32}}>
+      <div style={{textAlign:"center",marginBottom:24}}>
         <div style={{fontSize:36,marginBottom:8}}>🛡️</div>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:22,color:"#fff"}}>{t.stationAdminHubTitle}</div>
       </div>
