@@ -1035,7 +1035,6 @@ export default function PurInstinctApp(){
 
   else if(view.type==="nfcUnassigned") content=(
     <NfcUnassignedView
-      players={players.filter(p=>(p.groupId||"main")===activeRosterId)}
       onBack={()=>setView({type:"login"})}
       onConnect={(playerId)=>{assignNfcTag(playerId,view.token);setView({type:"player",id:playerId});}}
       onRegister={(name,email,phone,callback)=>addPlayerToSession(name,"M",callback,activeRosterId,{email,phone})}

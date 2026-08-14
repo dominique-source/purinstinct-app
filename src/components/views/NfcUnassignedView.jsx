@@ -4,22 +4,22 @@ import { useT } from "../../hooks/useLang.js";
 import braceletLime from "../../assets/bracelet-lime.png";
 
 // Vue publique/anonyme affichée quand ?nfc=TOKEN ne résout à aucun profil actif
-// (bracelet pas encore lié à personne). Trois chemins depuis l'accroche:
-// (1) "Nouveau ? Inscris-toi" — formulaire nom/email/cell, active le bracelet
-// tout de suite (chemin principal, remplace l'ancienne liste de noms qui
-// faisait "pas professionnel"); (2) "J'ai un code" — la personne a été
-// pré-inscrite par un responsable (nom/coordonnées déjà saisis à l'avance,
-// code à 4 chiffres reçu par texto/courriel) et confirme avant activation,
-// sans tout retaper; (3) lien discret "Déjà inscrit ?" — recherche par nom,
-// gardé en secours pour quelqu'un qui a déjà un profil (check-in normal)
-// mais pas encore de bracelet, sans en faire le chemin par défaut.
+// (bracelet pas encore lié à personne). Deux chemins depuis l'accroche, tous
+// deux sans recherche par nom: (1) "Nouveau ? Inscris-toi" — formulaire
+// nom/email/cell, active le bracelet tout de suite; (2) "J'ai un code" — la
+// personne a été pré-inscrite par un responsable (nom/coordonnées déjà
+// saisis à l'avance, code reçu par texto/courriel) et confirme avant
+// activation, sans tout retaper. Pas de recherche-par-nom en libre-service:
+// ça permettrait à quelqu'un de lier un bracelet au profil d'une AUTRE
+// personne par erreur (ou en cliquant vite sans lire) — le code/l'inscription
+// garantissent que le bon profil est visé.
 // Lettres autorisées dans le code de réclamation — 10 lettres choisies pour
 // éviter toute ambiguïté visuelle sur un cadran (pas de I/O confondus avec 1/0).
 const CODE_LETTERS = ["A","B","C","D","E","F","G","H","L","M"];
 
-export function NfcUnassignedView({ players, onBack, onConnect, onRegister, onFindByCode }) {
+export function NfcUnassignedView({ onBack, onConnect, onRegister, onFindByCode }) {
   const t = useT();
-  const [step, setStep] = useState("landing"); // landing | register | code | confirm | select
+  const [step, setStep] = useState("landing"); // landing | register | code | confirm
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -28,11 +28,6 @@ export function NfcUnassignedView({ players, onBack, onConnect, onRegister, onFi
   const [codeError, setCodeError] = useState(false);
   const [codeMode, setCodeMode] = useState("digits"); // digits | letters
   const [foundPlayer, setFoundPlayer] = useState(null);
-  const [search, setSearch] = useState("");
-
-  const filtered = search.trim().length > 0
-    ? players.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || String(p.number).includes(search))
-    : players;
 
   const handleRegister = () => {
     if (!name.trim() || registering) return;
@@ -186,47 +181,6 @@ export function NfcUnassignedView({ players, onBack, onConnect, onRegister, onFi
     );
   }
 
-  if (step === "select") {
-    return (
-      <div style={{ minHeight: "100svh", background: "#0A0A0A", fontFamily: "'DM Sans',sans-serif",
-        display: "flex", flexDirection: "column", padding: 24 }}>
-        <style>{FONTS}</style>
-        <button onClick={() => setStep("landing")} style={{ alignSelf: "flex-start", marginBottom: 16, padding: "8px 14px", borderRadius: 10,
-          background: "#111827", border: "1px solid #B8E02040", color: "#B8E020", cursor: "pointer",
-          fontSize: 13, fontWeight: 700 }}>
-          {t.back}
-        </button>
-        <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontStyle: "italic",
-            fontSize: 22, color: "#fff", marginBottom: 6 }}>{t.nfcSelectNameTitle}</div>
-          <div style={{ fontSize: 13, color: "#9ca3af" }}>{t.nfcSelectNameDesc}</div>
-        </div>
-
-        <input value={search} onChange={e => setSearch(e.target.value)} autoFocus
-          placeholder={t.nfcSelectNameSearchPlaceholder}
-          style={{ width: "100%", padding: "14px 16px", borderRadius: 12, border: "1px solid #1f2937",
-            background: "#0d0f1a", color: "#fff", fontSize: 16, outline: "none", marginBottom: 14,
-            boxSizing: "border-box" }}/>
-
-        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-          {filtered.length === 0 && (
-            <div style={{ textAlign: "center", color: "#4b5563", fontSize: 13, marginTop: 20 }}>{t.nfcSelectNameEmpty}</div>
-          )}
-          {filtered.map(p => (
-            <button key={p.id} onClick={() => onConnect(p.id)} style={{
-              display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 12,
-              border: "1px solid #1f2937", background: "#0d0f1a", cursor: "pointer", textAlign: "left" }}>
-              <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontStyle: "italic",
-                fontSize: 18, color: "#B8E020", width: 32, flexShrink: 0, textAlign: "center" }}>#{p.number}</span>
-              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#fff", fontWeight: 600, fontSize: 15 }}>{p.name}</span>
-              <span style={{ color: "#4b5563", fontSize: 18 }}>›</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return wrap(
     <>
       <img src={braceletLime} alt="" style={{ width: "100%", maxWidth: 300, borderRadius: 20,
@@ -245,10 +199,6 @@ export function NfcUnassignedView({ players, onBack, onConnect, onRegister, onFi
         fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: 15,
         background: "transparent", border: "1px solid #B8E02060", color: "#B8E020", marginBottom: 20 }}>
         {t.nfcHaveCodeCta}
-      </button>
-      <button onClick={() => setStep("select")} style={{ padding: "8px", borderRadius: 10, border: "none",
-        background: "none", color: "#6b7280", cursor: "pointer", fontSize: 12, textDecoration: "underline" }}>
-        {t.nfcAlreadyRegisteredCta}
       </button>
       <button onClick={onBack} style={{ marginTop: 14, padding: "10px", borderRadius: 10, border: "none",
         background: "none", color: "#6b7280", cursor: "pointer", fontSize: 13 }}>
