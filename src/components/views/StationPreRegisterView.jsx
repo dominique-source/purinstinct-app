@@ -13,19 +13,28 @@ export function StationPreRegisterView({onRegister,onBack}){
   const [email,setEmail]=useState("");
   const [phone,setPhone]=useState("");
   const [saving,setSaving]=useState(false);
-  const [result,setResult]=useState(null); // {name, code}
+  const [result,setResult]=useState(null); // {name, code, email}
+  const [emailStatus,setEmailStatus]=useState(null); // null | "sending" | "sent" | "failed"
 
   const handleSave=()=>{
     if(!name.trim()||saving) return;
     setSaving(true);
-    onRegister(name.trim(),email.trim(),phone.trim(),(newId,code)=>{
-      setResult({name:name.trim(),code});
+    const emailAddr=email.trim();
+    onRegister(name.trim(),emailAddr,phone.trim(),(newId,code,emailPromise)=>{
+      setResult({name:name.trim(),code,email:emailAddr});
       setSaving(false);
+      if(emailPromise){
+        setEmailStatus("sending");
+        emailPromise.then(ok=>setEmailStatus(ok?"sent":"failed"));
+      } else {
+        setEmailStatus(null);
+      }
     });
   };
 
   const handleAnother=()=>{
     setResult(null);
+    setEmailStatus(null);
     setName("");setEmail("");setPhone("");
   };
 
@@ -41,6 +50,14 @@ export function StationPreRegisterView({onRegister,onBack}){
           fontSize:64,letterSpacing:10,color:"#B8E020",textShadow:"0 0 40px #B8E02060",marginBottom:28}}>
           {result.code}
         </div>
+        {emailStatus&&(
+          <div style={{fontSize:13,fontWeight:700,marginBottom:16,
+            color:emailStatus==="sent"?"#22c55e":emailStatus==="failed"?"#f59e0b":"#9ca3af"}}>
+            {emailStatus==="sending"&&t.stationPreRegisterEmailSending}
+            {emailStatus==="sent"&&t.stationPreRegisterEmailSent.replace("{email}",result.email)}
+            {emailStatus==="failed"&&t.stationPreRegisterEmailFailed}
+          </div>
+        )}
         <div style={{fontSize:12,color:"#6b7280",maxWidth:280,marginBottom:28}}>{t.stationPreRegisterCodeHint}</div>
         <button onClick={handleAnother} style={{width:"100%",maxWidth:320,padding:"16px",borderRadius:14,
           border:"none",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:16,

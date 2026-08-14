@@ -37,6 +37,7 @@ import { StationPlayerLookupView } from "./components/views/StationPlayerLookupV
 import { DevHub } from "./components/views/DevHub.jsx";
 import { DEV_PIN, STATION_PIN, ADMIN_PIN, STATION_HUB_UNLOCKED_KEY } from "./config/pins.js";
 import { parseNfcToken, resolvePlayerId } from "./lib/nfc.js";
+import { sendClaimCodeEmail } from "./lib/email.js";
 import braceletLime from "./assets/bracelet-lime.png";
 
 // ================================================================
@@ -349,7 +350,11 @@ export default function PurInstinctApp(){
       photoConsent:false,videoConsent:false,profilePhoto:null,highlights:[]};
     setPlayers(ps=>[...ps,newPlayer]);
     fbUpdate({["state/players/"+newId]:newPlayer});
-    if(callback) callback(newId,code);
+    // Envoi du code par courriel en tâche de fond (n'attend jamais la
+    // requête réseau avant d'afficher le code à l'écran — le code visible
+    // reste toujours le filet de sécurité si l'envoi échoue).
+    const emailPromise=email?sendClaimCodeEmail(name,email,code):null;
+    if(callback) callback(newId,code,emailPromise);
   };
 
   // Recherche pure (aucune écriture) — la personne entre son code au
