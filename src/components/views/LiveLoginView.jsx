@@ -43,11 +43,11 @@ export function NumPad({value,onChange,onComplete,maxLen=4}){
 }
 
 // Wordmark — module-scope, no props/state.
-export function Wordmark(){
+export function Wordmark({width=160}){
   return(
     <div style={{textAlign:"center",marginBottom:"var(--pi-s6)"}}>
       <img src={import.meta.env.BASE_URL+"purinstinct-games-logo.png"} alt="PürInstinct Games"
-        style={{width:160,height:"auto",filter:"drop-shadow(0 0 40px var(--pi-lime-glow))"}}/>
+        style={{width,height:"auto",filter:"drop-shadow(0 0 40px var(--pi-lime-glow))"}}/>
     </div>
   );
 }

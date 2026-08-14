@@ -25,11 +25,12 @@ export function StationHubView({zone,onEnterSession,onGoAdmin}){
 
   return(
     <div style={{minHeight:"100svh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
-      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      display:"flex",flexDirection:"column",alignItems:"center",
+      paddingTop:"calc(env(safe-area-inset-top) + 32px)",paddingLeft:24,paddingRight:24,paddingBottom:24}}>
       <style>{FONTS}</style>
-      <Wordmark/>
+      <Wordmark width={80}/>
       <div style={{textAlign:"center",marginBottom:32}}>
-        <div style={{fontSize:72,marginBottom:8}}>{z.icon}</div>
+        <div style={{fontSize:108,marginBottom:8}}>{z.icon}</div>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:22,color:"#fff"}}>{zl.name}</div>
         <div style={{fontSize:12,color:"#4b5563",marginTop:4}}>{t.stationHubTitle}</div>
       </div>
