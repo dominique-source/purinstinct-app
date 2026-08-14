@@ -70,8 +70,8 @@ export function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReord
             onDrop={()=>handleDrop(idx)}
             onDragEnd={()=>{setDragIdx(null);setOverIdx(null);}}
             style={{...S.row(),padding:"8px 10px",borderRadius:10,
-              background:p.id===highlightId?"#1a2e05":isDragging?"#1a2e05":isOver?"#1a1a2e":"#0d0f1a",
-              border:p.id===highlightId?"2px solid "+z.color:isOver?"2px solid "+z.color+"80":isDragging?"2px solid #B8E02060":"1px solid transparent",
+              background:p.id===highlightId?"#1a2e05":isDragging?"#1a2e05":isOver?"#1a1a2e":idx%2===0?"#12151f":"#0d0f1a",
+              border:p.id===highlightId?"2px solid "+z.color:isOver?"2px solid "+z.color+"80":isDragging?"2px solid #B8E02060":"1px solid #1f2937",
               cursor:"grab",transition:"all .15s",opacity:isDragging?0.5:1,
               animation:p.id===highlightId?"pulseLime 0.6s ease-in-out 4":"none"}}>
             {/* drag handle — toucher pour drag sur mobile. Cible tactile 44px
