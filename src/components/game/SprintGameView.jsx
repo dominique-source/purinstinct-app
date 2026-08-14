@@ -53,7 +53,7 @@ export function SprintGameView({game,players,zone,onWinner,onRemove,onReplace,lo
                 background:t.color+"22",color:t.color,flexShrink:0}}>{i+1}</div>
               <TierBadge score={(p.zoneScores||{}).speed||50}/>
               <Bib n={p.number} size="sm" color={t.color}/>
-              <span style={{flex:1,color:"#fff",fontWeight:600,fontSize:13}}>{p.name}</span>
+              <span style={{flex:1,minWidth:0,color:"#fff",fontWeight:600,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
               {isFirst&&<span style={{fontSize:11,color:"#B8E020",fontWeight:700}}>🥇 1er</span>}
               {isSecond&&<span style={{fontSize:11,color:"#ca8a04",fontWeight:700}}>🥈 2e</span>}
               {streak>=2&&<span style={{fontSize:11,color:"#f97316"}}>🔥x{streak}</span>}

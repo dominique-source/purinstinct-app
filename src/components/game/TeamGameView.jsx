@@ -46,7 +46,7 @@ export function TeamGameView({game,players,zone,onResult,onRemove,onReplace,lock
                 {tp.map(p=>(
                   <div key={p.id} style={{...S.row()}}>
                     <Bib n={p.number} size="sm" color={z.color}/>
-                    <span style={{fontSize:12,color:"#fff",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name.split(" ")[0]}</span>
+                    <span style={{fontSize:12,color:"#fff",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name.split(" ")[0]}</span>
                     {((p.zoneStreaks||{})[zone]||0)>=2&&<span style={{fontSize:10,color:"#f97316"}}>🔥{(p.zoneStreaks||{})[zone]}</span>}
                     <button onClick={()=>onRemove(p.id)}
                       style={{background:"none",border:"none",cursor:"pointer",color:"#374151",fontSize:14,lineHeight:1,flexShrink:0}}

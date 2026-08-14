@@ -37,7 +37,7 @@ export function IndividualGameView({game,players,zone,onWinner,onRemove,onReplac
             <div key={p.id} style={{...S.row(),padding:"8px 10px",borderRadius:10,background:"#0d0f1a",
               border:"1px solid "+(isFav?"#fbbf2440":z.border)}}>
               <Bib n={p.number} size="sm" color={z.color}/>
-              <span style={{flex:1,color:"#fff",fontWeight:600,fontSize:13}}>{p.name}</span>
+              <span style={{flex:1,minWidth:0,color:"#fff",fontWeight:600,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
               {isFav&&<span style={{fontSize:11,color:"#fbbf24"}}>⚠ fav.</span>}
               {streak>=2&&<span style={{fontSize:11,color:"#f97316"}}>🔥x{streak}</span>}
               <div style={{...S.tag(z.color),fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{zs}</div>

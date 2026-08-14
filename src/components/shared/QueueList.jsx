@@ -88,7 +88,7 @@ export function QueueList({zone,qPlayers,onMoveTop,onMoveBottom,onRemove,onReord
                 cursor:"grab",touchAction:"none",lineHeight:1}}>⠿</div>
             <div style={{fontSize:11,color:"#374151",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,width:16,flexShrink:0}}>{idx+1}</div>
             <Bib n={p.number} size="sm" color={z.color}/>
-            <span style={{fontSize:13,color:"#fff",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
+            <span style={{fontSize:13,color:"#fff",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</span>
             {zone==="speed"&&<TierBadge score={zs}/>}
             {zone!=="speed"&&<div style={{...S.tag(z.color),fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{zs}</div>}
             {streak>=2&&<span style={{fontSize:11,color:"#f97316",flexShrink:0}}>🔥x{streak}</span>}
