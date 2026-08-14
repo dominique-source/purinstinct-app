@@ -3,6 +3,7 @@ import { ZONES, ZK } from "../../../config/zones.js";
 import { useZn, useT } from "../../../hooks/useLang.js";
 import { Panel, Eyebrow } from "../../ui/Panel.jsx";
 import { Button } from "../../ui/Button.jsx";
+import { ConfirmModal } from "../../ui/Modal.jsx";
 import { SECONDARY_ZONE_CANDIDATES } from "../../../lib/smallGroup.js";
 import { TeamGameView } from "../../game/TeamGameView.jsx";
 import { IndividualGameView } from "../../game/IndividualGameView.jsx";
@@ -94,6 +95,7 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
   const [headcount, setHeadcount] = useState(smallGroup.headcount || 24);
   const [zoneCount, setZoneCount] = useState(smallGroup.zoneCount || 2);
   const [speedMode, setSpeedMode] = useState(false);
+  const [confirmPause, setConfirmPause] = useState(false);
 
   const status = smallGroup.roundStatus || "idle";
   const canLaunch = status === "idle" || status === "roundEnded";
@@ -177,7 +179,7 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
             </div>
           )}
           {!canLaunch && onPauseRound && (
-            <button onClick={() => { if (window.confirm(t.smallGroupPauseConfirm)) onPauseRound(); }} style={{
+            <button onClick={() => setConfirmPause(true)} style={{
               alignSelf: "flex-start", padding: "6px 12px", borderRadius: "var(--pi-r-pill)",
               border: "1px solid var(--pi-line)", background: "transparent", color: "var(--pi-text-3)",
               cursor: "pointer", fontSize: "var(--pi-fs-label)" }}>
@@ -185,6 +187,10 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
             </button>
           )}
         </div>
+        <ConfirmModal open={confirmPause} onCancel={() => setConfirmPause(false)}
+          onConfirm={() => { setConfirmPause(false); onPauseRound(); }}
+          title={t.smallGroupPauseBtn} body={t.smallGroupPauseConfirm}
+          confirmLabel={t.smallGroupPauseBtn} danger={false}/>
       </Panel>
 
       {status !== "idle" && (
