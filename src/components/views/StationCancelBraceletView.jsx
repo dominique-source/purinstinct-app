@@ -1,16 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FONTS } from "../../config/fonts.js";
 import { useT } from "../../hooks/useLang.js";
+import { isWebNfcSupported, scanNfc } from "../../lib/webNfc.js";
+import { parseNfcToken, resolvePlayerId } from "../../lib/nfc.js";
 
-// Écran admin dédié: cherche un joueur, retire son bracelet actif
-// (unassignNfcTag) sans ouvrir tout le dossier profil — action ciblée pour
-// un bracelet perdu ou mal assigné, distincte de "Modifier profil"
-// (StationPlayerLookupView) qui expose bien plus de champs.
-export function StationCancelBraceletView({players,onUnassignNfc,onBack}){
+// Écran admin dédié: identifie un joueur (recherche par nom OU tap direct du
+// bracelet physique) et retire son bracelet actif (unassignNfcTag) sans
+// ouvrir tout le dossier profil — action ciblée pour un bracelet perdu, mal
+// assigné, mal utilisé, ou qu'on veut simplement "reformater" pour le
+// réassigner à quelqu'un d'autre. Le tap est indispensable quand on a le
+// bracelet en main sans savoir à qui il appartient — chercher par nom ne
+// marche pas dans ce cas. scanNfc() est démarré directement depuis l'onClick
+// du bouton (jamais dans un useEffect déclenché par un changement d'état):
+// Web NFC exige une activation utilisateur fraîche pour .scan().
+export function StationCancelBraceletView({players,nfcTags,onUnassignNfc,onBack}){
   const t=useT();
   const [selectedId,setSelectedId]=useState(null);
   const [search,setSearch]=useState("");
   const [done,setDone]=useState(false);
+  const [scanning,setScanning]=useState(false);
+  const [scanError,setScanError]=useState(null); // null | "unknown" | "unsupported"
+  const stopScanRef=useRef(null);
+
+  useEffect(()=>()=>stopScanRef.current?.(),[]);
 
   const filtered=search.trim().length>0
     ?players.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())||String(p.number).includes(search))
@@ -21,6 +33,32 @@ export function StationCancelBraceletView({players,onUnassignNfc,onBack}){
   const handleSelect=(id)=>{
     setSelectedId(id);
     setDone(false);
+  };
+
+  const handleStartScan=()=>{
+    setScanError(null);
+    setScanning(true);
+    stopScanRef.current=scanNfc({
+      onRead:(url)=>{
+        stopScanRef.current?.();
+        setScanning(false);
+        const token=parseNfcToken(url,window.location.origin);
+        const playerId=token?resolvePlayerId(token,nfcTags):null;
+        const player=playerId!=null?players.find(p=>p.id===playerId):null;
+        if(player) handleSelect(player.id);
+        else setScanError("unknown");
+      },
+      onBlank:()=>{
+        stopScanRef.current?.();
+        setScanning(false);
+        setScanError("unknown");
+      },
+      onError:()=>{
+        stopScanRef.current?.();
+        setScanning(false);
+        setScanError("unsupported");
+      },
+    });
   };
 
   const handleConfirm=()=>{
@@ -80,6 +118,30 @@ export function StationCancelBraceletView({players,onUnassignNfc,onBack}){
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:20,color:"#fff"}}>{t.stationCancelTitle}</div>
         <div style={{fontSize:12,color:"#4b5563",marginTop:4,maxWidth:320}}>{t.stationCancelDesc}</div>
       </div>
+
+      {isWebNfcSupported()&&(
+        <div style={{width:"100%",maxWidth:420,marginBottom:18}}>
+          <button onClick={scanning?()=>{stopScanRef.current?.();setScanning(false);}:handleStartScan} style={{
+            width:"100%",padding:"14px",borderRadius:12,cursor:"pointer",
+            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
+            background:scanning?"transparent":"#B8E02020",
+            border:scanning?"1px solid #ef444460":"1px solid #B8E02060",
+            color:scanning?"#ef4444":"#B8E020"}}>
+            {scanning?t.stationCancelScanStop:t.stationCancelScanCta}
+          </button>
+          {scanError==="unknown"&&(
+            <div style={{textAlign:"center",color:"#ef4444",fontSize:12,marginTop:8}}>{t.stationCancelScanUnknown}</div>
+          )}
+          {scanError==="unsupported"&&(
+            <div style={{textAlign:"center",color:"#ef4444",fontSize:12,marginTop:8}}>{t.nfcAssignError}</div>
+          )}
+          <div style={{display:"flex",alignItems:"center",gap:10,margin:"14px 0",color:"#4b5563",fontSize:11}}>
+            <div style={{flex:1,height:1,background:"#1f2937"}}/>
+            {t.stationCancelScanOr}
+            <div style={{flex:1,height:1,background:"#1f2937"}}/>
+          </div>
+        </div>
+      )}
 
       <div style={{width:"100%",maxWidth:420}}>
         <input value={search} onChange={e=>setSearch(e.target.value)} autoFocus

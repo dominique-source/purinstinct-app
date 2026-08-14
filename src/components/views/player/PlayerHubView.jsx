@@ -12,7 +12,7 @@ import { Button } from "../../ui/Button.jsx";
 // identity block up top (bib/name/score/rank/arena clock), then one cut-corner
 // destination tile per action. Tile accents are functional wayfinding (one
 // color per destination), not decoration — each tile is a single flat surface.
-export function PlayerHubView({player,rank,hubPts,arenaTimer,arenaStatus,arenaState,rosterCodes,sessionRosterId,onBecomeStation,onLogout,onGoStats,onGoRules,onGoQueue,onGoLeaderboard}){
+export function PlayerHubView({player,rank,hubPts,arenaTimer,arenaStatus,arenaState,rosterCodes,sessionRosterId,onBecomeStation,onLogout,onWrongBracelet,onGoStats,onGoRules,onGoQueue,onGoLeaderboard}){
   const t=useT();
   const [sessionQR,setSessionQR]=useState(null);
   const [showQR,setShowQR]=useState(false);
@@ -67,6 +67,13 @@ export function PlayerHubView({player,rank,hubPts,arenaTimer,arenaStatus,arenaSt
               {arenaStatus==="active"?t.statusActive:arenaStatus==="paused"?t.statusPaused:""}
             </span>}
           </div>
+        )}
+        {onWrongBracelet&&(
+          <button onClick={onWrongBracelet} style={{marginTop:"var(--pi-s2)",padding:"6px",border:"none",
+            background:"none",color:"var(--pi-text-4)",cursor:"pointer",fontSize:"var(--pi-fs-meta)",
+            textDecoration:"underline"}}>
+            {t.hubWrongBracelet}
+          </button>
         )}
       </div>
 

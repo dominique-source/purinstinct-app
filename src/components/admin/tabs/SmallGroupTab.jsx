@@ -88,7 +88,7 @@ function ZoneMatchCard({ zone, activeGame, queue, players, zn, onResult, onRemov
 // des matchs en cours. L'orchestration elle-même (sélection des joueurs,
 // répartition) vit dans src/lib/smallGroup.js et App.jsx:launchSmallGroupRound
 // — ce composant ne fait qu'afficher l'état et déclencher onLaunchRound.
-export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaunchRound, onSubmitResult, onRemoveFromGame, onReplaceInGame, previewOnly = false }) {
+export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaunchRound, onPauseRound, onSubmitResult, onRemoveFromGame, onReplaceInGame, previewOnly = false }) {
   const zn = useZn();
   const t = useT();
   const [headcount, setHeadcount] = useState(smallGroup.headcount || 24);
@@ -175,6 +175,14 @@ export function SmallGroupTab({ players, queues, activeGames, smallGroup, onLaun
             <div style={{ fontSize: "var(--pi-fs-label)", color: "var(--pi-text-3)" }}>
               Manche {smallGroup.roundNumber} en cours…
             </div>
+          )}
+          {!canLaunch && onPauseRound && (
+            <button onClick={() => { if (window.confirm(t.smallGroupPauseConfirm)) onPauseRound(); }} style={{
+              alignSelf: "flex-start", padding: "6px 12px", borderRadius: "var(--pi-r-pill)",
+              border: "1px solid var(--pi-line)", background: "transparent", color: "var(--pi-text-3)",
+              cursor: "pointer", fontSize: "var(--pi-fs-label)" }}>
+              ⏸ {t.smallGroupPauseBtn}
+            </button>
           )}
         </div>
       </Panel>

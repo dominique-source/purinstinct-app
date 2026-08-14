@@ -16,7 +16,7 @@ import { PlayerStatsTab } from "./player/PlayerStatsTab.jsx";
 import { PlayerLeaderboardTab } from "./player/PlayerLeaderboardTab.jsx";
 import { PlayerWinnersTab } from "./player/PlayerWinnersTab.jsx";
 
-export function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaState,rosterCodes,sessionRosterId,winnersPublished,onJoin,onLeave,onLogout,onUpdatePlayer,onBecomeStation,onAddComment}){
+export function PlayerView({playerId,players,queues,activeGames,disabledZones,arenaState,rosterCodes,sessionRosterId,winnersPublished,onJoin,onLeave,onLogout,onUpdatePlayer,onBecomeStation,onAddComment,onWrongBracelet}){
   const t=useT();
   const zn=useZn();
   const player=players.find(p=>p.id===playerId);
@@ -51,7 +51,7 @@ export function PlayerView({playerId,players,queues,activeGames,disabledZones,ar
     <PlayerHubView player={player} rank={rank} hubPts={hubPts}
       arenaTimer={arenaTimer} arenaStatus={arenaStatus} arenaState={arenaState}
       rosterCodes={rosterCodes} sessionRosterId={sessionRosterId}
-      onBecomeStation={onBecomeStation} onLogout={onLogout}
+      onBecomeStation={onBecomeStation} onLogout={onLogout} onWrongBracelet={onWrongBracelet}
       onGoStats={()=>{setShowHub(false);setTab("stats");}}
       onGoRules={()=>{setShowHub(false);setTab("rules");}}
       onGoQueue={()=>{setShowHub(false);setTab("queue");}}

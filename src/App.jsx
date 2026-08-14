@@ -683,6 +683,19 @@ export default function PurInstinctApp(){
     fbSet("smallGroup",nextRound);
   };
 
+  // Met en pause la manche Petit Groupe en cours — ne supprime rien
+  // (roundNumber, secondaryZoneUsage, historique de rotation des zones
+  // secondaires restent intacts pour la prochaine manche) — seulement
+  // roundStatus repasse à "idle", ce qui suffit à libérer immédiatement
+  // toutes les zones qu'elle retenait: zoneInActiveRound ne bloque plus rien
+  // dès que roundStatus n'est plus "active"/"wrapping". Échappatoire pour
+  // une manche de test oubliée en "active" qui bloque des zones pour de
+  // vrai, sans désactiver la fonctionnalité elle-même.
+  const pauseSmallGroupRound=()=>{
+    setSmallGroup(sg=>({...sg,roundStatus:"idle"}));
+    fbUpdate({"state/smallGroup/roundStatus":"idle"});
+  };
+
   // Mode Petit Groupe: régénère automatiquement le prochain match d'une zone
   // secondaire dès qu'elle se libère (activeGames[zone] redevenu null) tant
   // que la manche est active — même logique que l'auto-génération de
@@ -1008,7 +1021,11 @@ export default function PurInstinctApp(){
     // depuis) — traiter comme un bracelet non reconnu plutôt que d'essayer
     // d'ouvrir un profil qui n'existe pas (PlayerView ne trouverait rien).
     const playerExists=playerId!=null&&players.some(px=>px.id===playerId);
-    setTimeout(()=>setView(playerExists?{type:"player",id:playerId}:{type:"nfcUnassigned",token}),0);
+    // nfcToken conservé dans la vue (pas seulement local à cet effet) — sert
+    // à "Ce n'est pas mon bracelet ?" dans PlayerHubView pour délier CE
+    // bracelet précis et renvoyer la personne s'inscrire correctement dessus,
+    // sans avoir à retaper physiquement le bracelet une seconde fois.
+    setTimeout(()=>setView(playerExists?{type:"player",id:playerId,nfcToken:token}:{type:"nfcUnassigned",token}),0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[fbReady]);
 
@@ -1211,6 +1228,7 @@ export default function PurInstinctApp(){
       activationMode={activationMode}
       smallGroup={smallGroup}
       onLaunchSmallGroupRound={launchSmallGroupRound}
+      onPauseSmallGroupRound={pauseSmallGroupRound}
       onSubmitResult={submitResult}
       onRemoveFromGame={removeFromGame}
       onReplaceInGame={replaceInGame}
@@ -1356,6 +1374,7 @@ export default function PurInstinctApp(){
   else if(view.type==="stationAdminCancel") content=(
     <StationCancelBraceletView
       players={isTestMode?TEST_PLAYERS:players.filter(p=>(p.groupId||"main")===activeRosterId)}
+      nfcTags={nfcTags}
       onUnassignNfc={unassignNfcTag}
       onBack={()=>setView({type:"stationAdminHub"})}/>
   );
@@ -1500,7 +1519,12 @@ export default function PurInstinctApp(){
           onJoin={addToQueue} onLeave={removeFromQueue}
           onLogout={()=>isTestMode?testHome():setView({type:"liveLogin"})}
           onUpdatePlayer={updatePlayer}
-          onAddComment={(text)=>{const p=players.find(px=>px.id===view.id);if(p)addComment(p.id,p.name,p.number,text);}}/>
+          onAddComment={(text)=>{const p=players.find(px=>px.id===view.id);if(p)addComment(p.id,p.name,p.number,text);}}
+          onWrongBracelet={view.nfcToken?()=>{
+            if(!window.confirm(T[lang].wrongBraceletConfirm)) return;
+            unassignNfcTag(view.id);
+            setView({type:"nfcUnassigned",token:view.nfcToken});
+          }:undefined}/>
       );
     } else {
       // Filet de sécurité: view.id ne correspond à aucun joueur (profil
