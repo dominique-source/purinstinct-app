@@ -4,7 +4,7 @@ import { ZONES } from "../../config/zones.js";
 import { useZn, useT } from "../../hooks/useLang.js";
 import { LangFooter } from "../shared/LangFooter.jsx";
 import { STATION_PIN, STATION_HUB_UNLOCKED_KEY } from "../../config/pins.js";
-import { NumPad } from "./LiveLoginView.jsx";
+import { NumPad, Wordmark } from "./LiveLoginView.jsx";
 
 // Porte d'entrée du code QR de station (?stationHub=ZONE): un QR imprimé et
 // collé au poste peut être photographié/partagé par n'importe qui — ce code
@@ -30,9 +30,10 @@ export function StationHubPinView({zone,onUnlocked}){
   };
 
   return(
-    <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
+    <div style={{minHeight:"100svh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{FONTS}</style>
+      <Wordmark/>
       <div style={{textAlign:"center",marginBottom:32}}>
         <div style={{fontSize:36,marginBottom:8}}>{z.icon}</div>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:22,color:"#fff"}}>{zl.name}</div>
