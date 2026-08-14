@@ -5,13 +5,14 @@ import { LangFooter } from "../shared/LangFooter.jsx";
 // Menu atteint via le PIN admin (StationHubPinView, ADMIN_PIN "1111"),
 // accessible depuis le bouton Admin de n'importe quelle zone. Même esprit
 // que StationHubView: trois écrans dédiés plutôt qu'un seul surchargé.
-export function StationAdminHubView({onEditProfile,onCancelBracelet,onBecomeStation,onBack}){
+export function StationAdminHubView({onEditProfile,onConnectBracelet,onCancelBracelet,onBecomeStation,onBack}){
   const t=useT();
 
   const tiles=[
     {icon:"✏️",label:t.stationAdminEditProfile,sub:t.stationAdminEditProfileSub,color:"#3b82f6",action:onEditProfile},
+    {icon:"📶",label:t.stationAdminConnectBracelet,sub:t.stationAdminConnectBraceletSub,color:"#B8E020",action:onConnectBracelet},
     {icon:"🚫",label:t.stationAdminCancelBracelet,sub:t.stationAdminCancelBraceletSub,color:"#ef4444",action:onCancelBracelet},
-    {icon:"📍",label:t.stationAdminBecomeStation,sub:t.stationAdminBecomeStationSub,color:"#B8E020",action:onBecomeStation},
+    {icon:"📍",label:t.stationAdminBecomeStation,sub:t.stationAdminBecomeStationSub,color:"#f97316",action:onBecomeStation},
   ];
 
   return(

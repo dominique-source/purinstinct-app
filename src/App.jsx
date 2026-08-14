@@ -29,6 +29,7 @@ import { StationHubView } from "./components/views/StationHubView.jsx";
 import { StationHubPinView } from "./components/views/StationHubPinView.jsx";
 import { StationAdminHubView } from "./components/views/StationAdminHubView.jsx";
 import { StationCancelBraceletView } from "./components/views/StationCancelBraceletView.jsx";
+import { StationConnectBraceletView } from "./components/views/StationConnectBraceletView.jsx";
 import { StationBecomeStationView } from "./components/views/StationBecomeStationView.jsx";
 import { StationScanView } from "./components/views/StationScanView.jsx";
 import { StationPlayerLookupView } from "./components/views/StationPlayerLookupView.jsx";
@@ -1275,6 +1276,7 @@ export default function PurInstinctApp(){
   else if(view.type==="stationAdminHub") content=(
     <StationAdminHubView
       onEditProfile={()=>setView({type:"stationAdminProfile"})}
+      onConnectBracelet={()=>setView({type:"stationAdminConnect"})}
       onCancelBracelet={()=>setView({type:"stationAdminCancel"})}
       onBecomeStation={()=>setView({type:"stationAdminZonePick"})}
       onBack={()=>isTestMode?testHome():setView({type:"stationPick"})}/>
@@ -1286,6 +1288,13 @@ export default function PurInstinctApp(){
       nfcTags={nfcTags}
       onAssignNfc={assignNfcTag}
       onUpdatePlayer={updatePlayer}
+      onBack={()=>setView({type:"stationAdminHub"})}/>
+  );
+
+  else if(view.type==="stationAdminConnect") content=(
+    <StationConnectBraceletView
+      players={isTestMode?TEST_PLAYERS:players.filter(p=>(p.groupId||"main")===activeRosterId)}
+      onAssignNfc={assignNfcTag}
       onBack={()=>setView({type:"stationAdminHub"})}/>
   );
 
