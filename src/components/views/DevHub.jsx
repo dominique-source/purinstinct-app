@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { FONTS } from "../../config/fonts.js";
+import { ConfirmModal } from "../ui/Modal.jsx";
 
 // Aperçu local (jamais synced à Firebase) de chaque mode/rôle — ouvert via le
 // code DEV_PIN (config/pins.js) tapé sur ModeSelectView ou LiveLoginView.
@@ -19,6 +21,7 @@ const TILES=[
 ];
 
 export function DevHub({onPreview,onExit,onDeactivateAllGames,activeGamesCount=0}){
+  const [confirmDeactivate,setConfirmDeactivate]=useState(false);
   return(
     <div style={{minHeight:"100vh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 16px 60px"}}>
@@ -51,13 +54,7 @@ export function DevHub({onPreview,onExit,onDeactivateAllGames,activeGamesCount=0
             avant des tests, mais irréversible.
           </div>
           <button
-            onClick={()=>{
-              if(window.confirm(
-                activeGamesCount>0
-                  ?`Arrêter les ${activeGamesCount} partie${activeGamesCount>1?"s":""} actuellement en cours (toutes zones) ? Les joueurs concernés seront remis en tête de file. Cette action est irréversible.`
-                  :"Aucune partie active en ce moment. Continuer quand même ?"
-              )) onDeactivateAllGames();
-            }}
+            onClick={()=>setConfirmDeactivate(true)}
             style={{padding:"10px 20px",borderRadius:12,background:"#7f1d1d",
               border:"1px solid #ef4444",color:"#fff",cursor:"pointer",
               fontSize:13,fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif"}}
@@ -65,6 +62,13 @@ export function DevHub({onPreview,onExit,onDeactivateAllGames,activeGamesCount=0
             onMouseLeave={e=>{e.currentTarget.style.background="#7f1d1d";}}>
             🛑 Désactiver toutes les parties en direct{activeGamesCount>0?` (${activeGamesCount})`:""}
           </button>
+          <ConfirmModal open={confirmDeactivate} onCancel={()=>setConfirmDeactivate(false)}
+            onConfirm={()=>{setConfirmDeactivate(false);onDeactivateAllGames();}}
+            title="Désactiver toutes les parties en direct"
+            body={activeGamesCount>0
+              ?`Arrêter les ${activeGamesCount} partie${activeGamesCount>1?"s":""} actuellement en cours (toutes zones) ? Les joueurs concernés seront remis en tête de file. Cette action est irréversible.`
+              :"Aucune partie active en ce moment. Continuer quand même ?"}
+            confirmLabel="🛑 Désactiver"/>
         </div>
       )}
 
