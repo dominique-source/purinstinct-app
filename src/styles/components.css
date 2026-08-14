@@ -164,7 +164,12 @@
 /* ---------- STATION CONSOLE LAYOUT ------------------------ */
 /* Mobile: action first, queue below (core live action prioritized).
    Tablet/desktop: split — action left, queue rail right, both live at once. */
-.pi-station-grid { display: grid; gap: var(--pi-s4); align-items: start; }
+/* grid-template-columns explicit even on the single-column (mobile) case:
+   without it, the implicit column defaults to min-width:auto like a flex
+   item and refuses to shrink below its content's natural width — any wide
+   row inside (game view, queue list) then pushes the whole page wider than
+   the viewport, forcing horizontal scroll/pinch-zoom instead of wrapping. */
+.pi-station-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--pi-s4); align-items: start; }
 @media (min-width: 1024px) {
   .pi-station-grid { grid-template-columns: minmax(0, 1fr) 360px; gap: var(--pi-s6); }
   .pi-station-rail { position: sticky; top: 148px; }
@@ -181,7 +186,7 @@
 /* Mobile: avatar hero on top, controls stacked below.
    Tablet (>=768px): avatar keeps a fixed comfortable width, controls fill the rest.
    Desktop (>=1024px): same two columns with more breathing room. */
-.pi-profile-grid { display: grid; gap: var(--pi-s4); align-items: start; }
+.pi-profile-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--pi-s4); align-items: start; }
 @media (min-width: 768px) {
   .pi-profile-grid { grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: var(--pi-s5); }
 }
