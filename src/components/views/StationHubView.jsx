@@ -36,16 +36,18 @@ export function StationHubView({zone,onEnterSession,onGoAdmin}){
       <div style={{display:"flex",flexDirection:"column",gap:12,width:"100%",maxWidth:360}}>
         {tiles.map(({icon,label,sub,color,action})=>(
           <button key={label} onClick={action}
-            style={{padding:"20px 18px",border:"1px solid "+color+"30",borderRadius:16,
-              background:"#0d0f1a",cursor:"pointer",textAlign:"left",
+            style={{padding:"20px 18px",border:"1px solid "+color+"60",borderRadius:16,
+              background:`linear-gradient(135deg, ${color}40 0%, ${color}10 55%, #0d0f1a 100%)`,
+              cursor:"pointer",textAlign:"left",
               display:"flex",alignItems:"center",gap:16,
+              boxShadow:`0 6px 24px ${color}25`,
               transition:"all .15s"}}
-            onMouseEnter={e=>{e.currentTarget.style.background=color+"15";e.currentTarget.style.borderColor=color+"80";}}
-            onMouseLeave={e=>{e.currentTarget.style.background="#0d0f1a";e.currentTarget.style.borderColor=color+"30";}}>
+            onMouseEnter={e=>{e.currentTarget.style.background=`linear-gradient(135deg, ${color}60 0%, ${color}20 55%, #0d0f1a 100%)`;e.currentTarget.style.borderColor=color+"a0";}}
+            onMouseLeave={e=>{e.currentTarget.style.background=`linear-gradient(135deg, ${color}40 0%, ${color}10 55%, #0d0f1a 100%)`;e.currentTarget.style.borderColor=color+"60";}}>
             <div style={{fontSize:30,flexShrink:0}}>{icon}</div>
             <div>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:17,color:"#fff",lineHeight:1.2}}>{label}</div>
-              <div style={{fontSize:12,color:"#4b5563",marginTop:2}}>{sub}</div>
+              <div style={{fontSize:12,color:"#d1d5db",marginTop:2}}>{sub}</div>
             </div>
           </button>
         ))}
