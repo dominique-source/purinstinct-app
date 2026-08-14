@@ -999,7 +999,11 @@ export default function PurInstinctApp(){
     const token=parseNfcToken(window.location.href,window.location.origin);
     if(!token){ setTimeout(()=>setView({type:"login"}),0); return; }
     const playerId=resolvePlayerId(token,nfcTags);
-    setTimeout(()=>setView(playerId?{type:"player",id:playerId}:{type:"nfcUnassigned",token}),0);
+    // Le tag référence un joueur mais ce joueur n'existe plus (supprimé
+    // depuis) — traiter comme un bracelet non reconnu plutôt que d'essayer
+    // d'ouvrir un profil qui n'existe pas (PlayerView ne trouverait rien).
+    const playerExists=playerId!=null&&players.some(px=>px.id===playerId);
+    setTimeout(()=>setView(playerExists?{type:"player",id:playerId}:{type:"nfcUnassigned",token}),0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[fbReady]);
 
@@ -1493,6 +1497,27 @@ export default function PurInstinctApp(){
           onLogout={()=>isTestMode?testHome():setView({type:"liveLogin"})}
           onUpdatePlayer={updatePlayer}
           onAddComment={(text)=>{const p=players.find(px=>px.id===view.id);if(p)addComment(p.id,p.name,p.number,text);}}/>
+      );
+    } else {
+      // Filet de sécurité: view.id ne correspond à aucun joueur (profil
+      // supprimé depuis, ex. bracelet resté lié à un joueur retiré) — un
+      // écran noir sans message n'aide personne à comprendre quoi faire.
+      content=(
+        <div style={{minHeight:"100svh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
+          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+          padding:24,textAlign:"center"}}>
+          <style>{FONTS}</style>
+          <div style={{fontSize:32,marginBottom:12}}>❓</div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",
+            fontSize:20,color:"#fff",marginBottom:8}}>{T[lang].playerNotFoundTitle}</div>
+          <div style={{fontSize:13,color:"#9ca3af",marginBottom:24,maxWidth:300}}>{T[lang].playerNotFoundDesc}</div>
+          <button onClick={()=>isTestMode?testHome():setView({type:liveMode?"liveLogin":"login"})} style={{
+            padding:"14px 28px",borderRadius:14,border:"none",cursor:"pointer",
+            fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:15,
+            background:"#B8E020",color:"#000"}}>
+            {T[lang].playerNotFoundBtn}
+          </button>
+        </div>
       );
     }
   }
