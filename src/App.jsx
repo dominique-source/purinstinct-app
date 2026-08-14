@@ -331,9 +331,14 @@ export default function PurInstinctApp(){
     const localMax=players.length>0?Math.max(...players.map(p=>Number(p.id)||0)):0;
     const newId=await allocPlayerId(localMax);
     const usedCodes=players.map(p=>p.claimCode).filter(Boolean);
+    // Chiffres + 10 lettres (A,B,C,D,E,F,G,H,L,M) pour matcher le cadran
+    // à deux modes de NfcUnassignedView — plus de diversité qu'un code
+    // purement numérique.
+    const CLAIM_CODE_CHARS="0123456789ABCDEFGHLM";
     let code;
-    do { code=String(Math.floor(1000+Math.random()*9000)); }
-    while(usedCodes.includes(code));
+    do {
+      code=Array.from({length:4},()=>CLAIM_CODE_CHARS[Math.floor(Math.random()*CLAIM_CODE_CHARS.length)]).join("");
+    } while(usedCodes.includes(code));
     const newPlayer={id:newId,number:newId,name,gender:"M",globalPoints:0,
       zoneScores:{purinstinct:50,speed:50,handAgility:50,footAgility:50,generalAgility:50,iq:50},
       zoneStreaks:{purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0},

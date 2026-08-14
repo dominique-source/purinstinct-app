@@ -13,6 +13,10 @@ import braceletLime from "../../assets/bracelet-lime.png";
 // sans tout retaper; (3) lien discret "Déjà inscrit ?" — recherche par nom,
 // gardé en secours pour quelqu'un qui a déjà un profil (check-in normal)
 // mais pas encore de bracelet, sans en faire le chemin par défaut.
+// Lettres autorisées dans le code de réclamation — 10 lettres choisies pour
+// éviter toute ambiguïté visuelle sur un cadran (pas de I/O confondus avec 1/0).
+const CODE_LETTERS = ["A","B","C","D","E","F","G","H","L","M"];
+
 export function NfcUnassignedView({ players, onBack, onConnect, onRegister, onFindByCode }) {
   const t = useT();
   const [step, setStep] = useState("landing"); // landing | register | code | confirm | select
@@ -22,6 +26,7 @@ export function NfcUnassignedView({ players, onBack, onConnect, onRegister, onFi
   const [registering, setRegistering] = useState(false);
   const [code, setCode] = useState("");
   const [codeError, setCodeError] = useState(false);
+  const [codeMode, setCodeMode] = useState("digits"); // digits | letters
   const [foundPlayer, setFoundPlayer] = useState(null);
   const [search, setSearch] = useState("");
 
@@ -105,6 +110,9 @@ export function NfcUnassignedView({ players, onBack, onConnect, onRegister, onFi
   }
 
   if (step === "code") {
+    const digitKeys = [1,2,3,4,5,6,7,8,9,"",0,"⌫"];
+    const letterKeys = [...CODE_LETTERS.slice(0,9),"",CODE_LETTERS[9],"⌫"];
+    const keys = codeMode === "digits" ? digitKeys : letterKeys;
     return wrap(
       <div style={{ width: "100%", maxWidth: 340 }}>
         <button onClick={() => { setStep("landing"); setCode(""); setCodeError(false); }} style={{ marginBottom: 20, padding: "8px 14px", borderRadius: 10,
@@ -125,8 +133,8 @@ export function NfcUnassignedView({ players, onBack, onConnect, onRegister, onFi
           ))}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, maxWidth: 260, margin: "0 auto" }}>
-          {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((k, i) => (
-            <button key={i} onClick={() => {
+          {keys.map((k, i) => (
+            <button key={codeMode+i} onClick={() => {
               if (k === "") return;
               if (k === "⌫") { setCode(code.slice(0, -1)); return; }
               if (code.length < 4) {
@@ -141,6 +149,12 @@ export function NfcUnassignedView({ players, onBack, onConnect, onRegister, onFi
             </button>
           ))}
         </div>
+        <button onClick={() => setCodeMode(m => m === "digits" ? "letters" : "digits")} style={{
+          marginTop: 16, padding: "10px 20px", borderRadius: 12, border: "1px solid #B8E02060",
+          background: "transparent", color: "#B8E020", cursor: "pointer",
+          fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: 14 }}>
+          {codeMode === "digits" ? t.nfcCodeSwitchToLetters : t.nfcCodeSwitchToDigits}
+        </button>
       </div>
     );
   }

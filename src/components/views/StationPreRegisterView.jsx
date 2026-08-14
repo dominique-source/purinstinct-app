@@ -3,7 +3,7 @@ import { FONTS } from "../../config/fonts.js";
 import { useT } from "../../hooks/useLang.js";
 
 // Écran admin: pré-inscrit un joueur avant l'événement (nom + coordonnées
-// facultatives) et affiche son code à 4 chiffres — le responsable
+// facultatives) et affiche son code à 4 caractères — le responsable
 // l'envoie lui-même par texto/courriel. La personne entre ensuite ce code
 // au kiosque bracelet (NfcUnassignedView "J'ai un code") pour sauter la
 // ressaisie de ses infos.
