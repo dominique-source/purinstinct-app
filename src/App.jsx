@@ -328,18 +328,24 @@ export default function PurInstinctApp(){
   // personne de sauter la ressaisie de ses infos au kiosque bracelet
   // (NfcUnassignedView "J'ai un code"). Même génération de code que
   // soloCode plus haut, unicité vérifiée contre les joueurs déjà en liste.
-  const preRegisterPlayer=async(name,email,phone,callback)=>{
-    const localMax=players.length>0?Math.max(...players.map(p=>Number(p.id)||0)):0;
-    const newId=await allocPlayerId(localMax);
+  // Chiffres + 10 lettres (A,B,C,D,E,F,G,H,L,M) pour matcher le cadran à
+  // deux modes de ClaimCodeKeypad — plus de diversité qu'un code purement
+  // numérique. Partagé entre preRegisterPlayer et registerPlayerWithCode
+  // (toute création de joueur qui a besoin d'un code de récupération).
+  const generateClaimCode=()=>{
     const usedCodes=players.map(p=>p.claimCode).filter(Boolean);
-    // Chiffres + 10 lettres (A,B,C,D,E,F,G,H,L,M) pour matcher le cadran
-    // à deux modes de NfcUnassignedView — plus de diversité qu'un code
-    // purement numérique.
     const CLAIM_CODE_CHARS="0123456789ABCDEFGHLM";
     let code;
     do {
       code=Array.from({length:4},()=>CLAIM_CODE_CHARS[Math.floor(Math.random()*CLAIM_CODE_CHARS.length)]).join("");
     } while(usedCodes.includes(code));
+    return code;
+  };
+
+  const preRegisterPlayer=async(name,email,phone,callback)=>{
+    const localMax=players.length>0?Math.max(...players.map(p=>Number(p.id)||0)):0;
+    const newId=await allocPlayerId(localMax);
+    const code=generateClaimCode();
     const newPlayer={id:newId,number:newId,name,gender:"M",globalPoints:0,
       zoneScores:{purinstinct:50,speed:50,handAgility:50,footAgility:50,generalAgility:50,iq:50},
       zoneStreaks:{purinstinct:0,speed:0,handAgility:0,footAgility:0,generalAgility:0,iq:0},
@@ -361,6 +367,23 @@ export default function PurInstinctApp(){
   // kiosque, on retrouve son pré-enregistrement pour confirmation avant
   // d'activer le bracelet dessus.
   const findPlayerByClaimCode=(code)=>players.find(p=>p.claimCode===code)||null;
+
+  // Inscription immédiate (kiosque libre-service ET écran admin "Connecter
+  // un bracelet" — même fonction, un seul endroit à maintenir): à la
+  // différence de preRegisterPlayer, le bracelet est connecté tout de suite
+  // par l'appelant (onConnect), pas plus tard via un code. On génère quand
+  // même un claimCode + on envoie le courriel si une adresse est fournie —
+  // filet de sécurité si le bracelet est perdu/endommagé plus tard, la
+  // personne peut retrouver son profil (points, historique) avec ce code.
+  const registerPlayerWithCode=(name,email,phone,callback)=>{
+    const code=generateClaimCode();
+    addPlayerToSession(name,"M",(newId)=>{
+      fbUpdate({["state/players/"+newId+"/claimCode"]:code});
+      setPlayers(ps=>ps.map(p=>p.id===newId?{...p,claimCode:code}:p));
+      if(email) sendClaimCodeEmail(name,email,code);
+      if(callback) callback(newId);
+    },activeRosterId,{email,phone});
+  };
 
 
   // --- Queue management ---
@@ -1059,7 +1082,7 @@ export default function PurInstinctApp(){
     <NfcUnassignedView
       onBack={()=>setView({type:"login"})}
       onConnect={(playerId)=>{assignNfcTag(playerId,view.token);setView({type:"player",id:playerId});}}
-      onRegister={(name,email,phone,callback)=>addPlayerToSession(name,"M",callback,activeRosterId,{email,phone})}
+      onRegister={registerPlayerWithCode}
       onFindByCode={findPlayerByClaimCode}/>
   );
 
@@ -1368,7 +1391,7 @@ export default function PurInstinctApp(){
     <StationConnectBraceletView
       players={isTestMode?TEST_PLAYERS:players.filter(p=>(p.groupId||"main")===activeRosterId)}
       onAssignNfc={assignNfcTag}
-      onRegister={(name,email,phone,callback)=>addPlayerToSession(name,"M",callback,activeRosterId,{email,phone})}
+      onRegister={registerPlayerWithCode}
       onBack={()=>setView({type:"stationAdminHub"})}/>
   );
 
@@ -1434,6 +1457,8 @@ export default function PurInstinctApp(){
       teams={teams[view.id]||{}}
       nfcTags={nfcTags}
       onAssignNfc={assignNfcTag}
+      onFindByCode={findPlayerByClaimCode}
+      onGoAdminMode={()=>isTestMode?testHome():setView({type:"stationAdminPin",zone:view.id})}
       suppressAutoGen={activationMode==="petitGroupe"&&smallGroup.roundStatus!=="active"}
       onGenerateTeamMatch={()=>generateTeamMatch(view.id)}
       onAddQ={addToQueue} onRemoveQ={removeFromQueue}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FONTS } from "../../config/fonts.js";
 import { useT } from "../../hooks/useLang.js";
+import { ClaimCodeKeypad } from "../shared/ClaimCodeKeypad.jsx";
 import braceletLime from "../../assets/bracelet-lime.png";
 
 // Vue publique/anonyme affichée quand ?nfc=TOKEN ne résout à aucun profil actif
@@ -13,9 +14,6 @@ import braceletLime from "../../assets/bracelet-lime.png";
 // ça permettrait à quelqu'un de lier un bracelet au profil d'une AUTRE
 // personne par erreur (ou en cliquant vite sans lire) — le code/l'inscription
 // garantissent que le bon profil est visé.
-// Lettres autorisées dans le code de réclamation — 10 lettres choisies pour
-// éviter toute ambiguïté visuelle sur un cadran (pas de I/O confondus avec 1/0).
-const CODE_LETTERS = ["A","B","C","D","E","F","G","H","L","M"];
 
 export function NfcUnassignedView({ onBack, onConnect, onRegister, onFindByCode }) {
   const t = useT();
@@ -105,9 +103,6 @@ export function NfcUnassignedView({ onBack, onConnect, onRegister, onFindByCode 
   }
 
   if (step === "code") {
-    const digitKeys = [1,2,3,4,5,6,7,8,9,"",0,"⌫"];
-    const letterKeys = [...CODE_LETTERS.slice(0,9),"",CODE_LETTERS[9],"⌫"];
-    const keys = codeMode === "digits" ? digitKeys : letterKeys;
     return wrap(
       <div style={{ width: "100%", maxWidth: 340 }}>
         <button onClick={() => { setStep("landing"); setCode(""); setCodeError(false); }} style={{ marginBottom: 20, padding: "8px 14px", borderRadius: 10,
@@ -120,36 +115,10 @@ export function NfcUnassignedView({ onBack, onConnect, onRegister, onFindByCode 
           fontSize: 22, color: "#fff", marginBottom: 6 }}>{t.nfcCodeTitle}</div>
         <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 24 }}>{t.nfcCodeDesc}</div>
         {codeError && <div style={{ color: "#ef4444", fontSize: 13, marginBottom: 16 }}>{t.nfcCodeError}</div>}
-        <div style={{ display: "flex", justifyContent: "center", gap: 12, marginBottom: 24 }}>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} style={{ width: 16, height: 16, borderRadius: "50%",
-              background: i < code.length ? "#B8E020" : "#1f2937",
-              border: `2px solid ${i < code.length ? "#B8E020" : "#374151"}` }}/>
-          ))}
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, maxWidth: 260, margin: "0 auto" }}>
-          {keys.map((k, i) => (
-            <button key={codeMode+i} onClick={() => {
-              if (k === "") return;
-              if (k === "⌫") { setCode(code.slice(0, -1)); return; }
-              if (code.length < 4) {
-                const nv = code + k; setCode(nv); setCodeError(false);
-                if (nv.length === 4) setTimeout(() => handleCodeComplete(nv), 150);
-              }
-            }} style={{ padding: 18, borderRadius: 14, border: "1px solid #1f2937",
-              background: k === "" ? "transparent" : "#0d0f1a", color: "#fff",
-              fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: 20,
-              cursor: k === "" ? "default" : "pointer", opacity: k === "" ? 0 : 1 }}>
-              {k}
-            </button>
-          ))}
-        </div>
-        <button onClick={() => setCodeMode(m => m === "digits" ? "letters" : "digits")} style={{
-          marginTop: 16, padding: "10px 20px", borderRadius: 12, border: "1px solid #B8E02060",
-          background: "transparent", color: "#B8E020", cursor: "pointer",
-          fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: 14 }}>
-          {codeMode === "digits" ? t.nfcCodeSwitchToLetters : t.nfcCodeSwitchToDigits}
-        </button>
+        <ClaimCodeKeypad code={code} mode={codeMode}
+          onCodeChange={(v) => { setCode(v); setCodeError(false); }}
+          onModeChange={setCodeMode}
+          onComplete={handleCodeComplete}/>
       </div>
     );
   }

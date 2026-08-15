@@ -5,6 +5,7 @@ import { TierBadge } from "../shared/TierBadge.jsx";
 import { RulesCard } from "../shared/RulesCard.jsx";
 import { LangFooter } from "../shared/LangFooter.jsx";
 import { QueueList } from "../shared/QueueList.jsx";
+import { ClaimCodeKeypad } from "../shared/ClaimCodeKeypad.jsx";
 import { SprintGameView } from "./SprintGameView.jsx";
 import { IndividualGameView } from "./IndividualGameView.jsx";
 import { TeamGameView } from "./TeamGameView.jsx";
@@ -19,7 +20,7 @@ const NFC_REREAD_DEBOUNCE_MS = 1500; // évite les doubles lectures d'un même b
 // Flagship live-station console. Presentation is design-system-driven; the
 // pending/undo state machine, auto-generation and queue logic are preserved
 // verbatim from the previous implementation.
-export function StationView({zone,players,queue,activeGame,disabled,roundOwned,arenaState,sessionName,sessionCode,teamMode,teams,nfcTags,onAssignNfc,suppressAutoGen=false,onGenerateTeamMatch,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,onFillQueue}){
+export function StationView({zone,players,queue,activeGame,disabled,roundOwned,arenaState,sessionName,sessionCode,teamMode,teams,nfcTags,onAssignNfc,onFindByCode,onGoAdminMode,suppressAutoGen=false,onGenerateTeamMatch,onAddQ,onRemoveQ,onGenerate,onResult,onCancelGame,onRemoveFromGame,onReplaceInGame,onReorderQ,onBack,onGoAdmin,onLogout,onFillQueue}){
   const t=useT();
   const zn=useZn();
   const z=ZONES[zone];
@@ -28,11 +29,24 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
   const [tab,setTab]=useState("game");
   const [showRoster,setShowRoster]=useState(false);
   const [numInput,setNumInput]=useState("");
-  // Bracelet NFC scanné mais pas encore lié à un joueur: token en attente de
-  // sélection dans la liste (voir l'effet de scan plus bas).
+  // Bracelet NFC scanné mais pas encore lié à un joueur: token en attente
+  // de résolution (voir l'effet de scan plus bas). Jamais de recherche/
+  // sélection par nom ici — bracelet vierge = code de réclamation (déjà
+  // pré-inscrit, juste pas encore activé) ou passage en mode admin pour
+  // une inscription tapée (jamais choisie dans une liste, trop risqué de
+  // lier le mauvais nom).
   const [nfcUnknownToken,setNfcUnknownToken]=useState(null);
-  const [nfcPickerSearch,setNfcPickerSearch]=useState("");
+  const [nfcBlankStep,setNfcBlankStep]=useState("prompt"); // prompt | code | confirm
+  const [nfcCode,setNfcCode]=useState("");
+  const [nfcCodeMode,setNfcCodeMode]=useState("digits");
+  const [nfcCodeError,setNfcCodeError]=useState(false);
+  const [nfcFoundPlayer,setNfcFoundPlayer]=useState(null);
   const [nfcError,setNfcError]=useState(false);
+
+  const closeNfcBlankModal=()=>{
+    setNfcUnknownToken(null); setNfcBlankStep("prompt");
+    setNfcCode(""); setNfcCodeError(false); setNfcFoundPlayer(null);
+  };
   const [sprintSize,setSprintSize]=useState(4); // nombre ou "tous"
   const [flash,setFlash]=useState(null);
   const [confirmShortGame,setConfirmShortGame]=useState(false);
@@ -140,9 +154,9 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
   // téléphone). Bracelet déjà lié -> ajoute à la file exactement comme le
   // numéro de dossard manuel (handleAdd) ci-dessus — il "tombe" directement
   // dans cette zone. Bracelet valide mais pas encore lié à personne -> ouvre
-  // la liste de noms (nfcUnknownToken) pour l'activer sur-le-champ, puis
-  // l'ajoute à cette même file une fois choisi (voir handleNfcPickName plus
-  // bas). Lecture seule côté scan, jamais de verrouillage/écriture du tag.
+  // le prompt code/mode admin (nfcUnknownToken, voir handleNfcCodeComplete
+  // plus bas) — jamais une liste de noms à choisir. Lecture seule côté
+  // scan, jamais de verrouillage/écriture du tag.
   //
   // NDEFReader.scan() exige une activation utilisateur directe (Chrome le
   // refuse sinon, silencieusement) — jamais démarré tout seul dans un effet
@@ -182,19 +196,20 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
   };
   useEffect(()=>()=>{nfcStopRef.current?.();},[]);
 
-  // Bracelet inconnu + nom choisi dans la liste: on lie le bracelet à ce
-  // joueur ET on l'ajoute à la file de cette zone en un seul geste — il
-  // "tombe" directement dans la section où il vient de taper.
-  const handleNfcPickName=(playerId)=>{
-    onAssignNfc(playerId,nfcUnknownToken);
-    addPlayerToQueue(playerId);
-    setNfcUnknownToken(null);
-    setNfcPickerSearch("");
+  // Bracelet inconnu + code de réclamation entré: on lie le bracelet à ce
+  // joueur (déjà pré-inscrit ailleurs) ET on l'ajoute à la file de cette
+  // zone en un seul geste — il "tombe" directement dans la section où il
+  // vient de taper.
+  const handleNfcCodeComplete=(value)=>{
+    const player=onFindByCode?onFindByCode(value):null;
+    if(player){ setNfcFoundPlayer(player); setNfcCodeError(false); setNfcBlankStep("confirm"); }
+    else { setNfcCodeError(true); setNfcCode(""); }
   };
-
-  const nfcPickerFiltered=nfcPickerSearch.trim().length>0
-    ?players.filter(p=>p.name.toLowerCase().includes(nfcPickerSearch.toLowerCase())||String(p.number).includes(nfcPickerSearch))
-    :players;
+  const handleNfcConfirm=()=>{
+    onAssignNfc(nfcFoundPlayer.id,nfcUnknownToken);
+    addPlayerToQueue(nfcFoundPlayer.id);
+    closeNfcBlankModal();
+  };
 
   const handleFlashResult=(label)=>{ setFlash(label); setTimeout(()=>setFlash(null),2200); };
 
@@ -587,31 +602,69 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
       </div>
     </Modal>
 
-    {/* ================= BRACELET NFC INCONNU: CHOISIR UN NOM ================= */}
-    <Modal open={!!nfcUnknownToken} onClose={()=>{setNfcUnknownToken(null);setNfcPickerSearch("");}} labelledBy="nfc-picker-title">
-      <h2 id="nfc-picker-title" style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
-        fontSize:"var(--pi-fs-section)",color:"var(--pi-text)",marginBottom:"var(--pi-s1)"}}>
-        {t.nfcSelectNameTitle}
-      </h2>
-      <p style={{color:"var(--pi-text-2)",fontSize:"var(--pi-fs-body)",marginBottom:"var(--pi-s3)"}}>{t.nfcSelectNameDesc}</p>
-      <input value={nfcPickerSearch} onChange={e=>setNfcPickerSearch(e.target.value)} autoFocus
-        placeholder={t.nfcSelectNameSearchPlaceholder} className="pi-input"
-        style={{width:"100%",marginBottom:"var(--pi-s3)",boxSizing:"border-box"}}/>
-      <div style={{maxHeight:"50vh",overflowY:"auto",display:"flex",flexDirection:"column",gap:"var(--pi-s2)"}}>
-        {nfcPickerFiltered.length===0&&(
-          <div style={{textAlign:"center",color:"var(--pi-text-4)",fontSize:"var(--pi-fs-body)",padding:"var(--pi-s4) 0"}}>{t.nfcSelectNameEmpty}</div>
-        )}
-        {nfcPickerFiltered.map(p=>(
-          <button key={p.id} onClick={()=>handleNfcPickName(p.id)} style={{
-            display:"flex",alignItems:"center",gap:"var(--pi-s3)",padding:"12px 14px",borderRadius:"var(--pi-r-md)",
-            border:"1px solid var(--pi-line)",background:"var(--pi-surface-1)",cursor:"pointer",textAlign:"left"}}>
-            <span style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",fontSize:16,
-              color:"var(--pi-lime)",width:30,flexShrink:0,textAlign:"center"}}>#{p.number}</span>
-            <span style={{flex:1,color:"#fff",fontWeight:600,fontSize:"var(--pi-fs-body)"}}>{p.name}</span>
-            <span style={{color:"var(--pi-text-4)",fontSize:16}}>›</span>
+    {/* ================= BRACELET NFC INCONNU: CODE OU MODE ADMIN ================= */}
+    {/* Jamais de recherche/sélection par nom ici (risque de lier le
+        mauvais bracelet) — soit un code de réclamation (déjà pré-inscrit
+        ailleurs, juste pas encore activé), soit un aller-retour en mode
+        admin pour une inscription tapée (voir StationConnectBraceletView
+        "+ Nouveau joueur"). */}
+    <Modal open={!!nfcUnknownToken} onClose={closeNfcBlankModal} labelledBy="nfc-blank-title">
+      {nfcBlankStep==="prompt"&&(
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:32,marginBottom:12}}>📶</div>
+          <h2 id="nfc-blank-title" style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
+            fontSize:"var(--pi-fs-section)",color:"var(--pi-text)",marginBottom:"var(--pi-s2)"}}>
+            {t.stationBlankTitle}
+          </h2>
+          <p style={{color:"var(--pi-text-2)",fontSize:"var(--pi-fs-body)",marginBottom:"var(--pi-s5)"}}>{t.stationBlankDesc}</p>
+          <div style={{display:"flex",flexDirection:"column",gap:"var(--pi-s2)"}}>
+            <Button variant="primary" block onClick={()=>setNfcBlankStep("code")}>🔑 {t.stationBlankHasCode}</Button>
+            {onGoAdminMode&&<Button variant="secondary" block onClick={()=>{closeNfcBlankModal();onGoAdminMode();}}>🛡️ {t.stationBlankGoAdmin}</Button>}
+          </div>
+        </div>
+      )}
+      {nfcBlankStep==="code"&&(
+        <div style={{textAlign:"center"}}>
+          <button onClick={()=>{setNfcBlankStep("prompt");setNfcCode("");setNfcCodeError(false);}} style={{marginBottom:"var(--pi-s3)",padding:"8px 14px",borderRadius:10,
+            background:"var(--pi-surface-2)",border:"1px solid var(--pi-lime-line)",color:"var(--pi-lime)",cursor:"pointer",
+            fontSize:13,fontWeight:700}}>
+            ← {t.back}
           </button>
-        ))}
-      </div>
+          <h2 id="nfc-blank-title" style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
+            fontSize:"var(--pi-fs-section)",color:"var(--pi-text)",marginBottom:"var(--pi-s1)"}}>
+            {t.nfcCodeTitle}
+          </h2>
+          <p style={{color:"var(--pi-text-2)",fontSize:"var(--pi-fs-body)",marginBottom:"var(--pi-s3)"}}>{t.nfcCodeDesc}</p>
+          {nfcCodeError&&<div style={{color:"var(--pi-danger)",fontSize:13,marginBottom:"var(--pi-s3)"}}>{t.nfcCodeError}</div>}
+          <div style={{display:"flex",justifyContent:"center"}}>
+            <ClaimCodeKeypad code={nfcCode} mode={nfcCodeMode}
+              onCodeChange={(v)=>{setNfcCode(v);setNfcCodeError(false);}}
+              onModeChange={setNfcCodeMode}
+              onComplete={handleNfcCodeComplete}/>
+          </div>
+        </div>
+      )}
+      {nfcBlankStep==="confirm"&&nfcFoundPlayer&&(
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:32,marginBottom:8}}>✋</div>
+          <h2 id="nfc-blank-title" style={{fontFamily:"var(--pi-font-display)",fontWeight:900,fontStyle:"italic",
+            fontSize:"var(--pi-fs-section)",color:"var(--pi-text)",marginBottom:"var(--pi-s1)"}}>
+            {t.nfcConfirmTitle}
+          </h2>
+          <p style={{color:"var(--pi-text-2)",fontSize:"var(--pi-fs-body)",marginBottom:"var(--pi-s3)"}}>{t.nfcConfirmDesc}</p>
+          <div style={{background:"var(--pi-surface-2)",border:"1px solid var(--pi-line)",borderRadius:"var(--pi-r-md)",
+            padding:"var(--pi-s4)",marginBottom:"var(--pi-s4)",textAlign:"left"}}>
+            <div style={{color:"#fff",fontWeight:700,fontSize:"var(--pi-fs-body)",marginBottom:4}}>{nfcFoundPlayer.name}</div>
+            {nfcFoundPlayer.email&&<div style={{color:"var(--pi-text-3)",fontSize:"var(--pi-fs-label)"}}>📧 {nfcFoundPlayer.email}</div>}
+          </div>
+          <Button variant="primary" block onClick={handleNfcConfirm}>{t.nfcConfirmBtn}</Button>
+          <button onClick={()=>{setNfcBlankStep("code");setNfcCode("");setNfcFoundPlayer(null);}} style={{
+            marginTop:"var(--pi-s3)",padding:"8px",border:"none",background:"none",color:"var(--pi-text-3)",
+            cursor:"pointer",fontSize:13}}>
+            {t.stationCancelBackToSearch}
+          </button>
+        </div>
+      )}
     </Modal>
 
     {!pending&&<LangFooter/>}
