@@ -17,7 +17,7 @@ import braceletLime from "../../assets/bracelet-lime.png";
 
 export function NfcUnassignedView({ onBack, onConnect, onRegister, onFindByCode }) {
   const t = useT();
-  const [step, setStep] = useState("landing"); // landing | register | code | confirm
+  const [step, setStep] = useState("landing"); // landing | register | code | confirm | success
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -26,11 +26,24 @@ export function NfcUnassignedView({ onBack, onConnect, onRegister, onFindByCode 
   const [codeError, setCodeError] = useState(false);
   const [codeMode, setCodeMode] = useState("digits"); // digits | letters
   const [foundPlayer, setFoundPlayer] = useState(null);
+  const [registeredId, setRegisteredId] = useState(null);
+  const [emailStatus, setEmailStatus] = useState(null); // null | sending | sent | failed
 
   const handleRegister = () => {
     if (!name.trim() || registering) return;
     setRegistering(true);
-    onRegister(name.trim(), email.trim(), phone.trim(), (newId) => onConnect(newId));
+    // Pas d'email fourni: aucun statut à montrer, on continue directement
+    // vers le profil (pas de friction ajoutée). Avec un email: écran de
+    // confirmation "courriel envoyé" avant de continuer, même sécurité que
+    // le code visible à l'écran si l'envoi échoue.
+    onRegister(name.trim(), email.trim(), phone.trim(), (newId, emailPromise) => {
+      setRegistering(false);
+      if (!emailPromise) { onConnect(newId); return; }
+      setRegisteredId(newId);
+      setEmailStatus("sending");
+      emailPromise.then((ok) => setEmailStatus(ok ? "sent" : "failed"));
+      setStep("success");
+    });
   };
 
   const handleCodeComplete = (value) => {
@@ -98,6 +111,30 @@ export function NfcUnassignedView({ onBack, onConnect, onRegister, onFindByCode 
             {registering ? t.nfcWriting : t.nfcConnectCta}
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (step === "success") {
+    return wrap(
+      <div style={{ width: "100%", maxWidth: 340 }}>
+        <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
+        <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontStyle: "italic",
+          fontSize: 22, color: "#fff", marginBottom: 16 }}>{t.nfcConnectDoneTitle}</div>
+        {emailStatus && (
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 24,
+            color: emailStatus === "sent" ? "#22c55e" : emailStatus === "failed" ? "#f59e0b" : "#9ca3af" }}>
+            {emailStatus === "sending" && t.nfcEmailSending}
+            {emailStatus === "sent" && t.nfcEmailSent.replace("{email}", email.trim())}
+            {emailStatus === "failed" && t.nfcEmailFailed}
+          </div>
+        )}
+        <button onClick={() => onConnect(registeredId)} style={{
+          width: "100%", padding: "16px", borderRadius: 14, border: "none", cursor: "pointer",
+          fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontSize: 17,
+          background: "#B8E020", color: "#000" }}>
+          {t.nfcConnectContinueBtn}
+        </button>
       </div>
     );
   }

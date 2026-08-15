@@ -137,6 +137,20 @@ export function PlayerDossier({player,onSave,onBack,embedded,onBecomeStation,onA
         </div>
       </div>
 
+      {/* Code de récupération — visible pour le joueur ET l'admin, jamais
+          éditable (généré par preRegisterPlayer/registerPlayerWithCode).
+          Permet de retrouver le profil (points, historique) si le bracelet
+          est perdu/endommagé, même sans avoir reçu ou retrouvé le courriel. */}
+      {player.claimCode&&(
+        <div style={{...S.card()}}>
+          <div style={{...S.label(),marginBottom:6}}>🔑 {t.claimCodeLabel}</div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",
+            fontSize:28,letterSpacing:6,color:"#B8E020"}}>
+            {player.claimCode}
+          </div>
+        </div>
+      )}
+
       {/* Bracelet NFC (admin uniquement) */}
       {onAssignNfc&&(
         <div style={{...S.card()}}>

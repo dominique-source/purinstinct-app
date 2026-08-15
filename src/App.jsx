@@ -380,8 +380,8 @@ export default function PurInstinctApp(){
     addPlayerToSession(name,"M",(newId)=>{
       fbUpdate({["state/players/"+newId+"/claimCode"]:code});
       setPlayers(ps=>ps.map(p=>p.id===newId?{...p,claimCode:code}:p));
-      if(email) sendClaimCodeEmail(name,email,code);
-      if(callback) callback(newId);
+      const emailPromise=email?sendClaimCodeEmail(name,email,code):null;
+      if(callback) callback(newId,emailPromise);
     },activeRosterId,{email,phone});
   };
 

@@ -22,6 +22,7 @@ export function StationConnectBraceletView({players,onAssignNfc,onRegister,onBac
   const [newEmail,setNewEmail]=useState("");
   const [newPhone,setNewPhone]=useState("");
   const [saving,setSaving]=useState(false);
+  const [emailStatus,setEmailStatus]=useState(null); // null | sending | sent | failed
 
   const filtered=search.trim().length>0
     ?players.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())||String(p.number).includes(search))
@@ -32,17 +33,25 @@ export function StationConnectBraceletView({players,onAssignNfc,onRegister,onBac
   const handleSelect=(id)=>{
     setSelectedId(id);
     setStep("idle");
+    setEmailStatus(null); // joueur existant choisi via recherche — pas d'envoi à signaler
   };
 
   const handleCreateAndSelect=()=>{
     if(!newName.trim()||saving) return;
     setSaving(true);
-    onRegister(newName.trim(),newEmail.trim(),newPhone.trim(),(newId)=>{
+    const emailAddr=newEmail.trim();
+    onRegister(newName.trim(),emailAddr,newPhone.trim(),(newId,emailPromise)=>{
       setSelectedId(newId);
       setStep("idle");
       setRegistering(false);
       setSaving(false);
       setNewName("");setNewEmail("");setNewPhone("");
+      if(emailPromise){
+        setEmailStatus("sending");
+        emailPromise.then(ok=>setEmailStatus(ok?"sent":"failed"));
+      } else {
+        setEmailStatus(null);
+      }
     });
   };
 
@@ -67,6 +76,15 @@ export function StationConnectBraceletView({players,onAssignNfc,onRegister,onBac
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:15,color:"#B8E020"}}>#{selectedPlayer.number}</div>
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontStyle:"italic",fontSize:24,color:"#fff",marginTop:4}}>{selectedPlayer.name}</div>
         </div>
+
+        {emailStatus&&(
+          <div style={{fontSize:13,fontWeight:700,marginBottom:16,textAlign:"center",
+            color:emailStatus==="sent"?"#22c55e":emailStatus==="failed"?"#f59e0b":"#9ca3af"}}>
+            {emailStatus==="sending"&&t.nfcEmailSending}
+            {emailStatus==="sent"&&t.nfcEmailSent.replace("{email}",selectedPlayer.email||"")}
+            {emailStatus==="failed"&&t.nfcEmailFailed}
+          </div>
+        )}
 
         {!isWebNfcSupported()?(
           <div style={{textAlign:"center",color:"#ef4444",fontSize:14,marginBottom:24,maxWidth:300}}>{t.nfcUnsupportedBrowser}</div>
