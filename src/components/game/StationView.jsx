@@ -322,7 +322,9 @@ export function StationView({zone,players,queue,activeGame,disabled,roundOwned,a
       </header>
 
       {/* ================= CONTENT ================= */}
-      <main style={{flex:1,width:"100%",maxWidth:"var(--pi-w-wide)",margin:"0 auto",padding:"var(--pi-s4) var(--pi-gutter)"}}>
+      <main style={{flex:1,width:"100%",maxWidth:"var(--pi-w-wide)",margin:"0 auto",
+        padding:"var(--pi-s4) var(--pi-gutter)",
+        paddingBottom:"calc(var(--pi-s4) + 64px + env(safe-area-inset-bottom))"}}>
         {tab==="rules"&&<div style={{maxWidth:"var(--pi-w-content)"}}><RulesCard zone={zone}/></div>}
 
         {tab==="game"&&(

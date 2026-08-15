@@ -12,7 +12,7 @@ import { NumPad, Wordmark } from "./LiveLoginView.jsx";
 // quel écran responsable de plateau. persistKey optionnel: si fourni,
 // mémorise le déverrouillage en sessionStorage (tient tant que l'onglet
 // reste ouvert) — volontairement omis pour l'admin, plus sensible.
-export function StationHubPinView({zone,expectedPin,persistKey,onUnlocked}){
+export function StationHubPinView({zone,expectedPin,persistKey,onUnlocked,onBack}){
   const t=useT();
   const zn=useZn();
   const z=zone?ZONES[zone]:null;
@@ -35,6 +35,11 @@ export function StationHubPinView({zone,expectedPin,persistKey,onUnlocked}){
     <div style={{minHeight:"100svh",background:"#0A0A0A",fontFamily:"'DM Sans',sans-serif",
       display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
       <style>{FONTS}</style>
+      {onBack&&<button onClick={onBack} style={{position:"fixed",top:"calc(env(safe-area-inset-top) + 16px)",left:16,
+        padding:"8px 14px",borderRadius:10,background:"#111827",border:"1px solid #B8E02040",
+        color:"#B8E020",cursor:"pointer",fontSize:13,fontWeight:700}}>
+        ← {t.stationAdminBackToHub}
+      </button>}
       <Wordmark/>
       <div style={{textAlign:"center",marginBottom:32}}>
         {z?(<div style={{fontSize:36,marginBottom:8}}>{z.icon}</div>):(<div style={{fontSize:36,marginBottom:8}}>🛡️</div>)}

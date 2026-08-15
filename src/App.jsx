@@ -1335,7 +1335,8 @@ export default function PurInstinctApp(){
 
   else if(view.type==="stationAdminPin") content=(
     <StationHubPinView expectedPin={ADMIN_PIN}
-      onUnlocked={()=>setView({type:"stationAdminHub"})}/>
+      onUnlocked={()=>setView({type:"stationAdminHub"})}
+      onBack={view.zone?()=>setView({type:"stationHub",id:view.zone}):undefined}/>
   );
 
   else if(view.type==="stationAdminHub") content=(
@@ -1389,7 +1390,7 @@ export default function PurInstinctApp(){
   else if(view.type==="stationHub") content=(
     <StationHubView zone={view.id}
       onEnterSession={()=>setView({type:"station",id:view.id})}
-      onGoAdmin={()=>setView({type:"stationAdminPin"})}/>
+      onGoAdmin={()=>setView({type:"stationAdminPin",zone:view.id})}/>
   );
 
   else if(view.type==="stationScan") content=(
